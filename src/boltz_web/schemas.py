@@ -5,7 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-AssetKind = Literal["protein", "ligand", "complex", "prepared_protein", "prepared_ligand", "result"]
+AssetKind = Literal["protein", "ligand", "complex", "prepared_protein", "prepared_ligand", "pocket", "result"]
 
 
 class AssetFileOut(BaseModel):
@@ -78,6 +78,16 @@ class PreparationRequest(BaseModel):
     asset_id: str
     project_id: str | None = None
     options: dict[str, Any] = Field(default_factory=dict)
+
+
+class PocketCreateRequest(BaseModel):
+    protein_asset_id: str
+    name: str = "binding pocket"
+    project_id: str | None = None
+    reference: str
+    center: list[float] = Field(min_length=3, max_length=3)
+    box_size: list[float] = Field(min_length=3, max_length=3)
+    component: dict[str, Any] = Field(default_factory=dict)
 
 
 class JobCreateRequest(BaseModel):

@@ -45,6 +45,7 @@ from boltz_web.schemas import (
     DrawLigandRequest,
     JobCreateRequest,
     JobOut,
+    PocketCreateRequest,
     PreparationRequest,
     ProteinPdbRequest,
     ProjectCreateRequest,
@@ -346,6 +347,44 @@ def create_ligand_from_draw(
     path = asset_root(settings, user_id, project.id, asset.id) / "drawn_ligand.sdf"
     size, sha = write_bytes(path, data)
     add_asset_file(db, asset, "structure", path.name, "chemical/x-mdl-sdfile", path, size, sha)
+    db.commit()
+    db.refresh(asset)
+    return asset_to_out(asset)
+
+
+@app.post("/api/v1/assets/pockets", response_model=AssetOut)
+def create_pocket_asset(
+    request: PocketCreateRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AssetOut:
+    user_id = current_user.id
+    protein = db.get(Asset, request.protein_asset_id)
+    if protein is None or protein.user_id != user_id or protein.kind not in {"protein", "prepared_protein", "complex"}:
+        raise HTTPException(status_code=404, detail="protein asset not found")
+    try:
+        project = ensure_project(db, user_id, request.project_id or protein.project_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if protein.project_id != project.id:
+        raise HTTPException(status_code=400, detail="protein asset is not in the selected project")
+    asset = Asset(
+        user_id=user_id,
+        project_id=project.id,
+        kind="pocket",
+        name=request.name.strip() or "binding pocket",
+        parent_asset_id=protein.id,
+        source_type="pdb_component",
+        metadata_json={
+            "operation": "pocket_from_component",
+            "protein_asset_id": protein.id,
+            "reference": request.reference,
+            "center": request.center,
+            "box_size": request.box_size,
+            "component": request.component,
+        },
+    )
+    db.add(asset)
     db.commit()
     db.refresh(asset)
     return asset_to_out(asset)

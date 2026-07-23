@@ -617,6 +617,40 @@
         font-size: 12px;
         font-weight: 650;
       }
+      .component-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+      }
+      .component-card {
+        border: 1px solid rgba(213, 222, 235, 0.95);
+        border-radius: 14px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.74);
+      }
+      .component-card.selected {
+        border-color: rgba(47, 112, 223, 0.62);
+        background: rgba(232, 241, 255, 0.82);
+      }
+      .component-card strong {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 4px;
+      }
+      .component-card small {
+        color: #64748b;
+        line-height: 1.45;
+      }
+      .component-card button {
+        width: auto;
+        min-height: 34px;
+        margin-top: 10px;
+        padding: 6px 10px;
+      }
+      .pocket-summary {
+        display: grid;
+        gap: 8px;
+      }
       .asset-preview {
         min-height: 520px;
       }
@@ -881,6 +915,24 @@
                   <div class="viewer-badges" id="protein-viewer-flags"></div>
                 </div>
               </section>
+              <section>
+                <div class="workspace-header">
+                  <div>
+                    <h2>PDB 组分 / 候选配体</h2>
+                    <p class="muted">从 PDB 的 HETATM 记录解析配体、辅因子、金属和水。选择一个配体可生成对接口袋。</p>
+                  </div>
+                </div>
+                <div class="component-grid" id="protein-components">
+                  <div class="item"><small>选择蛋白资产后解析 PDB 组分</small></div>
+                </div>
+              </section>
+              <section>
+                <h2>当前口袋</h2>
+                <div class="pocket-summary" id="pocket-summary">
+                  <div class="item"><small>还没有选择参考配体。请选择 PDB 组分里的候选配体来创建口袋。</small></div>
+                </div>
+                <button class="secondary" id="create-pocket-asset" type="button">创建口袋资产并用于对接</button>
+              </section>
               <section class="asset-preview">
                 <h2>资产预览</h2>
                 <div id="protein-preview">
@@ -890,6 +942,10 @@
               <section>
                 <h2>准备产物</h2>
                 <div class="list" id="prepared-protein-assets"></div>
+              </section>
+              <section>
+                <h2>口袋资产</h2>
+                <div class="list" id="pocket-assets"></div>
               </section>
             </div>
           </div>
@@ -960,6 +1016,10 @@
                 <label>
                   口袋 / 盒子描述
                   <input id="docking-pocket" placeholder="后续接入交互式口袋选择" />
+                </label>
+                <label>
+                  口袋资产 ID
+                  <input id="docking-pocket-asset" placeholder="从蛋白页创建口袋资产后自动填入" />
                 </label>
                 <button id="create-docking-job">创建对接占位任务</button>
               </section>
@@ -1116,6 +1176,8 @@
       let currentProjectId = null;
       let activeProteinAsset = null;
       let activeProteinText = "";
+      let proteinComponents = [];
+      let activePocket = null;
       let proteinViewer = null;
       const proteinViewState = {
         cartoon: true,
@@ -1217,6 +1279,10 @@
           ? `当前蛋白资产：${selectedProteinId}`
           : "当前没有选中的蛋白资产";
       }
+      function setSelectedPocket(pocketId, pocketText = "") {
+        document.getElementById("docking-pocket-asset").value = pocketId || "";
+        if (pocketText) document.getElementById("docking-pocket").value = pocketText;
+      }
       function setProteinPlaceholder(title, body) {
         document.getElementById("protein-viewer-placeholder").innerHTML = `
           <strong>${escapeHtml(title)}</strong>
@@ -1251,6 +1317,148 @@
           asset.files.find((file) => file.content_type.includes("x-pdb")) ||
           asset.files[0]
         );
+      }
+      function parsePdbComponents(pdbText) {
+        const metals = new Set(["ZN", "MG", "MN", "FE", "CU", "CO", "NI", "CA", "NA", "K", "CD", "HG", "PB"]);
+        const waters = new Set(["HOH", "WAT", "H2O", "DOD"]);
+        const groups = new Map();
+        for (const line of pdbText.split(/\r?\n/)) {
+          if (!line.startsWith("HETATM")) continue;
+          const resn = line.slice(17, 20).trim();
+          const chain = line.slice(21, 22).trim() || "_";
+          const resi = line.slice(22, 26).trim();
+          const icode = line.slice(26, 27).trim();
+          const x = Number(line.slice(30, 38));
+          const y = Number(line.slice(38, 46));
+          const z = Number(line.slice(46, 54));
+          if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+          const atom = line.slice(12, 16).trim();
+          const elem = (line.slice(76, 78).trim() || atom.replace(/[0-9]/g, "").slice(0, 2)).toUpperCase();
+          const key = `${resn}|${chain}|${resi}|${icode}`;
+          if (!groups.has(key)) {
+            groups.set(key, {
+              key,
+              resn,
+              chain,
+              resi,
+              icode,
+              elem,
+              atomCount: 0,
+              atoms: [],
+              min: [Infinity, Infinity, Infinity],
+              max: [-Infinity, -Infinity, -Infinity],
+              sum: [0, 0, 0],
+            });
+          }
+          const group = groups.get(key);
+          group.atomCount += 1;
+          group.atoms.push({ atom, elem, x, y, z });
+          [x, y, z].forEach((value, index) => {
+            group.min[index] = Math.min(group.min[index], value);
+            group.max[index] = Math.max(group.max[index], value);
+            group.sum[index] += value;
+          });
+        }
+        const components = [...groups.values()].map((group) => {
+          const center = group.sum.map((value) => value / group.atomCount);
+          const span = group.max.map((value, index) => Math.max(0, value - group.min[index]));
+          const elementCounts = group.atoms.reduce((acc, atom) => {
+            acc[atom.elem] = (acc[atom.elem] || 0) + 1;
+            return acc;
+          }, {});
+          const isWater = waters.has(group.resn);
+          const isMetal = !isWater && group.atomCount <= 2 && (metals.has(group.resn.toUpperCase()) || metals.has(group.elem));
+          return {
+            ...group,
+            center,
+            span,
+            boxSize: span.map((value) => Math.max(18, Math.ceil(value + 10))),
+            reference: `${group.resn} ${group.chain}:${group.resi}${group.icode || ""}`,
+            type: isWater ? "water" : isMetal ? "metal" : "ligand",
+            elementCounts,
+          };
+        });
+        return components.sort((a, b) => {
+          const order = { ligand: 0, metal: 1, water: 2 };
+          return order[a.type] - order[b.type] || a.resn.localeCompare(b.resn) || Number(a.resi) - Number(b.resi);
+        });
+      }
+      function renderProteinComponents() {
+        const target = document.getElementById("protein-components");
+        if (!proteinComponents.length) {
+          target.innerHTML = '<div class="item"><small>这个 PDB 没有解析到 HETATM 组分</small></div>';
+          return;
+        }
+        const waterCount = proteinComponents.filter((item) => item.type === "water").length;
+        const visible = proteinComponents.filter((item) => item.type !== "water").slice(0, 80);
+        const cards = visible
+          .map(
+            (component) => `
+              <div class="component-card ${activePocket?.key === component.key ? "selected" : ""}">
+                <strong>${escapeHtml(component.resn)} · ${escapeHtml(component.type)}</strong>
+                <small>
+                  chain ${escapeHtml(component.chain)} · residue ${escapeHtml(component.resi)} · atoms ${component.atomCount}<br />
+                  center ${component.center.map((value) => value.toFixed(2)).join(", ")}<br />
+                  box ${component.boxSize.join(", ")} Å
+                </small>
+                <div class="item-actions">
+                  <button class="secondary" data-focus-component="${escapeHtml(component.key)}" type="button">定位</button>
+                  ${component.type === "ligand" ? `<button data-pocket-component="${escapeHtml(component.key)}" type="button">用作口袋</button>` : ""}
+                </div>
+              </div>`,
+          )
+          .join("");
+        target.innerHTML =
+          cards +
+          (waterCount
+            ? `<div class="component-card"><strong>水分子</strong><small>HOH/WAT 记录 ${waterCount} 个，可通过 Waters 开关显示。</small></div>`
+            : "");
+        document.querySelectorAll("[data-focus-component]").forEach((node) => {
+          node.addEventListener("click", () => focusProteinComponent(node.dataset.focusComponent));
+        });
+        document.querySelectorAll("[data-pocket-component]").forEach((node) => {
+          node.addEventListener("click", () => useComponentAsPocket(node.dataset.pocketComponent));
+        });
+      }
+      function renderPocketSummary() {
+        const target = document.getElementById("pocket-summary");
+        if (!activePocket) {
+          target.innerHTML = '<div class="item"><small>还没有选择参考配体。请选择 PDB 组分里的候选配体来创建口袋。</small></div>';
+          return;
+        }
+        target.innerHTML = `
+          <div class="item">
+            <strong>${escapeHtml(activePocket.reference)}</strong>
+            <small>
+              来源蛋白：${escapeHtml(activeProteinAsset?.name || "")}<br />
+              中心：${activePocket.center.map((value) => value.toFixed(2)).join(", ")}<br />
+              盒子：${activePocket.boxSize.join(", ")} Å
+            </small>
+          </div>
+        `;
+      }
+      function focusProteinComponent(componentKey) {
+        const component = proteinComponents.find((item) => item.key === componentKey);
+        const viewer = ensureProteinViewer();
+        if (!component || !viewer) return;
+        viewer.setStyle({ resn: component.resn, chain: component.chain === "_" ? "" : component.chain, resi: Number(component.resi) }, { stick: { color: "#e24646", radius: 0.28 } });
+        viewer.zoomTo({ resn: component.resn, chain: component.chain === "_" ? "" : component.chain, resi: Number(component.resi) });
+        viewer.render();
+      }
+      function useComponentAsPocket(componentKey) {
+        const component = proteinComponents.find((item) => item.key === componentKey);
+        if (!component) return;
+        activePocket = component;
+        document.getElementById("protein-pocket-ligand").value = component.reference;
+        document.getElementById("protein-pocket-center").value = component.center.map((value) => value.toFixed(2)).join(",");
+        document.getElementById("protein-pocket-size").value = component.boxSize.join(",");
+        const pocketText = `${component.reference}; center ${component.center.map((value) => value.toFixed(2)).join(",")}; box ${component.boxSize.join(",")} Å`;
+        document.getElementById("docking-pocket").value = pocketText;
+        proteinViewState.pocket = true;
+        renderProteinComponents();
+        renderPocketSummary();
+        applyProteinView();
+        setStatus("已从参考配体生成口袋参数，可创建口袋资产并用于对接", "success");
       }
       async function fetchAssetFileText(asset, file) {
         const response = await fetch(`/api/v1/assets/${asset.id}/files/${file.id}/download`, {
@@ -1301,7 +1509,17 @@
             viewer.addSurface($3Dmol.SurfaceType.VDW, { opacity: 0.38, color: "white" }, { hetflag: false });
           }
           if (proteinViewState.pocket) {
-            viewer.addSurface($3Dmol.SurfaceType.MS, { opacity: 0.55, color: "#4c82e6" }, { hetflag: true });
+            if (activePocket) {
+              const pocketSelection = {
+                resn: activePocket.resn,
+                chain: activePocket.chain === "_" ? "" : activePocket.chain,
+                resi: Number(activePocket.resi),
+              };
+              viewer.setStyle(pocketSelection, { stick: { color: "#e24646", radius: 0.32 } });
+              viewer.addSurface($3Dmol.SurfaceType.MS, { opacity: 0.55, color: "#4c82e6" }, pocketSelection);
+            } else {
+              viewer.addSurface($3Dmol.SurfaceType.MS, { opacity: 0.55, color: "#4c82e6" }, { hetflag: true });
+            }
           }
           viewer.zoomTo();
           viewer.render();
@@ -1320,6 +1538,10 @@
         setProteinPlaceholder(asset.name, `正在加载 ${file.filename} ...`);
         document.getElementById("protein-viewer-selection").textContent = `当前蛋白资产：${asset.name} · ${asset.id}`;
         activeProteinText = await fetchAssetFileText(asset, file);
+        proteinComponents = parsePdbComponents(activeProteinText);
+        activePocket = null;
+        renderProteinComponents();
+        renderPocketSummary();
         document.getElementById("protein-viewer-placeholder").innerHTML = "";
         applyProteinView();
       }
@@ -1361,6 +1583,10 @@
             if (isLigandLike(node.dataset.kind)) {
               selectedLigandId = selectedAssetId;
               document.getElementById("docking-ligand-asset").value = selectedLigandId;
+              runAction(() => previewAsset(selectedAssetId));
+              return;
+            }
+            if (node.dataset.kind === "pocket") {
               runAction(() => previewAsset(selectedAssetId));
               return;
             }
@@ -1452,6 +1678,11 @@
           document.getElementById("docking-ligand-asset").value = asset.id;
           renderPreview(asset, "ligand-preview");
           showPage("ligand");
+        } else if (asset.kind === "pocket") {
+          const pocketText = `${asset.metadata.reference || asset.name}; center ${(asset.metadata.center || []).join(",")}; box ${(asset.metadata.box_size || []).join(",")} Å`;
+          setSelectedPocket(asset.id, pocketText);
+          document.getElementById("selected").textContent = `Selected pocket: ${asset.id}`;
+          showPage("docking");
         } else {
           document.getElementById("selected").textContent = `Selected asset: ${asset.id}`;
           showPage("project");
@@ -1477,6 +1708,7 @@
         if (selectedAssetId === assetId) selectedAssetId = null;
         if (selectedProteinId === assetId) setSelectedProtein("");
         if (selectedLigandId === assetId) selectedLigandId = "";
+        if (document.getElementById("docking-pocket-asset").value === assetId) setSelectedPocket("");
         document.getElementById("docking-ligand-asset").value = selectedLigandId;
         setStatus("资产已删除", "success");
         await refresh();
@@ -1495,6 +1727,11 @@
           assets.filter((asset) => asset.kind === "prepared_protein"),
           "prepared-protein-assets",
           "还没有准备后蛋白资产",
+        );
+        renderAssetList(
+          assets.filter((asset) => asset.kind === "pocket"),
+          "pocket-assets",
+          "还没有口袋资产",
         );
         renderAssetList(
           assets.filter((asset) => isLigandLike(asset)),
@@ -1578,6 +1815,8 @@
         selectedProteinId = "";
         selectedLigandId = "";
         currentProjectId = null;
+        activePocket = null;
+        proteinComponents = [];
         localStorage.removeItem("boltz_token");
         localStorage.removeItem("boltz_user_id");
         localStorage.removeItem("boltz_is_admin");
@@ -1621,6 +1860,15 @@
             reference: document.getElementById("protein-pocket-ligand").value.trim(),
             center: document.getElementById("protein-pocket-center").value.trim(),
             box_size: document.getElementById("protein-pocket-size").value.trim(),
+            source_component: activePocket
+              ? {
+                  resn: activePocket.resn,
+                  chain: activePocket.chain,
+                  resi: activePocket.resi,
+                  type: activePocket.type,
+                  atom_count: activePocket.atomCount,
+                }
+              : null,
           },
         };
       }
@@ -1634,9 +1882,14 @@
         selectedLigandId = "";
         activeProteinAsset = null;
         activeProteinText = "";
+        proteinComponents = [];
+        activePocket = null;
         if (proteinViewer) proteinViewer.clear();
         setProteinPlaceholder("No protein selected", "选择蛋白资产后，这里会加载 PDB 结构并显示 Cartoon、表面、配体、金属、水分子和口袋范围。");
+        renderProteinComponents();
+        renderPocketSummary();
         document.getElementById("docking-ligand-asset").value = "";
+        setSelectedPocket("");
         await refresh();
       });
       document.getElementById("create-project").addEventListener("click", async () => {
@@ -1695,6 +1948,38 @@
           proteinViewState[key] = !proteinViewState[key];
           applyProteinView();
         });
+      });
+      document.getElementById("create-pocket-asset").addEventListener("click", async () => {
+        try {
+          if (!activeProteinAsset || !activePocket) throw new Error("请先从 PDB 组分中选择一个配体作为口袋参考");
+          const asset = await api("/api/v1/assets/pockets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              protein_asset_id: activeProteinAsset.id,
+              project_id: currentProjectId,
+              name: `${activeProteinAsset.name} pocket ${activePocket.reference}`,
+              reference: activePocket.reference,
+              center: activePocket.center.map((value) => Number(value.toFixed(3))),
+              box_size: activePocket.boxSize,
+              component: {
+                key: activePocket.key,
+                resn: activePocket.resn,
+                chain: activePocket.chain,
+                resi: activePocket.resi,
+                icode: activePocket.icode,
+                type: activePocket.type,
+                atom_count: activePocket.atomCount,
+                element_counts: activePocket.elementCounts,
+              },
+            }),
+          });
+          setSelectedPocket(asset.id, `${asset.metadata.reference}; center ${asset.metadata.center.join(",")}; box ${asset.metadata.box_size.join(",")} Å`);
+          setStatus("口袋资产已创建，并已填入对接任务", "success");
+          await refresh();
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
       });
       document.getElementById("fetch-pdb").addEventListener("click", async () => {
         try {
@@ -1775,14 +2060,20 @@
         try {
           const proteinId = document.getElementById("docking-protein-asset").value.trim();
           const ligandId = document.getElementById("docking-ligand-asset").value.trim();
+          const pocketId = document.getElementById("docking-pocket-asset").value.trim();
+          const inputAssetIds = [proteinId, ligandId].concat(pocketId ? [pocketId] : []);
           if (!proteinId || !ligandId) throw new Error("select protein and ligand assets first");
           await api("/api/v1/jobs", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               job_type: "structure_prediction",
-              input_asset_ids: [proteinId, ligandId],
+              input_asset_ids: inputAssetIds,
               project_id: currentProjectId,
+              options: {
+                pocket_asset_id: pocketId || null,
+                pocket: document.getElementById("docking-pocket").value.trim(),
+              },
             }),
           });
           setStatus("对接占位任务已进入队列", "success");

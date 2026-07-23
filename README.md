@@ -115,15 +115,19 @@ The standalone workbench is organized by workflow module:
 - Protein: left-side PDB/upload/asset/preparation controls and a wide right-side
   3Dmol protein workspace. Selecting a protein asset loads its PDB file through
   the authenticated asset download API and enables Cartoon, Surface, Pocket,
-  Ligand, Waters, Metals, H-bonds, and Clashes display toggles. The first CADD
+  Ligand, Waters, Metals, H-bonds, and Clashes display toggles. The workspace
+  parses PDB `HETATM` records into candidate ligands, metals, and water records.
+  A candidate ligand can be used as a pocket reference; the UI computes the
+  pocket center and box size, writes those values into protein preparation and
+  docking fields, and can persist them as a `pocket` asset. The first CADD
   preparation form records water removal, metal/cofactor retention,
   hydrogen/protonation settings, missing atom repair, alternate-location
   handling, pH, and pocket definition, then creates a `prepared_protein` asset
   that later workers can consume.
 - Ligand: left-side SMILES/upload/asset controls and a wide right-side ligand
   preview/editing workspace.
-- Docking: left-side protein/ligand/task controls and a wide right-side 3D
-  docking workspace for pocket, pose, interaction, and score inspection.
+- Docking: left-side protein/ligand/pocket/task controls and a wide right-side
+  3D docking workspace for pocket, pose, interaction, and score inspection.
 - FEP / Analysis: left-side input/settings controls and a wide right-side
   analysis workspace reserved for FEP and downstream reports.
 - SAR / Structure-activity relationship: left-side data-mapping controls and a
