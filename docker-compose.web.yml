@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+      args:
+        WEB_BASE_IMAGE: ${WEB_BASE_IMAGE:-python:3.11-slim}
     image: ${BOLTZ_WEB_IMAGE:-boltz-web:dev}
     restart: unless-stopped
     depends_on:
@@ -20,12 +22,12 @@ services:
       BOLTZ_DEFAULT_ADMIN_PASSWORD: ${BOLTZ_DEFAULT_ADMIN_PASSWORD:-admin123456}
       BOLTZ_USER_PROVISION_TOKEN: ${BOLTZ_USER_PROVISION_TOKEN:-}
     ports:
-      - "${BOLTZ_WEB_PORT:-8080}:8080"
+      - "${BOLTZ_WEB_PORT:-8800}:8800"
     volumes:
       - boltz-data:/data
       - ${MODEL_HUB_SHARED_MODELS_PATH:-./.modelhub}:/modelhub:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 -qO- http://127.0.0.1:8080/health > /dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 -qO- http://127.0.0.1:8800/health > /dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       start_period: 20s
@@ -40,8 +42,6 @@ services:
       POSTGRES_PASSWORD: ${BOLTZ_POSTGRES_PASSWORD:-boltz}
       POSTGRES_DB: boltz
       POSTGRES_INITDB_ARGS: "${POSTGRES_INITDB_ARGS:---data-checksums}"
-    ports:
-      - "${BOLTZ_POSTGRES_PORT:-25440}:5432"
     volumes:
       - boltz-postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -55,8 +55,6 @@ services:
     image: ${REDIS_IMAGE:-redis:7-alpine}
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "${BOLTZ_REDIS_PORT:-26379}:6379"
     volumes:
       - boltz-redis-data:/data
     healthcheck:

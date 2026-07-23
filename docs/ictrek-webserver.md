@@ -79,6 +79,11 @@ Protein and ligand preparation endpoints currently create versioned derived
 assets and metadata placeholders. The actual CADD preparation adapters should
 be added behind these endpoints.
 
+The `boltz-web` image is responsible for WebServer, authentication, projects,
+file/task management, and lightweight preparation such as RDKit parsing and
+SDF/conformer generation. Heavy preparation tools and GPU model execution
+should be added as worker images later, not folded into the WebServer image.
+
 ## Viewer Status
 
 The static workbench page is a placeholder for the commercial-grade viewer. It

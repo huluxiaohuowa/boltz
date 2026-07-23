@@ -539,7 +539,7 @@ app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 
 
 def run() -> None:
-    uvicorn.run("boltz_web.main:app", host="0.0.0.0", port=8080)
+    uvicorn.run("boltz_web.main:app", host="0.0.0.0", port=8800)
 
 
 if __name__ == "__main__":
