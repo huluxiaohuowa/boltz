@@ -32,10 +32,17 @@ dependencies = [
     "gemmi==0.6.5",
     "scikit-learn==1.6.1",
     "chembl_structure_pipeline==1.2.2",
+    "fastapi>=0.115.0,<1.0",
+    "uvicorn[standard]>=0.30.0,<1.0",
+    "sqlalchemy>=2.0.30,<3.0",
+    "psycopg[binary]>=3.2.0,<4.0",
+    "redis>=5.0.0,<6.0",
+    "python-multipart>=0.0.9,<1.0",
 ]
 
 [project.scripts]
 boltz = "boltz.main:cli"
+boltz-web = "boltz_web.main:run"
 
 [project.optional-dependencies]
 lint = ["ruff"]

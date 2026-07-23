@@ -47,7 +47,7 @@ Expected remotes:
 Use `upstream` only as a read-only reference for merging original Boltz code.
 Push ictrek webapp work to `origin`.
 
-## Local Development
+## Independent WebApp
 
 Install the Boltz package in a Python environment when working on prediction
 integration:
@@ -63,11 +63,47 @@ boltz predict input.yaml --use_msa_server
 ```
 
 Webapp service and frontend commands will be added once the application runtime
-is introduced.
+is introduced. The initial WebServer is now available as a FastAPI app:
+
+```bash
+export BOLTZ_DATABASE_URL=postgresql+psycopg://boltz:boltz@127.0.0.1:5432/boltz
+export BOLTZ_REDIS_URL=redis://127.0.0.1:6379/0
+export BOLTZ_DATA_DIR=/tmp/boltz-web-data
+boltz-web
+```
+
+The first development slice is documented in
+[docs/ictrek-webserver.md](docs/ictrek-webserver.md).
+
+For a standalone container stack, use the dedicated compose file:
+
+```bash
+cp .env.web.example .env.web
+# Edit PGV_POSTGRES_IMAGE to the PGV postgres image tag you want to use.
+docker compose --env-file .env.web -f docker-compose.web.yml up --build
+```
+
+The stack starts:
+
+- `boltz-web`: FastAPI WebServer and static workbench.
+- `boltz-postgres`: Postgres using the PGV image from `PGV_POSTGRES_IMAGE`.
+- `boltz-redis`: Redis for task event streams and status cache.
+
+VOS packaging is intentionally not part of this development path yet.
+
+Default login:
+
+- username: `admin`
+- password: `admin123456`
+
+New users can submit registration requests from the login screen. Admin approval
+is required before they can use the workbench. The backend also exposes a
+`BOLTZ_USER_PROVISION_TOKEN` protected endpoint for later VOS account
+provisioning.
 
 ## VOS Packaging
 
-The VOS package scaffold lives in `ictrek.app/`.
+The VOS package scaffold lives in `ictrek.app/`, but VOS integration is deferred.
 
 ```bash
 cd ictrek.app
@@ -75,6 +111,9 @@ cd ictrek.app
 ```
 
 The current template expects a prebuilt web image supplied through
-`BOLTZ_WEB_IMAGE`. Later releases can replace this with CI-populated image
+`BOLTZ_WEB_IMAGE`. Later releases can replace it with CI-populated image
 values.
 
+```bash
+docker build -f Dockerfile.web -t boltz-web:dev .
+```

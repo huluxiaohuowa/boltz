@@ -1,0 +1,72 @@
+services:
+  boltz-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: ${BOLTZ_WEB_IMAGE:-boltz-web:dev}
+    restart: unless-stopped
+    depends_on:
+      boltz-postgres:
+        condition: service_healthy
+      boltz-redis:
+        condition: service_healthy
+    environment:
+      BOLTZ_DATA_DIR: /data
+      BOLTZ_MODEL_HUB_DIR: /modelhub
+      BOLTZ_DATABASE_URL: postgresql+psycopg://boltz:${BOLTZ_POSTGRES_PASSWORD:-boltz}@boltz-postgres:5432/boltz
+      BOLTZ_REDIS_URL: redis://boltz-redis:6379/0
+      BOLTZ_PUBLIC_BASE_PATH: /
+      BOLTZ_DEFAULT_ADMIN_USERNAME: ${BOLTZ_DEFAULT_ADMIN_USERNAME:-admin}
+      BOLTZ_DEFAULT_ADMIN_PASSWORD: ${BOLTZ_DEFAULT_ADMIN_PASSWORD:-admin123456}
+      BOLTZ_USER_PROVISION_TOKEN: ${BOLTZ_USER_PROVISION_TOKEN:-}
+    ports:
+      - "${BOLTZ_WEB_PORT:-8080}:8080"
+    volumes:
+      - boltz-data:/data
+      - ${MODEL_HUB_SHARED_MODELS_PATH:-./.modelhub}:/modelhub:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 -qO- http://127.0.0.1:8080/health > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+  boltz-postgres:
+    image: ${PGV_POSTGRES_IMAGE:?set PGV_POSTGRES_IMAGE to the PGV postgres image, for example swr.cn-southwest-2.myhuaweicloud.com/ictrek/pgv:<tag>}
+    restart: unless-stopped
+    command: ["postgres", "-c", "shared_preload_libraries=${POSTGRES_SHARED_PRELOAD_LIBRARIES:-pg_search,pg_cron,vchord.so,vectors.so}"]
+    environment:
+      POSTGRES_USER: boltz
+      POSTGRES_PASSWORD: ${BOLTZ_POSTGRES_PASSWORD:-boltz}
+      POSTGRES_DB: boltz
+      POSTGRES_INITDB_ARGS: "${POSTGRES_INITDB_ARGS:---data-checksums}"
+    ports:
+      - "${BOLTZ_POSTGRES_PORT:-25440}:5432"
+    volumes:
+      - boltz-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U boltz -d boltz"]
+      interval: 10s
+      timeout: 10s
+      start_period: 30s
+      retries: 6
+
+  boltz-redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${BOLTZ_REDIS_PORT:-26379}:6379"
+    volumes:
+      - boltz-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 6
+
+volumes:
+  boltz-data:
+  boltz-postgres-data:
+  boltz-redis-data:

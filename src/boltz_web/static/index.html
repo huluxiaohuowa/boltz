@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Boltz Workbench</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+          sans-serif;
+        background: #eef2f7;
+        color: #162033;
+        font-optical-sizing: auto;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 45%, #eaf1ef 100%);
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 22px;
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(22px) saturate(180%);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.75);
+        box-shadow: 0 10px 28px rgba(54, 72, 99, 0.08);
+      }
+      .hidden {
+        display: none !important;
+      }
+      h1 {
+        margin: 0;
+        font-size: 19px;
+        line-height: 1.15;
+        letter-spacing: 0;
+        font-weight: 700;
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(320px, 380px) 1fr;
+        gap: 16px;
+        padding: 16px;
+      }
+      section {
+        background: rgba(255, 255, 255, 0.74);
+        border: 1px solid rgba(255, 255, 255, 0.82);
+        border-radius: 12px;
+        padding: 16px;
+        backdrop-filter: blur(18px) saturate(170%);
+        box-shadow:
+          0 18px 45px rgba(42, 58, 80, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      }
+      h2 {
+        margin: 0 0 12px;
+        font-size: 15px;
+        line-height: 1.25;
+        font-weight: 700;
+      }
+      label {
+        display: block;
+        margin-top: 10px;
+        font-size: 12px;
+        color: #536173;
+        font-weight: 600;
+      }
+      input,
+      select,
+      textarea,
+      button {
+        box-sizing: border-box;
+        width: 100%;
+        margin-top: 6px;
+        border: 1px solid rgba(170, 183, 201, 0.72);
+        border-radius: 9px;
+        padding: 9px 10px;
+        font: inherit;
+        background: rgba(255, 255, 255, 0.78);
+        color: #172033;
+        outline: none;
+        transition:
+          border-color 120ms ease,
+          box-shadow 120ms ease,
+          transform 100ms ease;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: #3775e0;
+        box-shadow: 0 0 0 4px rgba(55, 117, 224, 0.14);
+      }
+      textarea {
+        min-height: 84px;
+        resize: vertical;
+      }
+      button {
+        cursor: pointer;
+        border-color: #2f70df;
+        background: linear-gradient(180deg, #397cea, #2866d5);
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: 0 8px 18px rgba(40, 102, 213, 0.22);
+      }
+      button:active {
+        transform: scale(0.985);
+      }
+      button.secondary {
+        border-color: rgba(170, 183, 201, 0.72);
+        background: rgba(255, 255, 255, 0.68);
+        color: #162033;
+        box-shadow: none;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .viewer {
+        min-height: 420px;
+        border: 1px solid rgba(210, 219, 232, 0.9);
+        border-radius: 12px;
+        background:
+          linear-gradient(120deg, rgba(40, 102, 213, 0.07), rgba(41, 139, 117, 0.08)),
+          linear-gradient(180deg, #fbfdff, #f6f9fc);
+        padding: 14px;
+      }
+      .list {
+        display: grid;
+        gap: 8px;
+      }
+      .item {
+        border: 1px solid rgba(213, 222, 235, 0.95);
+        border-radius: 10px;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.72);
+        transition:
+          transform 120ms ease,
+          border-color 120ms ease,
+          background 120ms ease;
+      }
+      .item:hover {
+        transform: translateY(-1px);
+        border-color: rgba(55, 117, 224, 0.4);
+        background: rgba(255, 255, 255, 0.9);
+      }
+      .item strong {
+        display: block;
+        font-size: 13px;
+      }
+      .item small {
+        color: #64748b;
+        word-break: break-all;
+      }
+      .status {
+        min-height: 20px;
+        margin-top: 10px;
+        color: #38506b;
+        font-size: 12px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        width: auto;
+        margin: 0;
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+      }
+      .muted {
+        color: #66758a;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition: none !important;
+        }
+      }
+      @media (prefers-reduced-transparency: reduce) {
+        header,
+        section {
+          background: #ffffff;
+          backdrop-filter: none;
+        }
+      }
+      @media (max-width: 980px) {
+        main,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Boltz Workbench</h1>
+      <div>
+        <label>
+          User
+          <input id="user-id" value="admin" readonly />
+        </label>
+      </div>
+    </header>
+    <main id="login-screen">
+      <section>
+        <h2>登录</h2>
+        <label>
+          用户名
+          <input id="login-username" value="admin" autocomplete="username" />
+        </label>
+        <label>
+          密码
+          <input id="login-password" type="password" autocomplete="current-password" />
+        </label>
+        <button id="login">登录</button>
+        <label>
+          注册用户名
+          <input id="register-username" autocomplete="username" />
+        </label>
+        <label>
+          注册密码
+          <input id="register-password" type="password" autocomplete="new-password" />
+        </label>
+        <button class="secondary" id="register">提交注册申请</button>
+        <div class="status" id="login-status"></div>
+      </section>
+    </main>
+    <main id="app-screen" class="hidden">
+      <section>
+        <h2>准备输入</h2>
+        <label>
+          工程
+          <select id="project-id"></select>
+        </label>
+        <label>
+          新建工程
+          <input id="project-name" placeholder="工程名称" />
+        </label>
+        <button class="secondary" id="create-project">创建工程</button>
+        <label>
+          PDB ID
+          <input id="pdb-id" placeholder="例如 1a2c" />
+        </label>
+        <button id="fetch-pdb">导入 PDB</button>
+        <label>
+          上传文件
+          <input id="upload-file" type="file" />
+        </label>
+        <label>
+          文件类型
+          <select id="upload-kind">
+            <option value="protein">Protein</option>
+            <option value="ligand">Ligand</option>
+            <option value="complex">Complex</option>
+          </select>
+        </label>
+        <button id="upload-asset">上传资产</button>
+        <label>
+          SMILES 列表
+          <textarea id="smiles" placeholder="每行一个 SMILES"></textarea>
+        </label>
+        <button id="create-smiles">生成配体 SDF</button>
+        <div class="status" id="status"></div>
+      </section>
+      <div class="grid">
+        <section id="admin-panel" class="hidden">
+          <h2>用户审核</h2>
+          <button class="secondary" id="refresh-users">刷新用户</button>
+          <div class="list" id="users"></div>
+        </section>
+        <section>
+          <h2>资产</h2>
+          <div class="list" id="assets"></div>
+        </section>
+        <section>
+          <h2>任务</h2>
+          <button class="secondary" id="create-job">用选中资产创建占位任务</button>
+          <div class="list" id="jobs"></div>
+        </section>
+        <section style="grid-column: 1 / -1">
+          <h2>3D 工作区</h2>
+          <div class="toolbar">
+            <button class="secondary chip">Cartoon</button>
+            <button class="secondary chip">Surface</button>
+            <button class="secondary chip">Pocket</button>
+            <button class="secondary chip">Ligand</button>
+            <button class="secondary chip">Interactions</button>
+          </div>
+          <div class="viewer" id="viewer">
+            <strong>No structure selected</strong>
+            <p class="muted">Select a protein, ligand, or result asset to inspect it here.</p>
+            <div id="selected"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script>
+      let selectedAssetId = null;
+      let currentProjectId = null;
+      let token = localStorage.getItem("boltz_token") || "";
+      let isAdmin = localStorage.getItem("boltz_is_admin") === "true";
+      const statusEl = document.getElementById("status");
+      const loginStatusEl = document.getElementById("login-status");
+      const headers = () => (token ? { Authorization: `Bearer ${token}` } : {});
+      const setStatus = (text) => {
+        statusEl.textContent = text;
+      };
+      const setLoginStatus = (text) => {
+        loginStatusEl.textContent = text;
+      };
+      async function api(path, options = {}) {
+        const response = await fetch(path, {
+          ...options,
+          headers: { ...headers(), ...(options.headers || {}) },
+        });
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        return response.json();
+      }
+      async function refresh() {
+        const suffix = currentProjectId ? `?project_id=${encodeURIComponent(currentProjectId)}` : "";
+        const [assets, jobs] = await Promise.all([api(`/api/v1/assets${suffix}`), api(`/api/v1/jobs${suffix}`)]);
+        document.getElementById("assets").innerHTML = assets
+          .map(
+            (asset) => `
+            <div class="item" data-asset="${asset.id}">
+              <strong>${asset.name}</strong>
+              <small>${asset.kind} · ${asset.source_type}<br />${asset.id}</small>
+            </div>`,
+          )
+          .join("");
+        document.querySelectorAll("[data-asset]").forEach((node) => {
+          node.addEventListener("click", () => {
+            selectedAssetId = node.dataset.asset;
+            document.getElementById("selected").textContent = `Selected asset: ${selectedAssetId}`;
+          });
+        });
+        document.getElementById("jobs").innerHTML = jobs
+          .map(
+            (job) => `
+            <div class="item">
+              <strong>${job.job_type}</strong>
+              <small>${job.status}<br />${job.id}</small>
+            </div>`,
+          )
+          .join("");
+      }
+      async function refreshProjects() {
+        const projects = await api("/api/v1/projects");
+        if (!currentProjectId && projects[0]) currentProjectId = projects[0].id;
+        document.getElementById("project-id").innerHTML = projects
+          .map((project) => `<option value="${project.id}">${project.name}</option>`)
+          .join("");
+        document.getElementById("project-id").value = currentProjectId || "";
+      }
+      async function refreshUsers() {
+        if (!isAdmin) return;
+        const users = await api("/api/v1/admin/users");
+        document.getElementById("users").innerHTML = users
+          .map(
+            (user) => `
+            <div class="item">
+              <strong>${user.id}</strong>
+              <small>${user.status} · ${user.is_admin ? "admin" : "user"}</small>
+              ${
+                user.status === "pending"
+                  ? `<button class="secondary" data-approve="${user.id}">批准</button>`
+                  : ""
+              }
+            </div>`,
+          )
+          .join("");
+        document.querySelectorAll("[data-approve]").forEach((node) => {
+          node.addEventListener("click", async () => {
+            await api(`/api/v1/admin/users/${node.dataset.approve}/approve`, { method: "POST" });
+            await refreshUsers();
+          });
+        });
+      }
+      async function enterApp(userId, admin) {
+        isAdmin = admin;
+        localStorage.setItem("boltz_is_admin", String(admin));
+        document.getElementById("user-id").value = userId;
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("app-screen").classList.remove("hidden");
+        document.getElementById("admin-panel").classList.toggle("hidden", !admin);
+        await refreshProjects();
+        await refresh();
+        await refreshUsers();
+      }
+      document.getElementById("project-id").addEventListener("change", async (event) => {
+        currentProjectId = event.target.value;
+        selectedAssetId = null;
+        await refresh();
+      });
+      document.getElementById("create-project").addEventListener("click", async () => {
+        try {
+          const project = await api("/api/v1/projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: document.getElementById("project-name").value || "default" }),
+          });
+          currentProjectId = project.id;
+          await refreshProjects();
+          await refresh();
+        } catch (error) {
+          setStatus(error.message);
+        }
+      });
+      document.getElementById("login").addEventListener("click", async () => {
+        try {
+          const result = await api("/api/v1/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: document.getElementById("login-username").value,
+              password: document.getElementById("login-password").value,
+            }),
+          });
+          token = result.access_token;
+          localStorage.setItem("boltz_token", token);
+          localStorage.setItem("boltz_user_id", result.user_id);
+          await enterApp(result.user_id, result.is_admin);
+        } catch (error) {
+          setLoginStatus(error.message);
+        }
+      });
+      document.getElementById("register").addEventListener("click", async () => {
+        try {
+          await api("/api/v1/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: document.getElementById("register-username").value,
+              password: document.getElementById("register-password").value,
+            }),
+          });
+          setLoginStatus("注册申请已提交，等待 admin 审核");
+        } catch (error) {
+          setLoginStatus(error.message);
+        }
+      });
+      document.getElementById("refresh-users").addEventListener("click", refreshUsers);
+      document.getElementById("fetch-pdb").addEventListener("click", async () => {
+        try {
+          const pdbId = document.getElementById("pdb-id").value;
+          await api("/api/v1/assets/proteins/pdb", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pdb_id: pdbId, project_id: currentProjectId }),
+          });
+          setStatus("PDB imported");
+          await refresh();
+        } catch (error) {
+          setStatus(error.message);
+        }
+      });
+      document.getElementById("upload-asset").addEventListener("click", async () => {
+        try {
+          const file = document.getElementById("upload-file").files[0];
+          const form = new FormData();
+          form.append("kind", document.getElementById("upload-kind").value);
+          form.append("file", file);
+          if (currentProjectId) form.append("project_id", currentProjectId);
+          const response = await fetch("/api/v1/assets/upload", {
+            method: "POST",
+            headers: headers(),
+            body: form,
+          });
+          if (!response.ok) throw new Error(await response.text());
+          setStatus("File uploaded");
+          await refresh();
+        } catch (error) {
+          setStatus(error.message);
+        }
+      });
+      document.getElementById("create-smiles").addEventListener("click", async () => {
+        try {
+          const smiles = document
+            .getElementById("smiles")
+            .value.split(/\n+/)
+            .map((item) => item.trim())
+            .filter(Boolean);
+          await api("/api/v1/assets/ligands/smiles", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ smiles, project_id: currentProjectId }),
+          });
+          setStatus("Ligand asset created");
+          await refresh();
+        } catch (error) {
+          setStatus(error.message);
+        }
+      });
+      document.getElementById("create-job").addEventListener("click", async () => {
+        try {
+          if (!selectedAssetId) throw new Error("select an asset first");
+          await api("/api/v1/jobs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              job_type: "visualization",
+              input_asset_ids: [selectedAssetId],
+              project_id: currentProjectId,
+            }),
+          });
+          setStatus("Job queued");
+          await refresh();
+        } catch (error) {
+          setStatus(error.message);
+        }
+      });
+      if (token) {
+        enterApp(localStorage.getItem("boltz_user_id") || "admin", isAdmin).catch(() => {
+          token = "";
+          localStorage.removeItem("boltz_token");
+          document.getElementById("login-screen").classList.remove("hidden");
+          document.getElementById("app-screen").classList.add("hidden");
+        });
+      }
+    </script>
+  </body>
+</html>
