@@ -1,0 +1,33 @@
+configs:
+  - name: BOLTZ_DATA_PATH
+    type: path
+    title:
+      zh-CN: Boltz 数据目录
+      en: Boltz Data Directory
+    description:
+      zh-CN: 保存 Boltz WebApp 的任务输入、输出和缓存数据。
+      en: Stores Boltz WebApp job inputs, outputs, and cache data.
+    default: /data/vos_workspace/boltz
+
+  - name: MODEL_HUB_SHARED_MODELS_PATH
+    type: path
+    title:
+      zh-CN: Model Hub 共享模型目录
+      en: Model Hub Shared Models Directory
+    description:
+      zh-CN: 可选。挂载 Model Hub 管理的模型缓存，便于复用 Boltz-2 镜像模型。
+      en: Optional. Mounts the model cache managed by Model Hub for reusing mirrored Boltz-2 assets.
+    default: /data/vos_workspace/model_hub
+
+  - name: BOLTZ_WEB_HOST_PORT
+    type: integer
+    title:
+      zh-CN: Web 宿主机端口
+      en: Web Host Port
+    description:
+      zh-CN: 可选暴露 Boltz Web 服务到宿主机的端口。
+      en: Optional host port for exposing the Boltz web service.
+    default: 35020
+    minimum: 1024
+    maximum: 65535
+

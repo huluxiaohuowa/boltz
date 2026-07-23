@@ -1,0 +1,34 @@
+id: com.ictrek.boltz
+name:
+  zh-CN: Boltz
+  en: Boltz
+description:
+  zh-CN: 面向 Boltz 生物分子结构与亲和力预测工作流的 VOS Web 应用。
+  en: VOS web application for Boltz biomolecular structure and affinity prediction workflows.
+version: __APP_VERSION__
+author: ictrek
+category: [ai, science]
+arch: [amd64, arm64]
+
+platform:
+  version: ">=3.0.0"
+
+profiles:
+  - name: webapp
+    title:
+      zh-CN: Web 应用
+      en: Web App
+    description:
+      zh-CN: 启动 Boltz Web 应用服务。实际镜像由打包时的 BOLTZ_WEB_IMAGE 提供。
+      en: Start the Boltz web application service. The concrete image is supplied by BOLTZ_WEB_IMAGE at package time.
+    conflicts: []
+
+storage:
+  directories:
+    - path: data
+      mode: "0755"
+    - path: jobs
+      mode: "0755"
+    - path: cache
+      mode: "0755"
+

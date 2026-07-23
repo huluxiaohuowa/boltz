@@ -1,0 +1,21 @@
+routers:
+  - id: com-ictrek-boltz
+    kind: group
+    title:
+      zh-CN: Boltz
+      en: Boltz
+    icon: lucide:dna
+    order: 210
+    children:
+      - id: boltz
+        kind: page
+        title:
+          zh-CN: Boltz
+          en: Boltz
+        icon: lucide:dna
+        iframe-src: /app/com.ictrek.boltz/
+        order: 10
+        keep-alive: true
+        entry-point: true
+        embed: true
+

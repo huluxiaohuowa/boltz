@@ -1,0 +1,48 @@
+x-boltz-web-base: &boltz-web-base
+  restart: unless-stopped
+  networks:
+    - vos_default
+  environment:
+    BOLTZ_DATA_DIR: /data
+    BOLTZ_MODEL_HUB_DIR: /modelhub
+  volumes:
+    - ${BOLTZ_DATA_PATH:-/data/vos_workspace/boltz}:/data
+    - ${MODEL_HUB_SHARED_MODELS_PATH:-/data/vos_workspace/model_hub}:/modelhub:ro
+  ports:
+    - "${BOLTZ_WEB_HOST_PORT:-35020}:8080"
+  labels:
+    - "traefik.enable=true"
+    - "traefik.docker.network=vos_default"
+    - "traefik.http.routers.boltz-top-open.rule=PathPrefix(`/app/com.ictrek.boltz`) && HeadersRegexp(`Sec-Fetch-Dest`, `document`)"
+    - "traefik.http.routers.boltz-top-open.priority=1000"
+    - "traefik.http.routers.boltz-top-open.service=boltz-web"
+    - "traefik.http.routers.boltz-top-open.middlewares=boltz-top-open-redirect"
+    - "traefik.http.middlewares.boltz-top-open-redirect.redirectregex.regex=^(https?://[^/]+)/app/com\\.ictrek\\.boltz/?(?:\\?.*)?$"
+    - "traefik.http.middlewares.boltz-top-open-redirect.redirectregex.replacement=$${1}/#/app/com.ictrek.boltz/com-ictrek-boltz/boltz"
+    - "traefik.http.middlewares.boltz-top-open-redirect.redirectregex.permanent=false"
+    - "traefik.http.routers.boltz-web.rule=PathPrefix(`/app/com.ictrek.boltz`)"
+    - "traefik.http.routers.boltz-web.service=boltz-web"
+    - "traefik.http.routers.boltz-web.middlewares=boltz-web-slash,boltz-web-strip"
+    - "traefik.http.middlewares.boltz-web-slash.redirectregex.regex=^(.*)/app/com\\.ictrek\\.boltz$"
+    - "traefik.http.middlewares.boltz-web-slash.redirectregex.replacement=$${1}/app/com.ictrek.boltz/"
+    - "traefik.http.middlewares.boltz-web-slash.redirectregex.permanent=true"
+    - "traefik.http.middlewares.boltz-web-strip.stripprefix.prefixes=/app/com.ictrek.boltz"
+    - "traefik.http.services.boltz-web.loadbalancer.server.port=8080"
+  healthcheck:
+    test: ["CMD-SHELL", "wget --no-verbose --tries=1 -qO- http://127.0.0.1:8080/ > /dev/null 2>&1 || exit 1"]
+    interval: 30s
+    timeout: 10s
+    start_period: 15s
+    retries: 3
+
+services:
+  boltz-web:
+    <<: *boltz-web-base
+    profiles: ["webapp"]
+    image: ${BOLTZ_WEB_IMAGE}
+    pull_policy: always
+
+networks:
+  vos_default:
+    external: true
+
