@@ -52,7 +52,7 @@ from boltz_web.schemas import (
     ProjectOut,
     SmilesLigandRequest,
 )
-from boltz_web.storage import asset_root, copy_file, safe_filename, save_upload, write_bytes
+from boltz_web.storage import asset_root, copy_file, safe_filename, save_upload, user_root, write_bytes
 
 settings = load_settings()
 app = FastAPI(title="Boltz WebApp", version="0.1.0")
@@ -173,6 +173,38 @@ def list_projects(
     db.commit()
     projects = db.scalars(select(Project).where(Project.user_id == current_user.id).order_by(Project.created_at.desc())).all()
     return [project_to_out(project) for project in projects]
+
+
+@app.delete("/api/v1/projects/{project_id}")
+def delete_project(
+    project_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    project = db.get(Project, project_id)
+    if project is None or project.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="project not found")
+
+    assets = db.scalars(
+        select(Asset).where(Asset.user_id == current_user.id, Asset.project_id == project.id),
+    ).all()
+    for asset in assets:
+        asset.parent_asset_id = None
+    db.flush()
+    for asset in assets:
+        db.delete(asset)
+
+    jobs = db.scalars(
+        select(Job).where(Job.user_id == current_user.id, Job.project_id == project.id),
+    ).all()
+    for job in jobs:
+        db.delete(job)
+
+    project_path = user_root(settings, current_user.id) / "projects" / project.id
+    shutil.rmtree(project_path, ignore_errors=True)
+    db.delete(project)
+    db.commit()
+    return {"status": "deleted"}
 
 
 @app.post("/api/v1/assets/proteins/pdb", response_model=AssetOut)
@@ -488,7 +520,7 @@ def prepare_protein(
         user_id=user_id,
         project_id=project.id,
         kind="prepared_protein",
-        name=f"{source.name} prepared",
+        name=(request.output_name or "").strip() or f"{source.name} prepared",
         parent_asset_id=source.id,
         source_type="protein_preparation",
         metadata_json=protein_prepare_metadata(request.options),
@@ -523,7 +555,7 @@ def prepare_ligand(
         user_id=user_id,
         project_id=project.id,
         kind="prepared_ligand",
-        name=f"{source.name} prepared",
+        name=(request.output_name or "").strip() or f"{source.name} prepared",
         parent_asset_id=source.id,
         source_type="ligand_preparation",
         metadata_json=ligand_prepare_metadata(request.options),

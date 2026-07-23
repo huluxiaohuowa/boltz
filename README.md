@@ -146,17 +146,24 @@ The standalone workbench is organized by workflow module:
   from a clicked ligand or residue center. Defined pockets are shown in the 3D
   viewer as a blue center marker and box guide. The right rail shows the pocket
   reference, center, and box size, and allows manual adjustment of center and
-  box dimensions before applying the updated guide. The protein workspace also has a true
-  focus editor mode that covers the full browser window, hides the page chrome
-  and left-side forms, keeps the 3D viewer wide, leaves display/edit actions in
-  a fixed right rail, and exposes a fixed return button in the bottom-left corner.
+  box dimensions with live 3D guide updates while typing. The protein workspace
+  also has a true focus editor mode that covers the full browser window, hides
+  the page chrome and left-side forms, keeps the 3D viewer wide, leaves
+  display/edit actions in a fixed right rail, and exposes both a right-rail
+  exit button and a fixed top-left return button.
+  In focus mode, a bottom horizontal object strip lists the parsed PDB objects:
+  protein chains, ligands, cofactors, metals, and waters. Object cards can be
+  focused, downloaded as individual PDB fragments, marked for deletion or
+  restored; ligand cards can also define the docking pocket. The same chain and
+  HETATM component operations are available in the normal protein page cards.
   A selected ligand can be focused, hidden or restored, and used as a pocket
   reference. The UI computes the pocket center and box size, writes those values
   into protein preparation and docking fields, and can persist them as a
-  `pocket` asset. The first CADD preparation form records
-  water removal, metal/cofactor retention, hydrogen/protonation settings,
-  missing atom repair, alternate-location handling, pH, and pocket definition,
-  then creates a `prepared_protein` asset that later workers can consume.
+  `pocket` asset. The first CADD preparation form records output asset naming,
+  batch naming pattern, chain/component delete lists, water removal,
+  metal/cofactor retention, hydrogen/protonation settings, missing atom repair,
+  alternate-location handling, pH, and pocket definition, then creates a
+  `prepared_protein` asset that later workers can consume.
 - Ligand: left-side SMILES/upload/asset controls and a wide right-side ligand
   preview/editing workspace.
 - Docking: left-side protein/ligand/pocket/task controls and a wide right-side
@@ -225,3 +232,8 @@ values.
 ```bash
 docker build -f Dockerfile.web -t boltz-web:dev .
 ```
+
+For sites that cannot reliably pull Docker Hub base images, set
+`WEB_BASE_IMAGE` in `.env.web` to an internal mirror or a locally preloaded
+Python/web base image. The tc81 deployment currently builds from a local
+`boltz-web:base` image to avoid repeated external base-image pulls.

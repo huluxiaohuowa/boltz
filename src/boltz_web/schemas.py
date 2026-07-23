@@ -77,6 +77,7 @@ class DrawLigandRequest(BaseModel):
 class PreparationRequest(BaseModel):
     asset_id: str
     project_id: str | None = None
+    output_name: str | None = None
     options: dict[str, Any] = Field(default_factory=dict)
 
 

@@ -64,11 +64,12 @@
         top: 56px;
         z-index: 9;
         display: grid;
-        grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
-        gap: 12px;
-        align-items: stretch;
-        padding: 10px;
-        border-radius: 20px;
+        grid-template-columns: minmax(440px, auto) minmax(0, 1fr);
+        gap: 14px;
+        align-items: center;
+        min-height: 64px;
+        padding: 8px 12px;
+        border-radius: 18px;
         background: rgba(255, 255, 255, 0.72);
         border: 1px solid rgba(255, 255, 255, 0.86);
         backdrop-filter: blur(24px) saturate(180%);
@@ -89,9 +90,9 @@
       }
       .project-strip {
         display: grid;
-        grid-template-columns: minmax(130px, 1fr) minmax(140px, 1fr) auto;
+        grid-template-columns: 170px 180px auto auto;
         gap: 8px;
-        align-items: end;
+        align-items: center;
       }
       .project-strip h2,
       .module-strip h2 {
@@ -99,12 +100,36 @@
       }
       .project-strip button {
         width: auto;
+        min-height: 38px;
+        margin: 0;
+        padding: 8px 12px;
         white-space: nowrap;
+      }
+      .project-strip label {
+        margin: 0;
+        color: #5f6e82;
+        font-size: 11px;
+        line-height: 1.1;
+      }
+      .project-strip input,
+      .project-strip select {
+        min-height: 36px;
+        margin-top: 4px;
+        padding: 7px 9px;
+        border-radius: 10px;
+      }
+      .project-strip .status {
+        grid-column: 1 / -1;
+        margin-top: 0;
+      }
+      .project-strip .status:not(:empty) {
+        padding: 7px 10px;
+        font-size: 11px;
       }
       .nav-list {
         display: flex;
         gap: 8px;
-        min-height: 48px;
+        min-height: 40px;
         align-items: center;
         overflow-x: auto;
       }
@@ -481,6 +506,9 @@
         border-color: rgba(220, 72, 72, 0.42) !important;
         color: #9b1c1c !important;
       }
+      button.danger {
+        background: rgba(255, 246, 246, 0.78);
+      }
       .status {
         min-height: 20px;
         margin-top: 10px;
@@ -645,7 +673,7 @@
       .pocket-editor-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
+        gap: 8px;
       }
       .pocket-editor-grid label {
         display: grid;
@@ -654,9 +682,12 @@
         color: #64748b;
       }
       .pocket-editor-grid input {
-        min-height: 34px;
-        padding: 6px 7px;
+        width: 100%;
+        min-width: 0;
+        min-height: 38px;
+        padding: 7px 8px;
         font-size: 12px;
+        text-align: center;
       }
       .pocket-action-row {
         display: grid;
@@ -734,6 +765,10 @@
       .component-card.hidden-component {
         opacity: 0.56;
       }
+      .component-card.marked-delete {
+        border-style: dashed;
+        background: rgba(255, 246, 246, 0.84);
+      }
       .component-card strong {
         display: block;
         font-size: 14px;
@@ -749,6 +784,23 @@
         margin-top: 10px;
         padding: 6px 10px;
       }
+      .cleanup-summary {
+        display: grid;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .cleanup-chip {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: rgba(255, 246, 229, 0.82);
+        border: 1px solid rgba(232, 169, 69, 0.34);
+        color: #7a4a0a;
+        font-size: 12px;
+        font-weight: 650;
+      }
       .pocket-summary {
         display: grid;
         gap: 8px;
@@ -761,6 +813,7 @@
         padding: 14px;
         border-radius: 0;
         background: rgba(248, 251, 255, 0.98);
+        backdrop-filter: none;
         box-shadow: 0 38px 110px rgba(19, 34, 56, 0.32);
       }
       .viewer-expanded .workspace-header {
@@ -779,18 +832,7 @@
         display: none;
       }
       .viewer-expanded #toggle-protein-focus {
-        position: fixed;
-        left: 22px;
-        bottom: 22px;
-        z-index: 2147483000;
-        width: auto;
-        min-height: 48px;
-        margin: 0;
-        padding: 11px 18px;
-        border-color: rgba(47, 112, 223, 0.45);
-        background: rgba(47, 112, 223, 0.94);
-        color: #fff;
-        box-shadow: 0 18px 42px rgba(47, 112, 223, 0.34);
+        display: none;
       }
       #toggle-protein-focus {
         display: inline-flex;
@@ -803,8 +845,59 @@
         height: 16px;
         flex: 0 0 auto;
       }
+      .focus-exit-button {
+        position: fixed;
+        left: 22px;
+        top: 22px;
+        z-index: 2147483001;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: auto;
+        min-height: 52px;
+        margin: 0;
+        padding: 12px 18px;
+        border: 1px solid rgba(47, 112, 223, 0.45);
+        border-radius: 999px;
+        background: rgba(47, 112, 223, 0.98);
+        color: #fff;
+        font-weight: 800;
+        box-shadow: 0 18px 42px rgba(47, 112, 223, 0.34), 0 0 0 1px rgba(255,255,255,0.75) inset;
+      }
+      .focus-exit-button svg {
+        width: 17px;
+        height: 17px;
+      }
+      body.viewer-focus-active .focus-exit-button {
+        display: inline-flex;
+      }
+      .protein-focus-exit-rail {
+        display: none;
+      }
+      .viewer-expanded .protein-focus-exit-rail {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 44px;
+        margin: 0 0 8px;
+        border-color: rgba(47, 112, 223, 0.45);
+        background: rgba(47, 112, 223, 0.94);
+        color: #fff;
+        font-weight: 800;
+        box-shadow: 0 12px 28px rgba(47, 112, 223, 0.22);
+      }
+      .protein-focus-exit-rail svg {
+        width: 15px;
+        height: 15px;
+      }
       .viewer-expanded .protein-editor-shell {
-        grid-template-columns: minmax(0, 1fr) 188px;
+        grid-template-columns: minmax(0, 1fr) 260px;
         height: calc(100vh - 28px);
       }
       .viewer-expanded .protein-canvas {
@@ -819,14 +912,71 @@
       .viewer-expanded .protein-viewer-bar {
         position: absolute;
         left: 22px;
-        right: 220px;
-        bottom: 82px;
+        right: 292px;
+        bottom: 132px;
         margin: 0;
         pointer-events: none;
       }
       .viewer-expanded .viewer-overlay,
       .viewer-expanded .viewer-badges {
         pointer-events: auto;
+      }
+      .focus-object-strip {
+        display: none;
+      }
+      body.viewer-focus-active .focus-object-strip {
+        position: fixed;
+        left: 22px;
+        right: 292px;
+        bottom: 22px;
+        z-index: 2147482999;
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 10px;
+        border-radius: 18px;
+        border: 1px solid rgba(210, 219, 232, 0.84);
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(20px) saturate(170%);
+        box-shadow: 0 18px 40px rgba(42, 58, 80, 0.14);
+      }
+      .object-pill {
+        flex: 0 0 220px;
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(213, 222, 235, 0.95);
+        background: rgba(255, 255, 255, 0.86);
+      }
+      .object-pill.selected {
+        border-color: rgba(47, 112, 223, 0.62);
+        background: rgba(232, 241, 255, 0.9);
+      }
+      .object-pill.marked-delete {
+        border-style: dashed;
+        background: rgba(255, 246, 246, 0.9);
+      }
+      .object-pill strong {
+        font-size: 13px;
+        line-height: 1.25;
+      }
+      .object-pill small {
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .object-pill-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .object-pill-actions button {
+        width: auto;
+        min-height: 30px;
+        margin: 0;
+        padding: 5px 8px;
+        font-size: 12px;
       }
       body.viewer-focus-active {
         overflow: hidden;
@@ -985,6 +1135,7 @@
             <input id="project-name" placeholder="项目名称" />
           </label>
           <button class="secondary" id="create-project">创建项目</button>
+          <button class="secondary danger" id="delete-project" type="button">删除项目</button>
           <div class="status" id="status"></div>
         </section>
         <section class="module-strip">
@@ -1084,8 +1235,17 @@
                   口袋盒子大小
                   <input id="protein-pocket-size" placeholder="例如 22,22,22 Å" />
                 </label>
+                <label>
+                  输出资产名称
+                  <input id="protein-output-name" placeholder="默认：原资产名 prepared" />
+                </label>
+                <label>
+                  批量命名规则
+                  <input id="protein-output-pattern" placeholder="例如 {project}_{asset}_{step}_{index}" />
+                </label>
                 <button id="prepare-protein">生成准备后蛋白资产</button>
                 <div class="operation-note">当前版本先保存完整前处理方案并生成准备后资产；后续接入 OpenMM/PDBFixer/Reduce/PropKa/MDAnalysis worker 后，右侧操作区会执行真实清洗、修复、加氢和口袋编辑。</div>
+                <div class="cleanup-summary" id="protein-cleanup-summary"></div>
               </section>
             </div>
             <div class="workspace-column">
@@ -1105,6 +1265,13 @@
                     </div>
                   </div>
                   <aside class="protein-tool-rail">
+                    <button class="secondary protein-focus-exit-rail" id="protein-focus-exit-rail" type="button">
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                        <path d="M10 6 4 12l6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M5 12h15" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+                      </svg>
+                      <span>退出专注</span>
+                    </button>
                     <div class="toolbar">
                       <button class="secondary chip active" data-protein-control="cartoon" type="button">Cartoon</button>
                       <button class="secondary chip" data-protein-control="surface" type="button">Surface</button>
@@ -1144,12 +1311,26 @@
                   <div class="viewer-overlay" id="protein-viewer-selection">当前没有选中的蛋白资产</div>
                   <div class="viewer-badges" id="protein-viewer-flags"></div>
                 </div>
+                <div class="focus-object-strip" id="focus-object-strip">
+                  <div class="object-pill"><small>选择蛋白资产后，这里会列出链、配体、金属、水等对象。</small></div>
+                </div>
+              </section>
+              <section>
+                <div class="workspace-header">
+                  <div>
+                    <h2>蛋白链 / Chain</h2>
+                    <p class="muted">按链导出、标记删除重复链，或只保留某条链给后续准备流程。</p>
+                  </div>
+                </div>
+                <div class="component-grid" id="protein-chains">
+                  <div class="item"><small>选择蛋白资产后解析链</small></div>
+                </div>
               </section>
               <section>
                 <div class="workspace-header">
                   <div>
                     <h2>PDB 组分 / 候选配体</h2>
-                    <p class="muted">从 PDB 的 HETATM 记录解析配体、辅因子、金属和水。选择一个配体可生成对接口袋。</p>
+                    <p class="muted">从 PDB 的 HETATM 记录解析配体、辅因子、金属和水。每个配体/分子可单独下载、标记删除、只保留或用作对接口袋。</p>
                   </div>
                 </div>
                 <div class="component-grid" id="protein-components">
@@ -1398,6 +1579,13 @@
         </section>
       </div>
     </main>
+    <button class="focus-exit-button" id="protein-focus-exit-floating" type="button" aria-label="返回工作台（Esc）">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+        <path d="M10 6 4 12l6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M5 12h15" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+      </svg>
+      <span>返回工作台</span>
+    </button>
     <script>
       let selectedAssetId = null;
       let selectedProteinId = "";
@@ -1413,7 +1601,9 @@
       let selectedProteinResidue = null;
       let selectedProteinChain = null;
       let proteinPickMode = "component";
+      let proteinChains = [];
       let hiddenComponentKeys = new Set();
+      let hiddenChainIds = new Set();
       let proteinFocusMode = false;
       let proteinViewer = null;
       const routePages = new Set(["project", "protein", "ligand", "docking", "fep", "sar", "admin"]);
@@ -1553,6 +1743,21 @@
           .replaceAll('"', "&quot;")
           .replaceAll("'", "&#039;");
       }
+      function sanitizeDownloadName(value, fallback = "structure") {
+        return String(value || fallback)
+          .replace(/[^A-Za-z0-9._-]+/g, "_")
+          .replace(/^_+|_+$/g, "")
+          .slice(0, 96) || fallback;
+      }
+      function downloadText(filename, text, mime = "chemical/x-pdb") {
+        const blob = new Blob([text], { type: `${mime};charset=utf-8` });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
       function isProteinLike(assetOrKind) {
         const kind = typeof assetOrKind === "string" ? assetOrKind : assetOrKind.kind;
         return ["protein", "prepared_protein", "complex"].includes(kind);
@@ -1609,6 +1814,76 @@
           asset.files.find((file) => file.content_type.includes("x-pdb")) ||
           asset.files[0]
         );
+      }
+      function pdbRecord(line) {
+        return line.startsWith("ATOM  ") || line.startsWith("HETATM");
+      }
+      function parsePdbChains(pdbText) {
+        const groups = new Map();
+        for (const line of pdbText.split(/\r?\n/)) {
+          if (!pdbRecord(line)) continue;
+          const chain = line.slice(21, 22).trim() || "_";
+          const resi = line.slice(22, 26).trim();
+          const resn = line.slice(17, 20).trim();
+          const record = line.slice(0, 6).trim();
+          if (!groups.has(chain)) {
+            groups.set(chain, {
+              id: chain,
+              atomCount: 0,
+              hetatmCount: 0,
+              residues: new Set(),
+              firstResidue: resi,
+              lastResidue: resi,
+              firstResn: resn,
+              lastResn: resn,
+            });
+          }
+          const group = groups.get(chain);
+          group.atomCount += 1;
+          if (record === "HETATM") group.hetatmCount += 1;
+          if (resi) {
+            group.residues.add(`${resn}:${resi}`);
+            group.lastResidue = resi;
+            group.lastResn = resn;
+          }
+        }
+        return [...groups.values()]
+          .map((group) => ({
+            ...group,
+            residueCount: group.residues.size,
+            residues: undefined,
+            label: `Chain ${group.id}`,
+          }))
+          .sort((a, b) => a.id.localeCompare(b.id));
+      }
+      function componentLineMatches(line, component) {
+        if (!line.startsWith("HETATM")) return false;
+        const resn = line.slice(17, 20).trim();
+        const chain = line.slice(21, 22).trim() || "_";
+        const resi = line.slice(22, 26).trim();
+        const icode = line.slice(26, 27).trim();
+        return resn === component.resn && chain === component.chain && resi === String(component.resi) && icode === (component.icode || "");
+      }
+      function chainLineMatches(line, chain) {
+        return pdbRecord(line) && (line.slice(21, 22).trim() || "_") === chain.id;
+      }
+      function pdbFragment(lines, title) {
+        const body = lines.filter(Boolean);
+        return [`REMARK Boltz Workbench export: ${title}`, ...body, "END", ""].join("\n");
+      }
+      function exportComponentPdb(componentKey) {
+        const component = proteinComponents.find((item) => item.key === componentKey);
+        if (!component || !activeProteinText) return;
+        const lines = activeProteinText.split(/\r?\n/).filter((line) => componentLineMatches(line, component));
+        downloadText(`${sanitizeDownloadName(component.reference)}.pdb`, pdbFragment(lines, component.reference));
+        setStatus(`已下载 ${component.reference}`, "success");
+      }
+      function exportChainPdb(chainId) {
+        const chain = proteinChains.find((item) => item.id === chainId);
+        if (!chain || !activeProteinText) return;
+        const lines = activeProteinText.split(/\r?\n/).filter((line) => chainLineMatches(line, chain) || line.startsWith("TER"));
+        downloadText(`${sanitizeDownloadName(`chain_${chain.id}`)}.pdb`, pdbFragment(lines, `chain ${chain.id}`));
+        setStatus(`已下载链 ${chain.id}`, "success");
       }
       function parsePdbComponents(pdbText) {
         const metals = new Set(["ZN", "MG", "MN", "FE", "CU", "CO", "NI", "CA", "NA", "K", "CD", "HG", "PB"]);
@@ -1679,6 +1954,7 @@
         const target = document.getElementById("protein-components");
         if (!proteinComponents.length) {
           target.innerHTML = '<div class="item"><small>这个 PDB 没有解析到 HETATM 组分</small></div>';
+          renderFocusObjectStrip();
           return;
         }
         const waterCount = proteinComponents.filter((item) => item.type === "water").length;
@@ -1686,7 +1962,7 @@
         const cards = visible
           .map(
             (component) => `
-              <div class="component-card ${activePocket?.key === component.key ? "selected" : ""} ${editingLigand?.key === component.key ? "editing" : ""} ${hiddenComponentKeys.has(component.key) ? "hidden-component" : ""}">
+              <div class="component-card ${activePocket?.key === component.key ? "selected" : ""} ${editingLigand?.key === component.key ? "editing" : ""} ${hiddenComponentKeys.has(component.key) ? "hidden-component marked-delete" : ""}">
                 <strong>${escapeHtml(component.resn)} · ${escapeHtml(component.type)}</strong>
                 <small>
                   chain ${escapeHtml(component.chain)} · residue ${escapeHtml(component.resi)} · atoms ${component.atomCount}<br />
@@ -1695,6 +1971,9 @@
                 </small>
                 <div class="item-actions">
                   <button class="secondary" data-focus-component="${escapeHtml(component.key)}" type="button">定位</button>
+                  <button class="secondary" data-export-component="${escapeHtml(component.key)}" type="button">下载</button>
+                  <button class="secondary ${hiddenComponentKeys.has(component.key) ? "" : "danger"}" data-toggle-component="${escapeHtml(component.key)}" type="button">${hiddenComponentKeys.has(component.key) ? "恢复" : "删除标记"}</button>
+                  <button class="secondary" data-keep-component="${escapeHtml(component.key)}" type="button">只保留</button>
                   ${component.type === "ligand" ? `<button class="secondary" data-edit-component="${escapeHtml(component.key)}" type="button">编辑</button><button data-pocket-component="${escapeHtml(component.key)}" type="button">用作口袋</button>` : ""}
                 </div>
               </div>`,
@@ -1713,6 +1992,147 @@
         });
         document.querySelectorAll("[data-pocket-component]").forEach((node) => {
           node.addEventListener("click", () => useComponentAsPocket(node.dataset.pocketComponent));
+        });
+        document.querySelectorAll("[data-export-component]").forEach((node) => {
+          node.addEventListener("click", () => exportComponentPdb(node.dataset.exportComponent));
+        });
+        document.querySelectorAll("[data-toggle-component]").forEach((node) => {
+          node.addEventListener("click", () => toggleComponentHidden(node.dataset.toggleComponent));
+        });
+        document.querySelectorAll("[data-keep-component]").forEach((node) => {
+          node.addEventListener("click", () => keepOnlyComponent(node.dataset.keepComponent));
+        });
+        renderFocusObjectStrip();
+      }
+      function renderProteinChains() {
+        const target = document.getElementById("protein-chains");
+        if (!target) return;
+        if (!proteinChains.length) {
+          target.innerHTML = '<div class="item"><small>这个 PDB 没有解析到蛋白链</small></div>';
+          renderFocusObjectStrip();
+          return;
+        }
+        target.innerHTML = proteinChains
+          .map(
+            (chain) => `
+              <div class="component-card ${selectedProteinChain === chain.id ? "selected" : ""} ${hiddenChainIds.has(chain.id) ? "marked-delete" : ""}">
+                <strong>链 ${escapeHtml(chain.id)}</strong>
+                <small>
+                  residues ${chain.residueCount} · atoms ${chain.atomCount}<br />
+                  range ${escapeHtml(chain.firstResn)}:${escapeHtml(chain.firstResidue)} – ${escapeHtml(chain.lastResn)}:${escapeHtml(chain.lastResidue)}<br />
+                  HETATM ${chain.hetatmCount}
+                </small>
+                <div class="item-actions">
+                  <button class="secondary" data-focus-chain="${escapeHtml(chain.id)}" type="button">定位</button>
+                  <button class="secondary" data-export-chain="${escapeHtml(chain.id)}" type="button">下载</button>
+                  <button class="secondary ${hiddenChainIds.has(chain.id) ? "" : "danger"}" data-toggle-chain="${escapeHtml(chain.id)}" type="button">${hiddenChainIds.has(chain.id) ? "恢复" : "删除标记"}</button>
+                  <button class="secondary" data-keep-chain="${escapeHtml(chain.id)}" type="button">只保留</button>
+                </div>
+              </div>`,
+          )
+          .join("");
+        document.querySelectorAll("[data-focus-chain]").forEach((node) => {
+          node.addEventListener("click", () => focusProteinChain(node.dataset.focusChain));
+        });
+        document.querySelectorAll("[data-export-chain]").forEach((node) => {
+          node.addEventListener("click", () => exportChainPdb(node.dataset.exportChain));
+        });
+        document.querySelectorAll("[data-toggle-chain]").forEach((node) => {
+          node.addEventListener("click", () => toggleChainHidden(node.dataset.toggleChain));
+        });
+        document.querySelectorAll("[data-keep-chain]").forEach((node) => {
+          node.addEventListener("click", () => keepOnlyChain(node.dataset.keepChain));
+        });
+        renderFocusObjectStrip();
+      }
+      function renderFocusObjectStrip() {
+        const target = document.getElementById("focus-object-strip");
+        if (!target) return;
+        const chainItems = proteinChains.map((chain) => ({
+          type: "chain",
+          id: chain.id,
+          title: `链 ${chain.id}`,
+          meta: `residues ${chain.residueCount} · atoms ${chain.atomCount}`,
+          selected: selectedProteinChain === chain.id,
+          hidden: hiddenChainIds.has(chain.id),
+        }));
+        const componentItems = proteinComponents
+          .filter((component) => component.type !== "water")
+          .slice(0, 120)
+          .map((component) => ({
+            type: "component",
+            id: component.key,
+            title: `${component.resn} · ${component.type}`,
+            meta: `${component.chain}:${component.resi} · atoms ${component.atomCount}`,
+            selected: activePocket?.key === component.key || editingLigand?.key === component.key,
+            hidden: hiddenComponentKeys.has(component.key),
+            componentType: component.type,
+          }));
+        const waterCount = proteinComponents.filter((component) => component.type === "water").length;
+        const waterItem = waterCount
+          ? [
+              {
+                type: "water",
+                id: "waters",
+                title: "水分子",
+                meta: `${waterCount} 个 HOH/WAT 组分`,
+                selected: proteinViewState.waters,
+                hidden: !proteinViewState.waters,
+              },
+            ]
+          : [];
+        const objects = [...chainItems, ...componentItems, ...waterItem];
+        if (!objects.length) {
+          target.innerHTML = '<div class="object-pill"><small>选择蛋白资产后，这里会列出链、配体、金属、水等对象。</small></div>';
+          return;
+        }
+        target.innerHTML = objects
+          .map(
+            (item) => `
+              <div class="object-pill ${item.selected ? "selected" : ""} ${item.hidden ? "marked-delete" : ""}">
+                <strong>${escapeHtml(item.title)}</strong>
+                <small>${escapeHtml(item.meta)}</small>
+                <div class="object-pill-actions">
+                  ${
+                    item.type === "chain"
+                      ? `<button class="secondary" data-strip-focus-chain="${escapeHtml(item.id)}" type="button">定位</button><button class="secondary" data-strip-export-chain="${escapeHtml(item.id)}" type="button">下载</button><button class="secondary danger" data-strip-toggle-chain="${escapeHtml(item.id)}" type="button">${item.hidden ? "恢复" : "删除"}</button>`
+                      : item.type === "component"
+                        ? `<button class="secondary" data-strip-focus-component="${escapeHtml(item.id)}" type="button">定位</button><button class="secondary" data-strip-export-component="${escapeHtml(item.id)}" type="button">下载</button><button class="secondary danger" data-strip-toggle-component="${escapeHtml(item.id)}" type="button">${item.hidden ? "恢复" : "删除"}</button>${item.componentType === "ligand" ? `<button data-strip-pocket-component="${escapeHtml(item.id)}" type="button">口袋</button>` : ""}`
+                        : `<button class="secondary" data-protein-control="waters" type="button">${proteinViewState.waters ? "隐藏水" : "显示水"}</button>`
+                  }
+                </div>
+              </div>`,
+          )
+          .join("");
+        bindFocusObjectStrip();
+      }
+      function bindFocusObjectStrip() {
+        document.querySelectorAll("[data-strip-focus-chain]").forEach((node) => {
+          node.addEventListener("click", () => focusProteinChain(node.dataset.stripFocusChain));
+        });
+        document.querySelectorAll("[data-strip-export-chain]").forEach((node) => {
+          node.addEventListener("click", () => exportChainPdb(node.dataset.stripExportChain));
+        });
+        document.querySelectorAll("[data-strip-toggle-chain]").forEach((node) => {
+          node.addEventListener("click", () => toggleChainHidden(node.dataset.stripToggleChain));
+        });
+        document.querySelectorAll("[data-strip-focus-component]").forEach((node) => {
+          node.addEventListener("click", () => focusProteinComponent(node.dataset.stripFocusComponent));
+        });
+        document.querySelectorAll("[data-strip-export-component]").forEach((node) => {
+          node.addEventListener("click", () => exportComponentPdb(node.dataset.stripExportComponent));
+        });
+        document.querySelectorAll("[data-strip-toggle-component]").forEach((node) => {
+          node.addEventListener("click", () => toggleComponentHidden(node.dataset.stripToggleComponent));
+        });
+        document.querySelectorAll("[data-strip-pocket-component]").forEach((node) => {
+          node.addEventListener("click", () => useComponentAsPocket(node.dataset.stripPocketComponent));
+        });
+        document.querySelectorAll("#focus-object-strip [data-protein-control]").forEach((node) => {
+          node.addEventListener("click", () => {
+            proteinViewState[node.dataset.proteinControl] = !proteinViewState[node.dataset.proteinControl];
+            applyProteinView(false);
+          });
         });
       }
       function renderPocketSummary() {
@@ -1774,6 +2194,10 @@
         `;
         document.getElementById("apply-pocket-edit")?.addEventListener("click", applyPocketEditorValues);
         document.getElementById("focus-active-pocket")?.addEventListener("click", focusActivePocket);
+        document.querySelectorAll("[data-pocket-center-index], [data-pocket-size-index]").forEach((node) => {
+          node.addEventListener("input", updatePocketFromEditorLive);
+          node.addEventListener("change", applyPocketEditorValues);
+        });
       }
       function componentSelection(component) {
         return {
@@ -1838,17 +2262,29 @@
       }
       function applyPocketEditorValues() {
         if (!activePocket) return;
-        activePocket = {
-          ...activePocket,
-          center: parsePocketNumbers("[data-pocket-center-index]", activePocket.center),
-          boxSize: parsePocketNumbers("[data-pocket-size-index]", activePocket.boxSize).map((value) => Math.max(4, Math.round(value))),
-        };
+        updateActivePocketFromEditor();
         proteinViewState.pocket = true;
         syncPocketFields();
         renderPocketSummary();
         applyProteinView(false);
         saveWorkbenchState();
         setStatus("口袋参数已更新", "success");
+      }
+      function updateActivePocketFromEditor() {
+        if (!activePocket) return;
+        activePocket = {
+          ...activePocket,
+          center: parsePocketNumbers("[data-pocket-center-index]", activePocket.center),
+          boxSize: parsePocketNumbers("[data-pocket-size-index]", activePocket.boxSize).map((value) => Math.max(4, Math.round(value))),
+        };
+      }
+      function updatePocketFromEditorLive() {
+        if (!activePocket) return;
+        updateActivePocketFromEditor();
+        proteinViewState.pocket = true;
+        syncPocketFields();
+        applyProteinView(false);
+        saveWorkbenchState();
       }
       function focusActivePocket() {
         if (!activePocket) throw new Error("请先定义口袋");
@@ -1980,24 +2416,99 @@
         const component = proteinComponents.find((item) => item.key === componentKey);
         const viewer = ensureProteinViewer();
         if (!component || !viewer) return;
+        editingLigand = component.type === "ligand" ? component : editingLigand;
+        selectedProteinChain = null;
         const selection = componentSelection(component);
         applyProteinView(false);
         viewer.setStyle(selection, { stick: { color: "#e24646", radius: 0.34 } });
         viewer.zoomTo(selection);
         viewer.render();
+        updateLigandEditor();
+        renderProteinComponents();
+        renderFocusObjectStrip();
+      }
+      function focusProteinChain(chainId) {
+        const chain = proteinChains.find((item) => item.id === chainId);
+        const viewer = ensureProteinViewer();
+        if (!chain || !viewer) return;
+        selectedProteinChain = chain.id;
+        proteinPickMode = "chain";
+        updatePickModeButtons();
+        applyProteinView(false);
+        viewer.setStyle(chainSelector(chain.id), { cartoon: { color: "#ffb703" }, stick: { color: "#ffb703", radius: 0.14 } });
+        viewer.zoomTo(chainSelector(chain.id));
+        viewer.render();
+        renderProteinChains();
+        renderFocusObjectStrip();
+        setStatus(`已定位链 ${chain.id}`, "success");
       }
       function hideEditingLigand() {
         if (!editingLigand) throw new Error("请先在 PDB 组分里选择一个配体进行编辑");
-        hiddenComponentKeys.add(editingLigand.key);
-        renderProteinComponents();
-        applyProteinView();
-        setStatus(`已隐藏配体 ${editingLigand.reference}`, "success");
+        toggleComponentHidden(editingLigand.key, true);
       }
       function restoreHiddenLigands() {
         hiddenComponentKeys = new Set();
+        hiddenChainIds = new Set();
         renderProteinComponents();
+        renderProteinChains();
+        renderCleanupSummary();
         applyProteinView();
-        setStatus("已恢复隐藏的配体显示", "success");
+        setStatus("已恢复所有删除标记", "success");
+      }
+      function toggleComponentHidden(componentKey, forceHidden = null) {
+        const component = proteinComponents.find((item) => item.key === componentKey);
+        if (!component) return;
+        const shouldHide = forceHidden == null ? !hiddenComponentKeys.has(componentKey) : forceHidden;
+        if (shouldHide) hiddenComponentKeys.add(componentKey);
+        else hiddenComponentKeys.delete(componentKey);
+        renderProteinComponents();
+        renderCleanupSummary();
+        applyProteinView(false);
+        saveWorkbenchState();
+        setStatus(`${shouldHide ? "已标记删除" : "已恢复"} ${component.reference}`, "success");
+      }
+      function keepOnlyComponent(componentKey) {
+        const component = proteinComponents.find((item) => item.key === componentKey);
+        if (!component) return;
+        hiddenComponentKeys = new Set(proteinComponents.filter((item) => item.type !== "water" && item.key !== componentKey).map((item) => item.key));
+        renderProteinComponents();
+        renderCleanupSummary();
+        focusProteinComponent(componentKey);
+        saveWorkbenchState();
+        setStatus(`已设置只保留 ${component.reference}，其他非水 HETATM 组分会在准备参数中标记删除`, "success");
+      }
+      function toggleChainHidden(chainId, forceHidden = null) {
+        const chain = proteinChains.find((item) => item.id === chainId);
+        if (!chain) return;
+        const shouldHide = forceHidden == null ? !hiddenChainIds.has(chainId) : forceHidden;
+        if (shouldHide) hiddenChainIds.add(chainId);
+        else hiddenChainIds.delete(chainId);
+        renderProteinChains();
+        renderCleanupSummary();
+        applyProteinView(false);
+        saveWorkbenchState();
+        setStatus(`${shouldHide ? "已标记删除" : "已恢复"}链 ${chain.id}`, "success");
+      }
+      function keepOnlyChain(chainId) {
+        const chain = proteinChains.find((item) => item.id === chainId);
+        if (!chain) return;
+        hiddenChainIds = new Set(proteinChains.filter((item) => item.id !== chainId).map((item) => item.id));
+        renderProteinChains();
+        renderCleanupSummary();
+        focusProteinChain(chainId);
+        saveWorkbenchState();
+        setStatus(`已设置只保留链 ${chain.id}，其他链会在准备参数中标记删除`, "success");
+      }
+      function renderCleanupSummary() {
+        const target = document.getElementById("protein-cleanup-summary");
+        if (!target) return;
+        const hiddenComponents = proteinComponents.filter((item) => hiddenComponentKeys.has(item.key));
+        const hiddenChains = proteinChains.filter((item) => hiddenChainIds.has(item.id));
+        const chips = [
+          ...hiddenChains.map((chain) => `<span class="cleanup-chip">删除链 ${escapeHtml(chain.id)}</span>`),
+          ...hiddenComponents.map((component) => `<span class="cleanup-chip">删除 ${escapeHtml(component.reference)}</span>`),
+        ];
+        target.innerHTML = chips.length ? chips.join("") : '<span class="muted">没有链或配体删除标记。</span>';
       }
       function useComponentAsPocket(componentKey) {
         const component = proteinComponents.find((item) => item.key === componentKey);
@@ -2091,12 +2602,25 @@
           <span>${label}</span>
         `;
       }
+      function setFocusObjectStripPortaled(portaled) {
+        const strip = document.getElementById("focus-object-strip");
+        const card = document.querySelector("[data-page='protein'] .workspace-card");
+        if (!strip || !card) return;
+        if (portaled && strip.parentElement !== document.body) {
+          document.body.appendChild(strip);
+        } else if (!portaled && strip.parentElement === document.body) {
+          card.appendChild(strip);
+        }
+      }
       function toggleProteinFocusMode() {
         proteinFocusMode = !proteinFocusMode;
         const card = document.querySelector("[data-page='protein'] .workspace-card");
+        if (proteinFocusMode) window.scrollTo(0, 0);
         card.classList.toggle("viewer-expanded", proteinFocusMode);
         document.body.classList.toggle("viewer-focus-active", proteinFocusMode);
+        setFocusObjectStripPortaled(proteinFocusMode);
         setProteinFocusButtonLabel();
+        renderFocusObjectStrip();
         setTimeout(() => {
           if (proteinViewer) {
             proteinViewer.resize();
@@ -2140,12 +2664,18 @@
           } else {
             viewer.setStyle({ hetflag: false }, { line: { colorscheme: "chainHetatm" } });
           }
+          hiddenChainIds.forEach((chainId) => {
+            viewer.setStyle(chainSelector(chainId), {});
+          });
           if (proteinViewState.ligand) {
             viewer.setStyle({ hetflag: true }, { stick: { colorscheme: "greenCarbon", radius: 0.18 } });
           }
           hiddenComponentKeys.forEach((key) => {
             const hidden = proteinComponents.find((component) => component.key === key);
             if (hidden) viewer.setStyle(componentSelection(hidden), {});
+          });
+          hiddenChainIds.forEach((chainId) => {
+            viewer.setStyle(chainSelector(chainId), {});
           });
           if (editingLigand && !hiddenComponentKeys.has(editingLigand.key)) {
             viewer.setStyle(componentSelection(editingLigand), { stick: { color: "#e24646", radius: 0.32 } });
@@ -2198,6 +2728,7 @@
           enableProteinClicks(viewer);
           if (zoom) viewer.zoomTo();
           viewer.render();
+          renderFocusObjectStrip();
         } catch (error) {
           setProteinPlaceholder("结构渲染失败", error.message || "PDB 文件无法被 3Dmol 正常解析");
         }
@@ -2213,6 +2744,7 @@
         setProteinPlaceholder(asset.name, `正在加载 ${file.filename} ...`);
         document.getElementById("protein-viewer-selection").textContent = `当前蛋白资产：${asset.name} · ${asset.id}`;
         activeProteinText = await fetchAssetFileText(asset, file);
+        proteinChains = parsePdbChains(activeProteinText);
         proteinComponents = parsePdbComponents(activeProteinText);
         activePocket = null;
         editingLigand = null;
@@ -2220,8 +2752,11 @@
         selectedProteinResidue = null;
         selectedProteinChain = null;
         hiddenComponentKeys = new Set();
+        hiddenChainIds = new Set();
         updateLigandEditor();
+        renderProteinChains();
         renderProteinComponents();
+        renderCleanupSummary();
         renderPocketSummary();
         document.getElementById("protein-viewer-placeholder").innerHTML = "";
         applyProteinView();
@@ -2231,19 +2766,30 @@
         target.innerHTML = assets.length
           ? assets
               .map(
-                (asset) => `
+                (asset) => {
+                  const primaryFile = getPrimaryAssetFile(asset);
+                  return `
                 <div class="item" data-asset="${asset.id}" data-kind="${asset.kind}">
                   <strong>${escapeHtml(asset.name)}</strong>
                   <small>${escapeHtml(asset.kind)} · ${escapeHtml(asset.source_type)}<br />${escapeHtml(asset.id)}</small>
                   <div class="item-actions">
                     <button class="secondary" data-preview-asset="${asset.id}" type="button">预览</button>
+                    ${
+                      primaryFile
+                        ? `<button class="secondary" data-download-asset="${asset.id}" data-download-file="${primaryFile.id}" data-download-name="${escapeHtml(primaryFile.filename)}" type="button">下载</button>`
+                        : ""
+                    }
                     <button class="secondary" data-rename-asset="${asset.id}" type="button">重命名</button>
                     <button class="secondary danger" data-delete-asset="${asset.id}" type="button">删除</button>
                   </div>
-                </div>`,
+                </div>`;
+                },
               )
               .join("")
           : emptyList(emptyLabel);
+      }
+      function getPrimaryAssetFile(asset) {
+        return asset?.files?.find((file) => file.role === "prepared_structure") || asset?.files?.find((file) => file.role === "structure") || asset?.files?.[0] || null;
       }
       async function runAction(action) {
         try {
@@ -2293,6 +2839,7 @@
             runAction(() => deleteAsset(node.dataset.deleteAsset));
           });
         });
+        bindDownloadButtons();
       }
       function renderPreview(asset, targetId) {
         const files = asset.files.length
@@ -2395,6 +2942,35 @@
         document.getElementById("docking-ligand-asset").value = selectedLigandId;
         setStatus("资产已删除", "success");
         await refresh();
+      }
+      async function deleteCurrentProject() {
+        if (!currentProjectId) throw new Error("当前没有项目");
+        const select = document.getElementById("project-id");
+        const label = select.options[select.selectedIndex]?.textContent || currentProjectId;
+        if (!window.confirm(`确认删除项目“${label}”？该项目下的资产、任务和持久化文件都会删除。`)) return;
+        await api(`/api/v1/projects/${currentProjectId}`, { method: "DELETE" });
+        currentProjectId = null;
+        selectedAssetId = null;
+        setSelectedProtein("");
+        selectedLigandId = "";
+        activeProteinAsset = null;
+        activeProteinText = "";
+        proteinChains = [];
+        proteinComponents = [];
+        activePocket = null;
+        editingLigand = null;
+        hiddenComponentKeys = new Set();
+        hiddenChainIds = new Set();
+        if (proteinViewer) proteinViewer.clear();
+        localStorage.removeItem(workbenchStateKey);
+        await refreshProjects();
+        await refresh();
+        renderProteinChains();
+        renderProteinComponents();
+        renderCleanupSummary();
+        renderPocketSummary();
+        showPage("project");
+        setStatus("项目已删除", "success");
       }
       async function refresh() {
         const suffix = currentProjectId ? `?project_id=${encodeURIComponent(currentProjectId)}` : "";
@@ -2528,9 +3104,11 @@
         selectedLigandId = "";
         currentProjectId = null;
         activePocket = null;
+        proteinChains = [];
         proteinComponents = [];
         editingLigand = null;
         hiddenComponentKeys = new Set();
+        hiddenChainIds = new Set();
         if (proteinFocusMode) toggleProteinFocusMode();
         localStorage.removeItem("boltz_token");
         localStorage.removeItem("boltz_user_id");
@@ -2564,6 +3142,10 @@
       }
       function collectProteinPrepOptions() {
         return {
+          output_naming: {
+            asset_name: document.getElementById("protein-output-name").value.trim(),
+            batch_pattern: document.getElementById("protein-output-pattern").value.trim(),
+          },
           remove_waters: checked("prep-remove-waters"),
           keep_metals: checked("prep-keep-metals"),
           keep_cofactors: checked("prep-keep-cofactors"),
@@ -2572,6 +3154,26 @@
           assign_protonation: checked("prep-add-hydrogens"),
           remove_altloc: checked("prep-remove-altloc"),
           ph: Number(document.getElementById("protein-prep-ph").value || 7.4),
+          chain_cleanup: {
+            delete_chains: [...hiddenChainIds],
+            available_chains: proteinChains.map((chain) => ({
+              id: chain.id,
+              residue_count: chain.residueCount,
+              atom_count: chain.atomCount,
+            })),
+          },
+          component_cleanup: {
+            delete_components: proteinComponents
+              .filter((component) => hiddenComponentKeys.has(component.key))
+              .map((component) => ({
+                key: component.key,
+                resn: component.resn,
+                chain: component.chain,
+                resi: component.resi,
+                type: component.type,
+                atom_count: component.atomCount,
+              })),
+          },
           pocket: {
             reference: document.getElementById("protein-pocket-ligand").value.trim(),
             center: document.getElementById("protein-pocket-center").value.trim(),
@@ -2599,13 +3201,17 @@
         activeProteinAsset = null;
         activeProteinText = "";
         proteinComponents = [];
+        proteinChains = [];
         activePocket = null;
         editingLigand = null;
         hiddenComponentKeys = new Set();
+        hiddenChainIds = new Set();
         updateLigandEditor();
         if (proteinViewer) proteinViewer.clear();
         setProteinPlaceholder("No protein selected", "选择蛋白资产后，这里会加载 PDB 结构并显示 Cartoon、表面、配体、金属、水分子和口袋范围。");
+        renderProteinChains();
         renderProteinComponents();
+        renderCleanupSummary();
         renderPocketSummary();
         document.getElementById("docking-ligand-asset").value = "";
         setSelectedPocket("");
@@ -2631,6 +3237,9 @@
         } catch (error) {
           setStatus(error.message, "error");
         }
+      });
+      document.getElementById("delete-project").addEventListener("click", () => {
+        runAction(deleteCurrentProject);
       });
       document.getElementById("login").addEventListener("click", async () => {
         try {
@@ -2669,6 +3278,12 @@
       document.getElementById("logout").addEventListener("click", logout);
       document.getElementById("refresh-users").addEventListener("click", refreshUsers);
       document.getElementById("toggle-protein-focus").addEventListener("click", toggleProteinFocusMode);
+      document.getElementById("protein-focus-exit-rail").addEventListener("click", () => {
+        if (proteinFocusMode) toggleProteinFocusMode();
+      });
+      document.getElementById("protein-focus-exit-floating").addEventListener("click", () => {
+        if (proteinFocusMode) toggleProteinFocusMode();
+      });
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && proteinFocusMode) toggleProteinFocusMode();
       });
@@ -2762,6 +3377,7 @@
             body: JSON.stringify({
               asset_id: assetId,
               project_id: currentProjectId,
+              output_name: document.getElementById("protein-output-name").value.trim(),
               options: collectProteinPrepOptions(),
             }),
           });
