@@ -1,0 +1,34 @@
+ARG PROTEIN_PREP_AMD_BASE_IMAGE=debian:bookworm-slim
+FROM ${PROTEIN_PREP_AMD_BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    BOLTZ_DATA_DIR=/data \
+    PYTHONPATH=/app/src \
+    PATH=/opt/conda/envs/boltz-protein-prep/bin:/opt/conda/bin:$PATH
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends bash ca-certificates curl bzip2 tini \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY docker/protein-prep/install-miniforge.sh /tmp/install-miniforge.sh
+COPY docker/protein-prep/environment.yml /tmp/protein-prep-environment.yml
+
+RUN bash /tmp/install-miniforge.sh /opt/conda \
+    && conda env create -f /tmp/protein-prep-environment.yml \
+    && conda clean -afy \
+    && rm -f /tmp/install-miniforge.sh /tmp/protein-prep-environment.yml
+
+COPY pyproject.toml README.md README.origin.md LICENSE /app/
+COPY src /app/src
+
+RUN python -m pip install --no-cache-dir --no-deps -e .
+
+VOLUME ["/data"]
+
+ENTRYPOINT ["tini", "--"]
+CMD ["python", "-m", "boltz_prep.worker", "--watch"]

@@ -43,6 +43,7 @@ dependencies = [
 [project.scripts]
 boltz = "boltz.main:cli"
 boltz-web = "boltz_web.main:run"
+boltz-prep-worker = "boltz_prep.worker:main"
 
 [project.optional-dependencies]
 lint = ["ruff"]

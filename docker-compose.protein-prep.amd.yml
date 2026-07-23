@@ -1,0 +1,29 @@
+services:
+  boltz-protein-prep-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.protein-prep.amd
+      args:
+        PROTEIN_PREP_AMD_BASE_IMAGE: ${PROTEIN_PREP_AMD_BASE_IMAGE:-debian:bookworm-slim}
+    image: ${BOLTZ_PROTEIN_PREP_AMD_IMAGE:-boltz-protein-prep:amd-dev}
+    restart: unless-stopped
+    profiles: ["workers", "protein-prep"]
+    depends_on:
+      boltz-postgres:
+        condition: service_healthy
+      boltz-redis:
+        condition: service_healthy
+    environment:
+      BOLTZ_DATA_DIR: /data
+      BOLTZ_DATABASE_URL: postgresql+psycopg://boltz:${BOLTZ_POSTGRES_PASSWORD:-boltz}@boltz-postgres:5432/boltz
+      BOLTZ_REDIS_URL: redis://boltz-redis:6379/0
+      BOLTZ_PREP_WORKER_PLATFORM: amd
+      BOLTZ_PREP_POLL_SECONDS: ${BOLTZ_PREP_POLL_SECONDS:-5}
+    volumes:
+      - ${BOLTZ_DATA_HOST_DIR:-./data}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -m boltz_prep.worker --check > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3

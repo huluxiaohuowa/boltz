@@ -89,6 +89,26 @@ The stack starts:
 - `boltz-postgres`: Postgres using the PGV image from `PGV_POSTGRES_IMAGE`.
 - `boltz-redis`: Redis for task event streams and status cache.
 
+Optional protein-preparation workers are provided as compose overlays:
+
+```bash
+# AMD/x86_64 CPU worker
+docker compose --env-file .env.web \
+  -f docker-compose.web.yml \
+  -f docker-compose.protein-prep.amd.yml \
+  --profile protein-prep up --build -d boltz-protein-prep-worker
+
+# Thor/aarch64 worker; set the base image to the deployed L4T/CUDA runtime.
+export PROTEIN_PREP_THOR_BASE_IMAGE=<thor-l4t-cuda-base-image>
+docker compose --env-file .env.web \
+  -f docker-compose.web.yml \
+  -f docker-compose.protein-prep.thor.yml \
+  --profile protein-prep up --build -d boltz-protein-prep-worker
+```
+
+See [docs/protein-prep-worker.md](docs/protein-prep-worker.md) for the worker
+component stack and platform notes.
+
 BOLTZ user/project/asset files are stored under `BOLTZ_DATA_HOST_DIR` on the
 host and mounted into the web container at `/data`. Set this to a persistent
 SSD path in production, for example:
@@ -117,13 +137,14 @@ The standalone workbench is organized by workflow module:
   the authenticated asset download API and enables Cartoon, Surface, Pocket,
   Ligand, Waters, Metals, H-bonds, and Clashes display toggles. The workspace
   parses PDB `HETATM` records into candidate ligands, metals, and water records.
-  A candidate ligand can be used as a pocket reference; the UI computes the
-  pocket center and box size, writes those values into protein preparation and
-  docking fields, and can persist them as a `pocket` asset. The first CADD
-  preparation form records water removal, metal/cofactor retention,
-  hydrogen/protonation settings, missing atom repair, alternate-location
-  handling, pH, and pocket definition, then creates a `prepared_protein` asset
-  that later workers can consume.
+  A candidate ligand can be edited in the right-side tool rail, focused, hidden
+  or restored, and used as a pocket reference. The UI computes the pocket center
+  and box size, writes those values into protein preparation and docking fields,
+  and can persist them as a `pocket` asset. The first CADD preparation form
+  records water removal, metal/cofactor retention, hydrogen/protonation
+  settings, missing atom repair, alternate-location handling, pH, and pocket
+  definition, then creates a `prepared_protein` asset that later workers can
+  consume.
 - Ligand: left-side SMILES/upload/asset controls and a wide right-side ligand
   preview/editing workspace.
 - Docking: left-side protein/ligand/pocket/task controls and a wide right-side
@@ -135,6 +156,20 @@ The standalone workbench is organized by workflow module:
   decision analysis using ligand assets, activity tables, docking results, FEP
   results, and ADMET fields.
 - Admin: user approval and future service/worker status, visible to admins.
+
+Protein preparation execution is intentionally separated from the FastAPI web
+image. The web image stores user intent and creates traceable assets; production
+chemistry work should run in a dedicated protein-preparation worker image. The
+recommended worker stack is:
+
+- Gemmi for high-performance PDB/mmCIF parsing, chain/residue/component
+  selection, and structure writing. Most Linux x86_64/aarch64 deployments can
+  install it from Python wheels with `pip install gemmi`; only unsupported
+  architectures need a C++/CMake build stage.
+- PDBFixer/OpenMM for missing atom/residue repair and structure normalization.
+- PropKa/PDB2PQR/Reduce for pH-aware protonation and hydrogen placement.
+- Gemmi/MDAnalysis/NumPy for water/metal/cofactor retention rules, pocket
+  neighborhoods, and prepared output asset generation.
 
 Terminology used by the workbench:
 
