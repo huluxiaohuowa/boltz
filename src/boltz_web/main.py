@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import secrets
 import shutil
 from pathlib import Path
@@ -30,11 +31,15 @@ from boltz_web.auth import (
 from boltz_web.db import SessionLocal, get_db, init_db
 from boltz_web.models import Asset, AssetFile, Job, Project, User
 from boltz_web.preparation import (
+    boltz_yaml_from_components,
     fetch_pdb,
     ligand_prepare_metadata,
     molblock_or_smiles_to_sdf,
+    molblock_or_smiles_to_record,
+    pdb_sequences_from_text,
     prepare_pdb_text,
     protein_prepare_metadata,
+    sdf_to_ligand_records,
     smiles_to_sdf,
     table_to_smiles,
 )
@@ -44,10 +49,13 @@ from boltz_web.schemas import (
     AssetCopyRequest,
     AssetOut,
     AssetUpdateRequest,
+    BoltzInputCreateRequest,
     DrawLigandRequest,
     JobCreateRequest,
     JobOut,
     JobRetryRequest,
+    LigandEditRequest,
+    LigandMoleculeOut,
     PocketCreateRequest,
     PreparationRequest,
     ProteinPdbRequest,
@@ -374,6 +382,200 @@ def create_ligand_from_draw(
     path = asset_root(settings, user_id, project.id, asset.id) / "drawn_ligand.sdf"
     size, sha = write_bytes(path, data)
     add_asset_file(db, asset, "structure", path.name, "chemical/x-mdl-sdfile", path, size, sha)
+    db.commit()
+    db.refresh(asset)
+    return asset_to_out(asset)
+
+
+def ligand_structure_file(asset: Asset) -> AssetFile | None:
+    return (
+        next((item for item in asset.files if item.filename.lower().endswith(".sdf")), None)
+        or next((item for item in asset.files if item.role in {"structure", "prepared_structure", "source"}), None)
+        or (asset.files[0] if asset.files else None)
+    )
+
+
+def ligand_records_for_asset(asset: Asset) -> list[dict]:
+    structure_file = ligand_structure_file(asset)
+    if structure_file is None:
+        return []
+    path = Path(structure_file.storage_path)
+    if not path.exists():
+        return []
+    if path.suffix.lower() == ".sdf":
+        return sdf_to_ligand_records(path.read_bytes())
+    smiles = asset.metadata_json.get("smiles")
+    if isinstance(smiles, list):
+        return [
+            {
+                "index": index,
+                "name": f"ligand_{index + 1}",
+                "smiles": item,
+                "molblock": "",
+                "heavy_atom_count": 0,
+                "atom_count": 0,
+                "formal_charge": 0,
+                "formula": "",
+            }
+            for index, item in enumerate(smiles)
+        ]
+    return []
+
+
+@app.get("/api/v1/assets/{asset_id}/ligand-molecules", response_model=list[LigandMoleculeOut])
+def list_ligand_molecules(
+    asset_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[LigandMoleculeOut]:
+    user_id = current_user.id
+    asset = db.get(Asset, asset_id)
+    if asset is None or asset.user_id != user_id or asset.kind not in {"ligand", "prepared_ligand", "prepared_ligand_library"}:
+        raise HTTPException(status_code=404, detail="ligand asset not found")
+    return [LigandMoleculeOut(**record) for record in ligand_records_for_asset(asset)]
+
+
+@app.post("/api/v1/assets/ligands/{asset_id}/molecules/{molecule_index}/edit", response_model=AssetOut)
+def edit_ligand_molecule(
+    asset_id: str,
+    molecule_index: int,
+    request: LigandEditRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AssetOut:
+    user_id = current_user.id
+    source = db.get(Asset, asset_id)
+    if source is None or source.user_id != user_id or source.kind not in {"ligand", "prepared_ligand", "prepared_ligand_library"}:
+        raise HTTPException(status_code=404, detail="ligand asset not found")
+    try:
+        project = ensure_project(db, user_id, request.project_id or source.project_id)
+        data, record = molblock_or_smiles_to_record(request.smiles, request.molblock, request.name, molecule_index)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    asset = Asset(
+        user_id=user_id,
+        project_id=project.id,
+        kind="ligand",
+        name=request.name.strip() or record["name"],
+        parent_asset_id=source.id,
+        source_type="ligand_editor",
+        metadata_json={
+            "operation": "ligand_edit",
+            "source_asset_id": source.id,
+            "source_molecule_index": molecule_index,
+            "edit_parent_id": source.id,
+            "edit_reason": request.edit_reason,
+            "smiles": record["smiles"],
+            "record": record,
+        },
+    )
+    db.add(asset)
+    db.flush()
+    path = asset_root(settings, user_id, project.id, asset.id) / f"{safe_filename(asset.name)}.sdf"
+    size, sha = write_bytes(path, data)
+    add_asset_file(db, asset, "structure", path.name, "chemical/x-mdl-sdfile", path, size, sha)
+    db.commit()
+    db.refresh(asset)
+    return asset_to_out(asset)
+
+
+@app.post("/api/v1/boltz-inputs", response_model=AssetOut)
+def create_boltz_input(
+    request: BoltzInputCreateRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AssetOut:
+    user_id = current_user.id
+    protein = db.get(Asset, request.protein_asset_id)
+    ligand = db.get(Asset, request.ligand_asset_id)
+    if protein is None or protein.user_id != user_id or protein.kind not in {"protein", "prepared_protein", "complex"}:
+        raise HTTPException(status_code=404, detail="protein asset not found")
+    if ligand is None or ligand.user_id != user_id or ligand.kind not in {"ligand", "prepared_ligand", "prepared_ligand_library"}:
+        raise HTTPException(status_code=404, detail="ligand asset not found")
+    try:
+        project = ensure_project(db, user_id, request.project_id or protein.project_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if protein.project_id != project.id or ligand.project_id != project.id:
+        raise HTTPException(status_code=400, detail="protein and ligand must be in the selected project")
+    protein_file = next((item for item in protein.files if item.filename.lower().endswith(".pdb")), protein.files[0] if protein.files else None)
+    if protein_file is None:
+        raise HTTPException(status_code=400, detail="protein asset has no structure file")
+    ligand_records = ligand_records_for_asset(ligand)
+    if request.ligand_index < 0 or request.ligand_index >= len(ligand_records):
+        raise HTTPException(status_code=400, detail="ligand index is out of range")
+    pocket = db.get(Asset, request.pocket_asset_id) if request.pocket_asset_id else None
+    if pocket is not None and (pocket.user_id != user_id or pocket.project_id != project.id or pocket.kind != "pocket"):
+        raise HTTPException(status_code=404, detail="pocket asset not found")
+    protein_text = Path(protein_file.storage_path).read_text(errors="replace")
+    sequences = pdb_sequences_from_text(protein_text)
+    chain_id = (request.chain_id or "B").strip() or "B"
+    yaml_text, warnings = boltz_yaml_from_components(
+        sequences,
+        ligand_records[request.ligand_index],
+        chain_id,
+        request.affinity,
+        pocket.metadata_json if pocket else None,
+    )
+    job = Job(
+        user_id=user_id,
+        project_id=project.id,
+        job_type="boltz_input_generation",
+        status="queued",
+        input_asset_ids=[protein.id, ligand.id] + ([pocket.id] if pocket else []),
+        options_json={
+            "ligand_index": request.ligand_index,
+            "chain_id": chain_id,
+            "affinity": request.affinity,
+            "pocket_asset_id": pocket.id if pocket else None,
+        },
+    )
+    db.add(job)
+    db.flush()
+    publish_job_event(user_id, job.id, "queued", {"job_type": job.job_type})
+    publish_job_event(user_id, job.id, "running", {"message": "generating Boltz YAML"})
+    job.status = "running"
+    asset = Asset(
+        user_id=user_id,
+        project_id=project.id,
+        kind="boltz_prediction_input",
+        name=request.name.strip() or "boltz input",
+        parent_asset_id=ligand.id,
+        source_type="boltz_yaml",
+        metadata_json={
+            "operation": "boltz_input_generation",
+            "protein_asset_id": protein.id,
+            "ligand_asset_id": ligand.id,
+            "ligand_index": request.ligand_index,
+            "ligand": ligand_records[request.ligand_index],
+            "chain_id": chain_id,
+            "affinity": request.affinity,
+            "pocket_asset_id": pocket.id if pocket else None,
+            "warnings": warnings,
+            "job_id": job.id,
+        },
+    )
+    db.add(asset)
+    db.flush()
+    root = asset_root(settings, user_id, project.id, asset.id)
+    yaml_path = root / "input.yaml"
+    yaml_size, yaml_sha = write_bytes(yaml_path, yaml_text.encode("utf-8"))
+    add_asset_file(db, asset, "boltz_yaml", yaml_path.name, "application/x-yaml", yaml_path, yaml_size, yaml_sha)
+    report = {
+        "protein_asset_id": protein.id,
+        "ligand_asset_id": ligand.id,
+        "ligand_index": request.ligand_index,
+        "chain_id": chain_id,
+        "affinity": request.affinity,
+        "warnings": warnings,
+    }
+    report_path = root / "report.json"
+    report_size, report_sha = write_bytes(report_path, json.dumps(report, ensure_ascii=False, indent=2).encode("utf-8"))
+    add_asset_file(db, asset, "report", report_path.name, "application/json", report_path, report_size, report_sha)
+    job.output_asset_ids = [asset.id]
+    job.result_json = {"output_asset_id": asset.id, "output_files": ["input.yaml", "report.json"], "warnings": warnings}
+    job.status = "completed"
+    publish_job_event(user_id, job.id, "completed", {"output_asset_id": asset.id, "output_files": ["input.yaml", "report.json"]})
     db.commit()
     db.refresh(asset)
     return asset_to_out(asset)

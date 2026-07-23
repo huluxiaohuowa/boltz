@@ -9,6 +9,33 @@ import pandas as pd
 import requests
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem.MolStandardize import rdMolStandardize
+
+
+AMINO3_TO_1 = {
+    "ALA": "A",
+    "ARG": "R",
+    "ASN": "N",
+    "ASP": "D",
+    "CYS": "C",
+    "GLN": "Q",
+    "GLU": "E",
+    "GLY": "G",
+    "HIS": "H",
+    "ILE": "I",
+    "LEU": "L",
+    "LYS": "K",
+    "MET": "M",
+    "PHE": "F",
+    "PRO": "P",
+    "SER": "S",
+    "THR": "T",
+    "TRP": "W",
+    "TYR": "Y",
+    "VAL": "V",
+    "SEC": "U",
+    "PYL": "O",
+}
 
 
 def fetch_pdb(pdb_id: str) -> bytes:
@@ -35,6 +62,147 @@ def smiles_to_sdf(smiles: list[str], names: list[str] | None = None) -> bytes:
     finally:
         writer.close()
     return buffer.getvalue().encode("utf-8")
+
+
+def _standardize_mol(mol: Chem.Mol) -> Chem.Mol:
+    cleanup = rdMolStandardize.Cleanup(mol)
+    parent = rdMolStandardize.FragmentParent(cleanup)
+    uncharger = rdMolStandardize.Uncharger()
+    return uncharger.uncharge(parent)
+
+
+def _mol_to_record(mol: Chem.Mol, index: int) -> dict[str, Any]:
+    name = mol.GetProp("_Name").strip() if mol.HasProp("_Name") else f"ligand_{index + 1}"
+    smiles = Chem.MolToSmiles(Chem.RemoveHs(mol), isomericSmiles=True)
+    formula = ""
+    try:
+        from rdkit.Chem import rdMolDescriptors
+
+        formula = rdMolDescriptors.CalcMolFormula(mol)
+    except Exception:
+        formula = ""
+    return {
+        "index": index,
+        "name": name or f"ligand_{index + 1}",
+        "smiles": smiles,
+        "molblock": Chem.MolToMolBlock(Chem.RemoveHs(mol)),
+        "heavy_atom_count": Chem.RemoveHs(mol).GetNumHeavyAtoms(),
+        "atom_count": mol.GetNumAtoms(),
+        "formal_charge": Chem.GetFormalCharge(mol),
+        "formula": formula,
+    }
+
+
+def sdf_to_ligand_records(sdf_data: bytes) -> list[dict[str, Any]]:
+    supplier = Chem.ForwardSDMolSupplier(io.BytesIO(sdf_data), removeHs=False)
+    records: list[dict[str, Any]] = []
+    for index, mol in enumerate(supplier):
+        if mol is None:
+            continue
+        try:
+            standardized = _standardize_mol(mol)
+            records.append(_mol_to_record(standardized, index))
+        except Exception:
+            records.append(
+                {
+                    "index": index,
+                    "name": f"ligand_{index + 1}",
+                    "smiles": "",
+                    "molblock": "",
+                    "heavy_atom_count": 0,
+                    "atom_count": 0,
+                    "formal_charge": 0,
+                    "formula": "",
+                    "status": "failed",
+                },
+            )
+    return records
+
+
+def molblock_or_smiles_to_record(smiles: str | None, molblock: str | None, name: str, index: int = 0) -> tuple[bytes, dict[str, Any]]:
+    sdf = molblock_or_smiles_to_sdf(smiles, molblock, name)
+    records = sdf_to_ligand_records(sdf)
+    if not records:
+        raise ValueError("ligand could not be parsed after preparation")
+    records[0]["index"] = index
+    return sdf, records[0]
+
+
+def pdb_sequences_from_text(pdb_text: str) -> list[dict[str, str]]:
+    chains: dict[str, list[str]] = {}
+    for line in pdb_text.splitlines():
+        if not line.startswith("SEQRES"):
+            continue
+        chain_id = line[11:12].strip()
+        residues = line[19:].split()
+        if not chain_id or not residues:
+            continue
+        chains.setdefault(chain_id, []).extend(residues)
+    sequences: list[dict[str, str]] = []
+    for chain_id, residues in sorted(chains.items()):
+        if not residues:
+            continue
+        known = sum(1 for residue in residues if residue in AMINO3_TO_1)
+        # Some PDB entries expose small-molecule or inhibitor chains in SEQRES.
+        # Boltz protein entries should not include those ligand-like chains.
+        if known / len(residues) < 0.5:
+            continue
+        sequences.append({"id": chain_id, "sequence": "".join(AMINO3_TO_1.get(residue, "X") for residue in residues)})
+    return sequences
+
+
+def boltz_yaml_from_components(
+    protein_sequences: list[dict[str, str]],
+    ligand: dict[str, Any],
+    chain_id: str,
+    affinity: bool = True,
+    pocket: dict[str, Any] | None = None,
+) -> tuple[str, list[str]]:
+    warnings: list[str] = []
+    if not protein_sequences:
+        warnings.append("No protein SEQRES records were found; generated YAML contains only the ligand.")
+    ligand_smiles = ligand.get("smiles") or ""
+    if not ligand_smiles and not ligand.get("ccd"):
+        raise ValueError("ligand must include a SMILES or CCD value for Boltz")
+    if ligand.get("heavy_atom_count", 0) > 56:
+        warnings.append("Ligand has more than 56 heavy atoms; Boltz affinity quality may be reduced.")
+    if ligand.get("atom_count", 0) > 128:
+        warnings.append("Ligand has more than 128 atoms; Boltz affinity may not support this ligand.")
+
+    lines = ["version: 1", "sequences:"]
+    for protein in protein_sequences:
+        lines.extend(
+            [
+                "  - protein:",
+                f"      id: {protein['id']}",
+                f"      sequence: {protein['sequence']}",
+            ],
+        )
+    lines.extend(["  - ligand:", f"      id: {chain_id}"])
+    if ligand.get("ccd"):
+        lines.append(f"      ccd: {ligand['ccd']}")
+    else:
+        escaped = ligand_smiles.replace("'", "''")
+        lines.append(f"      smiles: '{escaped}'")
+    constraints: list[str] = []
+    component = (pocket or {}).get("component") or {}
+    if component.get("type") == "residue" and component.get("chain") and component.get("resi"):
+        constraints.extend(
+            [
+                "constraints:",
+                "  - pocket:",
+                f"      binder: {chain_id}",
+                f"      contacts: [[{component['chain']}, {component['resi']}]]",
+                "      max_distance: 6",
+            ],
+        )
+    elif pocket:
+        warnings.append("Pocket center/box assets are kept in metadata; Boltz pocket constraints require residue/atom contacts.")
+    if constraints:
+        lines.extend(constraints)
+    if affinity:
+        lines.extend(["properties:", "  - affinity:", f"      binder: {chain_id}"])
+    return "\n".join(lines).rstrip() + "\n", warnings
 
 
 def molblock_or_smiles_to_sdf(smiles: str | None, molblock: str | None, name: str) -> bytes:

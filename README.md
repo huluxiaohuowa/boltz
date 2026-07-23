@@ -83,6 +83,27 @@ cp .env.web.example .env.web
 docker compose --env-file .env.web -f docker-compose.web.yml up --build
 ```
 
+Build and push production images from the target build host with:
+
+```bash
+./build_image.sh --component web --tag thor_YYYYMMDD
+```
+
+The script uses the same repository-plus-tag convention as the other ictrek app
+image build scripts:
+
+```text
+swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-web:thor_YYYYMMDD
+```
+
+Protein-preparation worker images are separate from the web image. Build the
+Thor worker only after selecting the matching Thor/L4T/CUDA base image:
+
+```bash
+PROTEIN_PREP_THOR_BASE_IMAGE=<thor-l4t-cuda-base-image> \
+  ./build_image.sh --component protein-prep-thor --tag thor_YYYYMMDD
+```
+
 The stack starts:
 
 - `boltz-web`: FastAPI WebServer and static workbench.
@@ -165,7 +186,13 @@ The standalone workbench is organized by workflow module:
   alternate-location handling, pH, and pocket definition, then creates a
   `prepared_protein` asset that later workers can consume.
 - Ligand: left-side SMILES/upload/asset controls and a wide right-side ligand
-  preview/editing workspace.
+  preview/editing workspace. The first Boltz-first ligand-preparation slice
+  parses SDF/SMILES assets into molecule rows, lets one molecule be selected for
+  Boltz chain-id assignment, supports editing a selected molecule through
+  SMILES/MolBlock fields and saving it as a new ligand asset, and can generate a
+  `boltz_prediction_input` asset containing `input.yaml` plus `report.json`.
+  PDBQT remains an optional future AutoDock/Vina export rather than the default
+  ligand output.
 - Docking: left-side protein/ligand/pocket/task controls and a wide right-side
   3D docking workspace for pocket, pose, interaction, and score inspection.
 - FEP / Analysis: left-side input/settings controls and a wide right-side

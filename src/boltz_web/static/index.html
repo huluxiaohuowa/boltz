@@ -1009,6 +1009,56 @@
         color: #243247;
         white-space: pre-wrap;
       }
+      .molecule-table {
+        display: grid;
+        gap: 8px;
+      }
+      .molecule-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid rgba(213, 222, 235, 0.95);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.75);
+      }
+      .molecule-row.selected {
+        border-color: rgba(47, 112, 223, 0.68);
+        background: rgba(232, 241, 255, 0.86);
+      }
+      .molecule-row small {
+        display: block;
+        margin-top: 4px;
+        color: #64748b;
+        line-height: 1.45;
+      }
+      .molecule-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .molecule-actions button {
+        width: auto;
+        min-height: 34px;
+        margin: 0;
+        padding: 6px 10px;
+      }
+      .editor-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 12px;
+      }
+      .editor-grid textarea {
+        min-height: 170px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+      }
+      .yaml-preview {
+        min-height: 280px;
+        max-height: 460px;
+      }
       @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
@@ -1044,6 +1094,10 @@
         }
         .protein-tool-rail .toolbar {
           grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .editor-grid,
+        .molecule-row {
+          grid-template-columns: 1fr;
         }
         .login-shell {
           min-height: auto;
@@ -1365,26 +1419,78 @@
         <section class="page" data-page="ligand">
           <section class="page-hero">
             <h2>配体处理</h2>
-            <p class="muted">支持 SDF、SMILES、表格和后续手工绘制入口，生成标准化配体资产。</p>
+            <p class="muted">Boltz 优先：从 SDF、SMILES、表格或手工编辑得到 ligand asset，并生成可直接用于 Boltz 的 input.yaml。</p>
           </section>
           <div class="workflow-layout">
             <div class="operation-column">
               <section>
-                <h2>生成配体</h2>
+                <h2>SMILES / 分子库</h2>
+                <label>
+                  资产名称
+                  <input id="ligand-library-name" placeholder="例如 kinase_ligands" />
+                </label>
                 <label>
                   SMILES
                   <textarea id="smiles" placeholder="每行一个 SMILES"></textarea>
                 </label>
-                <button id="create-smiles">生成配体 SDF</button>
+                <button id="create-smiles">生成配体资产</button>
               </section>
               <section>
                 <h2>上传配体</h2>
                 <label>
-                  上传文件
+                  上传 SDF / MOL / MOL2 / PDB
                   <input id="ligand-upload-file" type="file" />
                 </label>
                 <button class="secondary" id="upload-ligand">上传配体资产</button>
-                <p class="muted">后续会补表格导入和手工绘制，仍然放在左侧操作区。</p>
+                <p class="muted">SDF 会解析为分子表；MOL2/PDB 先作为原始资产保存，后续通过 Open Babel worker 做格式转换。</p>
+              </section>
+              <section>
+                <h2>单分子编辑</h2>
+                <label>
+                  编辑后名称
+                  <input id="ligand-edit-name" placeholder="例如 edited_ligand_001" />
+                </label>
+                <label>
+                  SMILES
+                  <textarea id="ligand-edit-smiles" placeholder="可从分子表点击“编辑”带入，也可以手工输入"></textarea>
+                </label>
+                <label>
+                  MolBlock
+                  <textarea id="ligand-edit-molblock" placeholder="Ketcher 集成后会把画出的 MolBlock 写到这里；当前可粘贴 MolBlock"></textarea>
+                </label>
+                <button id="save-edited-ligand" type="button">保存为新配体资产</button>
+                <p class="muted">当前先提供 SMILES/MolBlock 编辑入口；Ketcher 组件会接入这里，不覆盖原始分子。</p>
+              </section>
+              <section>
+                <h2>Boltz 输入</h2>
+                <label>
+                  蛋白资产
+                  <select id="boltz-protein-asset"></select>
+                </label>
+                <label>
+                  配体资产
+                  <input id="boltz-ligand-asset" placeholder="从配体资产或分子表选择" readonly />
+                </label>
+                <div class="field-row">
+                  <label>
+                    分子序号
+                    <input id="boltz-ligand-index" type="number" value="0" min="0" />
+                  </label>
+                  <label>
+                    ligand chain id
+                    <input id="boltz-ligand-chain" value="B" />
+                  </label>
+                </div>
+                <label>
+                  口袋资产
+                  <select id="boltz-pocket-asset"></select>
+                </label>
+                <label class="option-row"><input id="boltz-affinity" type="checkbox" checked /> 生成 affinity binder 配置</label>
+                <label>
+                  输出名称
+                  <input id="boltz-input-name" placeholder="例如 boltz_input_ligand_001" />
+                </label>
+                <button id="create-boltz-input" type="button">生成 Boltz input.yaml 资产</button>
               </section>
               <section>
                 <h2>配体资产</h2>
@@ -1395,13 +1501,23 @@
               <section class="workspace-card asset-preview">
                 <div class="workspace-header">
                   <div>
-                    <h2>主工作区 / 配体预览</h2>
-                    <p class="muted">右侧保留给分子绘制、构象预览、枚举结果、性质表和后续交互编辑。</p>
+                    <h2>主工作区 / 分子表与 Boltz YAML</h2>
+                    <p class="muted">选择配体资产后，这里列出每个分子；单分子可进入编辑器修改，也可直接生成 Boltz 输入。</p>
                   </div>
                 </div>
-                <div id="ligand-preview">
-                  <p class="muted">选择配体资产后，在这里查看 SDF、SMILES 元数据和后续结构预览入口。</p>
+                <div class="molecule-table" id="ligand-molecule-table">
+                  <div class="item"><small>选择或创建配体资产后解析分子列表。</small></div>
                 </div>
+              </section>
+              <section class="asset-preview">
+                <h2>资产 / YAML 预览</h2>
+                <div id="ligand-preview">
+                  <p class="muted">选择配体或 Boltz YAML 资产后，在这里查看文件、元数据和下载入口。</p>
+                </div>
+              </section>
+              <section>
+                <h2>Boltz 输入资产</h2>
+                <div class="list" id="boltz-input-assets"></div>
               </section>
             </div>
           </div>
@@ -1592,6 +1708,8 @@
       let selectedLigandId = "";
       let currentAssets = [];
       let currentJobs = [];
+      let currentLigandMolecules = [];
+      let selectedLigandMoleculeIndex = 0;
       let currentProjectId = null;
       let activeProteinAsset = null;
       let activeProteinText = "";
@@ -1769,7 +1887,11 @@
       }
       function isLigandLike(assetOrKind) {
         const kind = typeof assetOrKind === "string" ? assetOrKind : assetOrKind.kind;
-        return ["ligand", "prepared_ligand"].includes(kind);
+        return ["ligand", "prepared_ligand", "prepared_ligand_library"].includes(kind);
+      }
+      function isBoltzInput(assetOrKind) {
+        const kind = typeof assetOrKind === "string" ? assetOrKind : assetOrKind.kind;
+        return ["boltz_ligand_input", "boltz_prediction_input"].includes(kind);
       }
       function setSelectedProtein(assetId) {
         selectedProteinId = assetId || "";
@@ -2816,7 +2938,12 @@
             if (isLigandLike(node.dataset.kind)) {
               selectedLigandId = selectedAssetId;
               document.getElementById("docking-ligand-asset").value = selectedLigandId;
+              document.getElementById("boltz-ligand-asset").value = selectedLigandId;
               saveWorkbenchState();
+              runAction(() => previewAsset(selectedAssetId));
+              return;
+            }
+            if (isBoltzInput(node.dataset.kind)) {
               runAction(() => previewAsset(selectedAssetId));
               return;
             }
@@ -2940,6 +3067,53 @@
         `;
         bindDownloadButtons();
       }
+      function renderLigandMolecules(molecules = currentLigandMolecules) {
+        const target = document.getElementById("ligand-molecule-table");
+        if (!target) return;
+        target.innerHTML = molecules.length
+          ? molecules
+              .map(
+                (mol) => `
+                <div class="molecule-row ${mol.index === selectedLigandMoleculeIndex ? "selected" : ""}" data-molecule-index="${mol.index}">
+                  <div>
+                    <strong>${escapeHtml(mol.name || `ligand_${mol.index + 1}`)}</strong>
+                    <small>
+                      #${mol.index} · heavy atoms ${mol.heavy_atom_count || 0} · charge ${mol.formal_charge || 0} · ${escapeHtml(mol.formula || "")}<br />
+                      ${escapeHtml(mol.smiles || "没有可用 SMILES")}
+                    </small>
+                  </div>
+                  <div class="molecule-actions">
+                    <button class="secondary" data-select-ligand-molecule="${mol.index}" type="button">用于 Boltz</button>
+                    <button class="secondary" data-edit-ligand-molecule="${mol.index}" type="button">编辑</button>
+                  </div>
+                </div>`,
+              )
+              .join("")
+          : emptyList("当前配体资产没有解析出可编辑分子；如果是 MOL2/PDB，请后续通过格式转换 worker 处理。");
+        target.querySelectorAll("[data-select-ligand-molecule]").forEach((node) => {
+          node.addEventListener("click", () => selectLigandMolecule(Number(node.dataset.selectLigandMolecule), false));
+        });
+        target.querySelectorAll("[data-edit-ligand-molecule]").forEach((node) => {
+          node.addEventListener("click", () => selectLigandMolecule(Number(node.dataset.editLigandMolecule), true));
+        });
+      }
+      async function loadLigandMolecules(assetId) {
+        currentLigandMolecules = await api(`/api/v1/assets/${assetId}/ligand-molecules`);
+        selectedLigandMoleculeIndex = currentLigandMolecules[0]?.index || 0;
+        document.getElementById("boltz-ligand-index").value = selectedLigandMoleculeIndex;
+        renderLigandMolecules();
+      }
+      function selectLigandMolecule(index, edit = false) {
+        selectedLigandMoleculeIndex = index;
+        document.getElementById("boltz-ligand-index").value = String(index);
+        const mol = currentLigandMolecules.find((item) => item.index === index);
+        if (mol && edit) {
+          document.getElementById("ligand-edit-name").value = `${mol.name || `ligand_${index + 1}`}_edited`;
+          document.getElementById("ligand-edit-smiles").value = mol.smiles || "";
+          document.getElementById("ligand-edit-molblock").value = mol.molblock || "";
+        }
+        renderLigandMolecules();
+      }
       function bindDownloadButtons() {
         document.querySelectorAll("[data-download-file]").forEach((node) => {
           node.addEventListener("click", () =>
@@ -2971,8 +3145,13 @@
         } else if (isLigandLike(asset)) {
           selectedLigandId = asset.id;
           document.getElementById("docking-ligand-asset").value = asset.id;
+          document.getElementById("boltz-ligand-asset").value = asset.id;
           renderPreview(asset, "ligand-preview");
+          await loadLigandMolecules(asset.id);
           saveWorkbenchState();
+          showPage("ligand");
+        } else if (isBoltzInput(asset)) {
+          renderPreview(asset, "ligand-preview");
           showPage("ligand");
         } else if (asset.kind === "pocket") {
           const pocketText = `${asset.metadata.reference || asset.name}; center ${(asset.metadata.center || []).join(",")}; box ${(asset.metadata.box_size || []).join(",")} Å`;
@@ -3056,6 +3235,24 @@
         setStatus("任务已重新执行", "success");
         await refresh();
       }
+      function refreshBoltzSelectors(assets) {
+        const proteinSelect = document.getElementById("boltz-protein-asset");
+        const pocketSelect = document.getElementById("boltz-pocket-asset");
+        if (!proteinSelect || !pocketSelect) return;
+        proteinSelect.innerHTML = assets
+          .filter((asset) => isProteinLike(asset))
+          .map((asset) => `<option value="${asset.id}">${escapeHtml(asset.name)} · ${escapeHtml(compactId(asset.id))}</option>`)
+          .join("");
+        if (selectedProteinId && assets.some((asset) => asset.id === selectedProteinId)) proteinSelect.value = selectedProteinId;
+        pocketSelect.innerHTML =
+          `<option value="">不使用口袋约束</option>` +
+          assets
+            .filter((asset) => asset.kind === "pocket")
+            .map((asset) => `<option value="${asset.id}">${escapeHtml(asset.name)} · ${escapeHtml(compactId(asset.id))}</option>`)
+            .join("");
+        const currentPocket = document.getElementById("docking-pocket-asset")?.value || "";
+        if (currentPocket && assets.some((asset) => asset.id === currentPocket)) pocketSelect.value = currentPocket;
+      }
       async function deleteCurrentProject() {
         if (!currentProjectId) throw new Error("当前没有项目");
         const select = document.getElementById("project-id");
@@ -3066,6 +3263,8 @@
         selectedAssetId = null;
         setSelectedProtein("");
         selectedLigandId = "";
+        currentLigandMolecules = [];
+        selectedLigandMoleculeIndex = 0;
         activeProteinAsset = null;
         activeProteinText = "";
         proteinChains = [];
@@ -3111,6 +3310,12 @@
           "ligand-assets",
           "还没有配体资产",
         );
+        renderAssetList(
+          assets.filter((asset) => isBoltzInput(asset)),
+          "boltz-input-assets",
+          "还没有 Boltz input.yaml 资产",
+        );
+        refreshBoltzSelectors(assets);
         bindAssetSelection();
         renderJobList(jobs, "jobs", "当前项目还没有任务");
         const dockingJobs = jobs.filter((job) =>
@@ -3153,6 +3358,8 @@
         if (state.selectedLigandId && currentAssets.some((asset) => asset.id === state.selectedLigandId && isLigandLike(asset))) {
           selectedLigandId = state.selectedLigandId;
           document.getElementById("docking-ligand-asset").value = selectedLigandId;
+          document.getElementById("boltz-ligand-asset").value = selectedLigandId;
+          await loadLigandMolecules(selectedLigandId);
         }
         if (state.activePocket && state.selectedProteinId === selectedProteinId) {
           activePocket = state.activePocket;
@@ -3212,6 +3419,8 @@
         selectedAssetId = null;
         selectedProteinId = "";
         selectedLigandId = "";
+        currentLigandMolecules = [];
+        selectedLigandMoleculeIndex = 0;
         currentProjectId = null;
         activePocket = null;
         proteinChains = [];
@@ -3229,6 +3438,7 @@
         document.getElementById("admin-nav").classList.add("hidden");
         document.getElementById("login-password").value = "";
         document.getElementById("login-screen").classList.remove("hidden");
+        renderLigandMolecules([]);
         showPage("project");
         setStatus("");
         setLoginStatus("已退出当前账户", "success");
@@ -3246,6 +3456,7 @@
           body: form,
         });
         if (!response.ok) throw new Error(formatApiError(await response.text(), response.status));
+        return response.json();
       }
       function checked(id) {
         return document.getElementById(id).checked;
@@ -3324,6 +3535,9 @@
         renderCleanupSummary();
         renderPocketSummary();
         document.getElementById("docking-ligand-asset").value = "";
+        document.getElementById("boltz-ligand-asset").value = "";
+        document.getElementById("boltz-ligand-index").value = "0";
+        renderLigandMolecules([]);
         setSelectedPocket("");
         saveWorkbenchState({
           projectId: currentProjectId,
@@ -3502,10 +3716,14 @@
       });
       document.getElementById("upload-ligand").addEventListener("click", async () => {
         try {
-          await uploadAsset("ligand", "ligand-upload-file");
+          const asset = await uploadAsset("ligand", "ligand-upload-file");
+          selectedLigandId = asset.id;
+          document.getElementById("docking-ligand-asset").value = asset.id;
+          document.getElementById("boltz-ligand-asset").value = asset.id;
           setStatus("配体资产已上传", "success");
           showPage("ligand");
           await refresh();
+          await previewAsset(asset.id);
         } catch (error) {
           setStatus(error.message, "error");
         }
@@ -3517,14 +3735,73 @@
             .value.split(/\n+/)
             .map((item) => item.trim())
             .filter(Boolean);
-          await api("/api/v1/assets/ligands/smiles", {
+          const asset = await api("/api/v1/assets/ligands/smiles", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ smiles, project_id: currentProjectId }),
+            body: JSON.stringify({
+              smiles,
+              project_id: currentProjectId,
+              name: document.getElementById("ligand-library-name").value.trim() || "SMILES ligands",
+            }),
           });
+          selectedLigandId = asset.id;
+          document.getElementById("docking-ligand-asset").value = asset.id;
+          document.getElementById("boltz-ligand-asset").value = asset.id;
           setStatus("配体资产已生成", "success");
           showPage("ligand");
           await refresh();
+          await previewAsset(asset.id);
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      });
+      document.getElementById("save-edited-ligand").addEventListener("click", async () => {
+        try {
+          if (!selectedLigandId) throw new Error("请先选择一个配体资产");
+          const asset = await api(`/api/v1/assets/ligands/${selectedLigandId}/molecules/${selectedLigandMoleculeIndex}/edit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project_id: currentProjectId,
+              name: document.getElementById("ligand-edit-name").value.trim() || "edited ligand",
+              smiles: document.getElementById("ligand-edit-smiles").value.trim() || null,
+              molblock: document.getElementById("ligand-edit-molblock").value.trim() || null,
+              edit_reason: "web ligand editor",
+            }),
+          });
+          selectedLigandId = asset.id;
+          document.getElementById("docking-ligand-asset").value = asset.id;
+          document.getElementById("boltz-ligand-asset").value = asset.id;
+          setStatus("编辑后的配体已保存为新资产", "success");
+          await refresh();
+          await previewAsset(asset.id);
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      });
+      document.getElementById("create-boltz-input").addEventListener("click", async () => {
+        try {
+          const proteinId = document.getElementById("boltz-protein-asset").value || selectedProteinId;
+          const ligandId = document.getElementById("boltz-ligand-asset").value || selectedLigandId;
+          if (!proteinId) throw new Error("请先选择蛋白资产");
+          if (!ligandId) throw new Error("请先选择配体资产");
+          const asset = await api("/api/v1/boltz-inputs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project_id: currentProjectId,
+              protein_asset_id: proteinId,
+              ligand_asset_id: ligandId,
+              ligand_index: Number(document.getElementById("boltz-ligand-index").value || 0),
+              chain_id: document.getElementById("boltz-ligand-chain").value.trim() || "B",
+              pocket_asset_id: document.getElementById("boltz-pocket-asset").value || null,
+              affinity: document.getElementById("boltz-affinity").checked,
+              name: document.getElementById("boltz-input-name").value.trim() || "boltz input",
+            }),
+          });
+          setStatus("Boltz input.yaml 资产已生成", "success");
+          await refresh();
+          await previewAsset(asset.id);
         } catch (error) {
           setStatus(error.message, "error");
         }
