@@ -517,6 +517,11 @@
         border-radius: 999px;
         font-size: 12px;
       }
+      .chip.active {
+        border-color: rgba(47, 112, 223, 0.6);
+        background: rgba(47, 112, 223, 0.12);
+        color: #153b82;
+      }
       .muted {
         color: #66758a;
         font-size: 13px;
@@ -557,6 +562,60 @@
         color: #2d4d7c;
         font-size: 12px;
         line-height: 1.55;
+      }
+      .protein-canvas {
+        position: relative;
+        min-height: 520px;
+        overflow: hidden;
+        border: 1px solid rgba(210, 219, 232, 0.9);
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 15% 12%, rgba(47, 112, 223, 0.1), transparent 30%),
+          radial-gradient(circle at 86% 18%, rgba(41, 139, 117, 0.1), transparent 32%),
+          linear-gradient(180deg, #fbfdff, #eef6f8);
+      }
+      .protein-canvas canvas {
+        display: block;
+      }
+      .protein-placeholder {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        align-content: start;
+        gap: 12px;
+        padding: 24px;
+        color: #5d6d82;
+        pointer-events: none;
+      }
+      .protein-placeholder strong {
+        color: #172033;
+        font-size: 20px;
+      }
+      .protein-viewer-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .protein-viewer-bar .viewer-overlay {
+        flex: 1 1 420px;
+        margin-top: 0;
+      }
+      .viewer-badges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .viewer-badge {
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(214, 224, 237, 0.72);
+        color: #536173;
+        font-size: 12px;
+        font-weight: 650;
       }
       .asset-preview {
         min-height: 520px;
@@ -615,6 +674,7 @@
         }
       }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.3/build/3Dmol-min.js"></script>
   </head>
   <body>
     <header>
@@ -801,19 +861,24 @@
                   </div>
                 </div>
                 <div class="toolbar">
-                  <button class="secondary chip" type="button">Cartoon</button>
-                  <button class="secondary chip" type="button">Surface</button>
-                  <button class="secondary chip" type="button">Pocket</button>
-                  <button class="secondary chip" type="button">Ligand</button>
-                  <button class="secondary chip" type="button">Waters</button>
-                  <button class="secondary chip" type="button">Metals</button>
-                  <button class="secondary chip" type="button">H-bonds</button>
-                  <button class="secondary chip" type="button">Clashes</button>
+                  <button class="secondary chip active" data-protein-control="cartoon" type="button">Cartoon</button>
+                  <button class="secondary chip" data-protein-control="surface" type="button">Surface</button>
+                  <button class="secondary chip" data-protein-control="pocket" type="button">Pocket</button>
+                  <button class="secondary chip active" data-protein-control="ligand" type="button">Ligand</button>
+                  <button class="secondary chip" data-protein-control="waters" type="button">Waters</button>
+                  <button class="secondary chip active" data-protein-control="metals" type="button">Metals</button>
+                  <button class="secondary chip" data-protein-control="hbonds" type="button">H-bonds</button>
+                  <button class="secondary chip" data-protein-control="clashes" type="button">Clashes</button>
                 </div>
-                <div class="viewer large" id="protein-viewer">
-                  <strong>No protein selected</strong>
-                  <p class="muted">选择蛋白资产后，这里会作为后续 3Dmol/NGL 工作区：预览结构、框选口袋、保留/删除配体片段、显示氢键/疏水/盐桥/金属配位。</p>
+                <div class="protein-canvas" id="protein-viewer">
+                  <div class="protein-placeholder" id="protein-viewer-placeholder">
+                    <strong>No protein selected</strong>
+                    <p class="muted">选择蛋白资产后，这里会加载 PDB 结构并显示 Cartoon、表面、配体、金属、水分子和口袋范围。</p>
+                  </div>
+                </div>
+                <div class="protein-viewer-bar">
                   <div class="viewer-overlay" id="protein-viewer-selection">当前没有选中的蛋白资产</div>
+                  <div class="viewer-badges" id="protein-viewer-flags"></div>
                 </div>
               </section>
               <section class="asset-preview">
@@ -1049,6 +1114,19 @@
       let selectedLigandId = "";
       let currentAssets = [];
       let currentProjectId = null;
+      let activeProteinAsset = null;
+      let activeProteinText = "";
+      let proteinViewer = null;
+      const proteinViewState = {
+        cartoon: true,
+        surface: false,
+        pocket: false,
+        ligand: true,
+        waters: false,
+        metals: true,
+        hbonds: false,
+        clashes: false,
+      };
       let token = localStorage.getItem("boltz_token") || "";
       let isAdmin = localStorage.getItem("boltz_is_admin") === "true";
       const statusEl = document.getElementById("status");
@@ -1139,6 +1217,112 @@
           ? `当前蛋白资产：${selectedProteinId}`
           : "当前没有选中的蛋白资产";
       }
+      function setProteinPlaceholder(title, body) {
+        document.getElementById("protein-viewer-placeholder").innerHTML = `
+          <strong>${escapeHtml(title)}</strong>
+          <p class="muted">${escapeHtml(body)}</p>
+        `;
+      }
+      function updateProteinControlButtons() {
+        document.querySelectorAll("[data-protein-control]").forEach((node) => {
+          node.classList.toggle("active", Boolean(proteinViewState[node.dataset.proteinControl]));
+        });
+        const labels = Object.entries(proteinViewState)
+          .filter(([, enabled]) => enabled)
+          .map(([key]) => {
+            const map = {
+              cartoon: "Cartoon",
+              surface: "Surface",
+              pocket: "Pocket",
+              ligand: "Ligand",
+              waters: "Waters",
+              metals: "Metals",
+              hbonds: "H-bonds",
+              clashes: "Clashes",
+            };
+            return `<span class="viewer-badge">${map[key] || key}</span>`;
+          })
+          .join("");
+        document.getElementById("protein-viewer-flags").innerHTML = labels || '<span class="viewer-badge">Line</span>';
+      }
+      function getProteinStructureFile(asset) {
+        return (
+          asset.files.find((file) => file.filename.toLowerCase().endsWith(".pdb")) ||
+          asset.files.find((file) => file.content_type.includes("x-pdb")) ||
+          asset.files[0]
+        );
+      }
+      async function fetchAssetFileText(asset, file) {
+        const response = await fetch(`/api/v1/assets/${asset.id}/files/${file.id}/download`, {
+          headers: headers(),
+        });
+        if (!response.ok) throw new Error(formatApiError(await response.text(), response.status));
+        return response.text();
+      }
+      function ensureProteinViewer() {
+        if (!window.$3Dmol) {
+          setProteinPlaceholder("3Dmol 未加载", "当前浏览器没有加载 3Dmol 资源，无法渲染蛋白结构。请检查网络或后续改为镜像内置 viewer 资源。");
+          return null;
+        }
+        if (!proteinViewer) {
+          proteinViewer = $3Dmol.createViewer(document.getElementById("protein-viewer"), {
+            backgroundColor: "white",
+            antialias: true,
+          });
+        }
+        return proteinViewer;
+      }
+      function applyProteinView() {
+        updateProteinControlButtons();
+        const viewer = ensureProteinViewer();
+        if (!viewer || !activeProteinText) return;
+        try {
+          viewer.clear();
+          viewer.addModel(activeProteinText, "pdb");
+          if (proteinViewState.cartoon) {
+            viewer.setStyle({ hetflag: false }, { cartoon: { color: "spectrum" } });
+          } else {
+            viewer.setStyle({ hetflag: false }, { line: { colorscheme: "chainHetatm" } });
+          }
+          if (proteinViewState.ligand) {
+            viewer.setStyle({ hetflag: true }, { stick: { colorscheme: "greenCarbon", radius: 0.18 } });
+          }
+          if (proteinViewState.waters) {
+            viewer.setStyle({ resn: "HOH" }, { sphere: { radius: 0.24, color: "#4da3ff" } });
+          } else {
+            viewer.setStyle({ resn: "HOH" }, {});
+          }
+          if (proteinViewState.metals) {
+            ["ZN", "MG", "MN", "FE", "CU", "CO", "NI", "CA", "NA", "K"].forEach((elem) => {
+              viewer.setStyle({ elem }, { sphere: { radius: 0.55, color: "#f0a429" } });
+            });
+          }
+          if (proteinViewState.surface) {
+            viewer.addSurface($3Dmol.SurfaceType.VDW, { opacity: 0.38, color: "white" }, { hetflag: false });
+          }
+          if (proteinViewState.pocket) {
+            viewer.addSurface($3Dmol.SurfaceType.MS, { opacity: 0.55, color: "#4c82e6" }, { hetflag: true });
+          }
+          viewer.zoomTo();
+          viewer.render();
+        } catch (error) {
+          setProteinPlaceholder("结构渲染失败", error.message || "PDB 文件无法被 3Dmol 正常解析");
+        }
+      }
+      async function loadProteinViewer(asset) {
+        activeProteinAsset = asset;
+        const file = getProteinStructureFile(asset);
+        if (!file) {
+          activeProteinText = "";
+          setProteinPlaceholder(asset.name, "这个蛋白资产没有可渲染的 PDB 文件");
+          return;
+        }
+        setProteinPlaceholder(asset.name, `正在加载 ${file.filename} ...`);
+        document.getElementById("protein-viewer-selection").textContent = `当前蛋白资产：${asset.name} · ${asset.id}`;
+        activeProteinText = await fetchAssetFileText(asset, file);
+        document.getElementById("protein-viewer-placeholder").innerHTML = "";
+        applyProteinView();
+      }
       function renderAssetList(assets, targetId, emptyLabel) {
         const target = document.getElementById(targetId);
         target.innerHTML = assets.length
@@ -1171,10 +1355,14 @@
             selectedAssetId = node.dataset.asset;
             if (isProteinLike(node.dataset.kind)) {
               setSelectedProtein(selectedAssetId);
+              runAction(() => previewAsset(selectedAssetId));
+              return;
             }
             if (isLigandLike(node.dataset.kind)) {
               selectedLigandId = selectedAssetId;
               document.getElementById("docking-ligand-asset").value = selectedLigandId;
+              runAction(() => previewAsset(selectedAssetId));
+              return;
             }
             document.getElementById("selected").textContent = `Selected asset: ${selectedAssetId}`;
           });
@@ -1257,6 +1445,7 @@
         if (isProteinLike(asset)) {
           setSelectedProtein(asset.id);
           renderPreview(asset, "protein-preview");
+          await loadProteinViewer(asset);
           showPage("protein");
         } else if (isLigandLike(asset)) {
           selectedLigandId = asset.id;
@@ -1443,6 +1632,10 @@
         selectedAssetId = null;
         setSelectedProtein("");
         selectedLigandId = "";
+        activeProteinAsset = null;
+        activeProteinText = "";
+        if (proteinViewer) proteinViewer.clear();
+        setProteinPlaceholder("No protein selected", "选择蛋白资产后，这里会加载 PDB 结构并显示 Cartoon、表面、配体、金属、水分子和口袋范围。");
         document.getElementById("docking-ligand-asset").value = "";
         await refresh();
       });
@@ -1496,6 +1689,13 @@
       });
       document.getElementById("logout").addEventListener("click", logout);
       document.getElementById("refresh-users").addEventListener("click", refreshUsers);
+      document.querySelectorAll("[data-protein-control]").forEach((node) => {
+        node.addEventListener("click", () => {
+          const key = node.dataset.proteinControl;
+          proteinViewState[key] = !proteinViewState[key];
+          applyProteinView();
+        });
+      });
       document.getElementById("fetch-pdb").addEventListener("click", async () => {
         try {
           const pdbId = document.getElementById("pdb-id").value;

@@ -113,10 +113,13 @@ The standalone workbench is organized by workflow module:
 
 - Project: current project, reusable assets, and recent tasks.
 - Protein: left-side PDB/upload/asset/preparation controls and a wide right-side
-  3D workspace. The first CADD preparation form records water removal,
-  metal/cofactor retention, hydrogen/protonation settings, missing atom repair,
-  alternate-location handling, pH, and pocket definition, then creates a
-  `prepared_protein` asset that later workers can consume.
+  3Dmol protein workspace. Selecting a protein asset loads its PDB file through
+  the authenticated asset download API and enables Cartoon, Surface, Pocket,
+  Ligand, Waters, Metals, H-bonds, and Clashes display toggles. The first CADD
+  preparation form records water removal, metal/cofactor retention,
+  hydrogen/protonation settings, missing atom repair, alternate-location
+  handling, pH, and pocket definition, then creates a `prepared_protein` asset
+  that later workers can consume.
 - Ligand: left-side SMILES/upload/asset controls and a wide right-side ligand
   preview/editing workspace.
 - Docking: left-side protein/ligand/task controls and a wide right-side 3D
