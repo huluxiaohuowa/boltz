@@ -143,13 +143,16 @@ The standalone workbench is organized by workflow module:
   ligand editing instead of changing one atom into a separate object. Atom mode
   highlights only one atom for inspection, residue mode highlights one residue,
   chain mode highlights a whole chain, and pocket mode creates pocket parameters
-  from a clicked ligand or residue center. The protein workspace also has a true
+  from a clicked ligand or residue center. Defined pockets are shown in the 3D
+  viewer as a blue center marker and box guide, and the right rail shows the
+  pocket reference, center, and box size. The protein workspace also has a true
   focus editor mode that covers the full browser window, hides the page chrome
-  and left-side forms, keeps the 3D viewer wide, and leaves display/edit actions
-  in a fixed right rail. A selected ligand can be focused, hidden or restored,
-  and used as a pocket reference. The UI computes the pocket center and box
-  size, writes those values into protein preparation and docking fields, and can
-  persist them as a `pocket` asset. The first CADD preparation form records
+  and left-side forms, keeps the 3D viewer wide, leaves display/edit actions in
+  a fixed right rail, and exposes a fixed return button in the top-left corner.
+  A selected ligand can be focused, hidden or restored, and used as a pocket
+  reference. The UI computes the pocket center and box size, writes those values
+  into protein preparation and docking fields, and can persist them as a
+  `pocket` asset. The first CADD preparation form records
   water removal, metal/cofactor retention, hydrogen/protonation settings,
   missing atom repair, alternate-location handling, pH, and pocket definition,
   then creates a `prepared_protein` asset that later workers can consume.

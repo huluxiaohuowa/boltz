@@ -744,6 +744,34 @@
       .viewer-expanded .workspace-header .muted {
         display: none;
       }
+      .viewer-expanded #toggle-protein-focus {
+        position: fixed;
+        top: 18px;
+        left: 18px;
+        z-index: 1003;
+        width: auto;
+        min-height: 42px;
+        margin: 0;
+        padding: 9px 16px;
+        border-color: rgba(47, 112, 223, 0.45);
+        background: rgba(47, 112, 223, 0.94);
+        color: #fff;
+        box-shadow: 0 16px 36px rgba(47, 112, 223, 0.26);
+      }
+      #toggle-protein-focus {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      #toggle-protein-focus svg {
+        width: 16px;
+        height: 16px;
+        flex: 0 0 auto;
+      }
+      .viewer-expanded .workspace-header > div {
+        padding-left: 148px;
+      }
       .viewer-expanded .protein-editor-shell {
         grid-template-columns: minmax(0, 1fr) 188px;
         height: calc(100vh - 98px);
@@ -1036,7 +1064,7 @@
                     <h2>主工作区 / 3D 预览</h2>
                     <p class="muted">这里是最大化结构操作区：口袋、配体、金属、水分子、相互作用和后续编辑都集中在右侧。</p>
                   </div>
-                  <button class="secondary" id="toggle-protein-focus" type="button">专注编辑</button>
+                  <button class="secondary" id="toggle-protein-focus" type="button"></button>
                 </div>
                 <div class="protein-editor-shell">
                   <div class="protein-canvas" id="protein-viewer">
@@ -1069,6 +1097,10 @@
                       <div class="selection-detail" id="protein-selection-detail">
                         <strong>点击选择</strong>
                         <span>在 3D 视图中单击原子、残基或配体；点到配体会自动进入编辑状态。</span>
+                      </div>
+                      <div class="selection-detail" id="protein-pocket-detail">
+                        <strong>口袋</strong>
+                        <span>未定义。切到“口袋”模式后点击配体/残基，或在组分里点“用作口袋”。</span>
                       </div>
                       <button class="secondary" id="focus-selected-ligand" type="button">聚焦配体</button>
                       <button class="secondary" id="hide-selected-ligand" type="button">隐藏配体</button>
@@ -1601,6 +1633,7 @@
         const target = document.getElementById("pocket-summary");
         if (!activePocket) {
           target.innerHTML = '<div class="item"><small>还没有选择参考配体。请选择 PDB 组分里的候选配体来创建口袋。</small></div>';
+          updatePocketInspector();
           return;
         }
         target.innerHTML = `
@@ -1612,6 +1645,22 @@
               盒子：${activePocket.boxSize.join(", ")} Å
             </small>
           </div>
+        `;
+        updatePocketInspector();
+      }
+      function updatePocketInspector() {
+        const target = document.getElementById("protein-pocket-detail");
+        if (!target) return;
+        if (!activePocket) {
+          target.innerHTML = `
+            <strong>口袋</strong>
+            <span>未定义。切到“口袋”模式后点击配体/残基，或在组分里点“用作口袋”。</span>
+          `;
+          return;
+        }
+        target.innerHTML = `
+          <strong>口袋 · ${escapeHtml(activePocket.reference)}</strong>
+          <span>center ${activePocket.center.map((value) => value.toFixed(2)).join(", ")}<br />box ${activePocket.boxSize.join(", ")} Å</span>
         `;
       }
       function componentSelection(component) {
@@ -1752,25 +1801,7 @@
             useComponentAsPocket(component.key);
             return;
           }
-          const residuePocket = {
-            key: `residue-pocket|${selectedProteinAtom.chain || "_"}|${selectedProteinAtom.resi}`,
-            resn: selectedProteinAtom.resn,
-            chain: selectedProteinAtom.chain || "_",
-            resi: selectedProteinAtom.resi,
-            atomCount: 1,
-            center: [selectedProteinAtom.x, selectedProteinAtom.y, selectedProteinAtom.z],
-            boxSize: [18, 18, 18],
-            reference: `${selectedProteinAtom.resn} ${selectedProteinAtom.chain || "_"}:${selectedProteinAtom.resi}`,
-            type: "residue",
-          };
-          activePocket = residuePocket;
-          document.getElementById("protein-pocket-ligand").value = residuePocket.reference;
-          document.getElementById("protein-pocket-center").value = residuePocket.center.map((value) => value.toFixed(2)).join(",");
-          document.getElementById("protein-pocket-size").value = residuePocket.boxSize.join(",");
-          document.getElementById("docking-pocket").value = `${residuePocket.reference}; center ${residuePocket.center.map((value) => value.toFixed(2)).join(",")}; box 18,18,18 Å`;
-          proteinViewState.pocket = true;
-          renderPocketSummary();
-          setStatus(`已用残基 ${residuePocket.reference} 生成口袋中心`, "success");
+          setPocketFromResidueAtom(selectedProteinAtom);
         } else if (proteinPickMode === "residue") {
           setStatus(`已选择残基 ${selectedProteinAtom.resn} ${selectedProteinAtom.chain || "_"}:${selectedProteinAtom.resi}`, "success");
         } else if (proteinPickMode === "chain") {
@@ -1836,12 +1867,94 @@
         applyProteinView();
         setStatus("已从参考配体生成口袋参数，可创建口袋资产并用于对接", "success");
       }
+      function setPocketFromResidueAtom(atom) {
+        const residuePocket = {
+          key: `residue-pocket|${atom.chain || "_"}|${atom.resi}`,
+          resn: atom.resn,
+          chain: atom.chain || "_",
+          resi: atom.resi,
+          atomCount: 1,
+          center: [atom.x, atom.y, atom.z],
+          boxSize: [18, 18, 18],
+          reference: `${atom.resn} ${atom.chain || "_"}:${atom.resi}`,
+          type: "residue",
+        };
+        activePocket = residuePocket;
+        document.getElementById("protein-pocket-ligand").value = residuePocket.reference;
+        document.getElementById("protein-pocket-center").value = residuePocket.center.map((value) => value.toFixed(2)).join(",");
+        document.getElementById("protein-pocket-size").value = residuePocket.boxSize.join(",");
+        document.getElementById("docking-pocket").value = `${residuePocket.reference}; center ${residuePocket.center.map((value) => value.toFixed(2)).join(",")}; box 18,18,18 Å`;
+        proteinViewState.pocket = true;
+        renderPocketSummary();
+        setStatus(`已用残基 ${residuePocket.reference} 生成口袋中心`, "success");
+      }
+      function drawPocketGuide(viewer, pocket) {
+        if (!viewer || !pocket) return;
+        const [cx, cy, cz] = pocket.center;
+        const [sx, sy, sz] = pocket.boxSize;
+        const center = { x: cx, y: cy, z: cz };
+        viewer.addSphere({ center, radius: 0.72, color: "#2f70df", opacity: 0.92 });
+        const hx = sx / 2;
+        const hy = sy / 2;
+        const hz = sz / 2;
+        const corners = [
+          { x: cx - hx, y: cy - hy, z: cz - hz },
+          { x: cx + hx, y: cy - hy, z: cz - hz },
+          { x: cx + hx, y: cy + hy, z: cz - hz },
+          { x: cx - hx, y: cy + hy, z: cz - hz },
+          { x: cx - hx, y: cy - hy, z: cz + hz },
+          { x: cx + hx, y: cy - hy, z: cz + hz },
+          { x: cx + hx, y: cy + hy, z: cz + hz },
+          { x: cx - hx, y: cy + hy, z: cz + hz },
+        ];
+        [
+          [0, 1],
+          [1, 2],
+          [2, 3],
+          [3, 0],
+          [4, 5],
+          [5, 6],
+          [6, 7],
+          [7, 4],
+          [0, 4],
+          [1, 5],
+          [2, 6],
+          [3, 7],
+        ].forEach(([start, end]) => {
+          viewer.addLine({ start: corners[start], end: corners[end], color: "#2f70df", linewidth: 2 });
+        });
+        if (viewer.addLabel) {
+          viewer.addLabel("Pocket", {
+            position: { x: cx, y: cy + hy + 1.2, z: cz },
+            fontColor: "#153b82",
+            backgroundColor: "#e8f1ff",
+            borderColor: "#2f70df",
+            borderThickness: 1,
+            fontSize: 12,
+          });
+        }
+      }
+      function setProteinFocusButtonLabel() {
+        const button = document.getElementById("toggle-protein-focus");
+        const label = proteinFocusMode ? "返回工作台" : "专注编辑";
+        const title = proteinFocusMode ? "返回工作台（Esc）" : "弹出为专注编辑窗口";
+        button.title = title;
+        button.setAttribute("aria-label", title);
+        button.innerHTML = `
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <path d="M8 4.75H5.75A1.75 1.75 0 0 0 4 6.5v11.75A1.75 1.75 0 0 0 5.75 20h11.75A1.75 1.75 0 0 0 19.25 18.25V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M13.5 4H20v6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M11 13 20 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          <span>${label}</span>
+        `;
+      }
       function toggleProteinFocusMode() {
         proteinFocusMode = !proteinFocusMode;
         const card = document.querySelector("[data-page='protein'] .workspace-card");
         card.classList.toggle("viewer-expanded", proteinFocusMode);
         document.body.classList.toggle("viewer-focus-active", proteinFocusMode);
-        document.getElementById("toggle-protein-focus").textContent = proteinFocusMode ? "退出专注" : "专注编辑";
+        setProteinFocusButtonLabel();
         setTimeout(() => {
           if (proteinViewer) {
             proteinViewer.resize();
@@ -1926,8 +2039,12 @@
               const pocketSelection = {
                 ...componentSelection(activePocket),
               };
-              viewer.setStyle(pocketSelection, { stick: { color: "#e24646", radius: 0.32 } });
-              viewer.addSurface($3Dmol.SurfaceType.MS, { opacity: 0.55, color: "#4c82e6" }, pocketSelection);
+              if (activePocket.type !== "residue") {
+                viewer.setStyle(pocketSelection, { stick: { color: "#e24646", radius: 0.32 } });
+              } else {
+                viewer.setStyle(pocketSelection, { stick: { color: "#ffb703", radius: 0.24 } });
+              }
+              drawPocketGuide(viewer, activePocket);
             } else {
               viewer.addSurface($3Dmol.SurfaceType.MS, { opacity: 0.55, color: "#4c82e6" }, { hetflag: true });
             }
@@ -2532,6 +2649,7 @@
           setStatus(error.message, "error");
         }
       });
+      setProteinFocusButtonLabel();
       if (token) {
         enterApp(localStorage.getItem("boltz_user_id") || "admin", isAdmin).catch(() => {
           logout();
