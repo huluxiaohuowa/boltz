@@ -610,8 +610,38 @@
         color: #64748b;
         line-height: 1.45;
       }
+      .selection-detail {
+        display: grid;
+        gap: 6px;
+        padding: 10px;
+        border-radius: 13px;
+        border: 1px solid rgba(149, 180, 233, 0.36);
+        background: rgba(232, 241, 255, 0.72);
+        color: #24456f;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .selection-detail strong {
+        font-size: 12px;
+      }
+      .selection-mode-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .selection-mode-grid button {
+        min-height: 34px;
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+      .selection-mode-grid button.active {
+        border-color: rgba(47, 112, 223, 0.62);
+        background: rgba(47, 112, 223, 0.12);
+        color: #153b82;
+      }
       .protein-canvas canvas {
         display: block;
+        cursor: crosshair;
       }
       .protein-placeholder {
         position: absolute;
@@ -696,19 +726,67 @@
       }
       .viewer-expanded {
         position: fixed;
-        inset: 16px;
-        z-index: 60;
-        overflow: auto;
-        padding: 18px;
-        border-radius: 28px;
-        background: rgba(255, 255, 255, 0.92);
+        inset: 0;
+        z-index: 1000;
+        overflow: hidden;
+        padding: 14px;
+        border-radius: 0;
+        background: rgba(248, 251, 255, 0.98);
         box-shadow: 0 38px 110px rgba(19, 34, 56, 0.32);
       }
+      .viewer-expanded .workspace-header {
+        min-height: 58px;
+        margin-bottom: 10px;
+      }
+      .viewer-expanded .workspace-header h2 {
+        font-size: 20px;
+      }
+      .viewer-expanded .workspace-header .muted {
+        display: none;
+      }
+      .viewer-expanded .protein-editor-shell {
+        grid-template-columns: minmax(0, 1fr) 188px;
+        height: calc(100vh - 98px);
+      }
       .viewer-expanded .protein-canvas {
-        min-height: calc(100vh - 190px);
+        height: 100%;
+        min-height: 0;
+        border-radius: 22px;
+      }
+      .viewer-expanded .protein-tool-rail {
+        overflow: auto;
+        padding-right: 2px;
+      }
+      .viewer-expanded .protein-viewer-bar {
+        position: absolute;
+        left: 22px;
+        right: 220px;
+        bottom: 18px;
+        margin: 0;
+        pointer-events: none;
+      }
+      .viewer-expanded .viewer-overlay,
+      .viewer-expanded .viewer-badges {
+        pointer-events: auto;
       }
       body.viewer-focus-active {
         overflow: hidden;
+      }
+      body.viewer-focus-active header,
+      body.viewer-focus-active .side-nav,
+      body.viewer-focus-active .project-strip,
+      body.viewer-focus-active .module-strip,
+      body.viewer-focus-active [data-page='protein'] > .page-hero,
+      body.viewer-focus-active [data-page='protein'] > .workflow-layout > .operation-column {
+        display: none !important;
+      }
+      body.viewer-focus-active .app-shell,
+      body.viewer-focus-active [data-page='protein'],
+      body.viewer-focus-active [data-page='protein'] > .workflow-layout,
+      body.viewer-focus-active [data-page='protein'] > .workflow-layout > .workspace-column {
+        display: block;
+        padding: 0;
+        margin: 0;
       }
       .asset-preview {
         min-height: 520px;
@@ -981,6 +1059,17 @@
                     <div class="ligand-editor-card" id="ligand-editor">
                       <strong>选中配体</strong>
                       <small>在下方 PDB 组分里点“编辑”后，可单独聚焦、隐藏或用作口袋。</small>
+                      <div class="selection-mode-grid" id="protein-pick-modes">
+                        <button class="secondary active" data-pick-mode="component" type="button">组分</button>
+                        <button class="secondary" data-pick-mode="atom" type="button">原子</button>
+                        <button class="secondary" data-pick-mode="residue" type="button">残基</button>
+                        <button class="secondary" data-pick-mode="chain" type="button">链</button>
+                        <button class="secondary" data-pick-mode="pocket" type="button">口袋</button>
+                      </div>
+                      <div class="selection-detail" id="protein-selection-detail">
+                        <strong>点击选择</strong>
+                        <span>在 3D 视图中单击原子、残基或配体；点到配体会自动进入编辑状态。</span>
+                      </div>
                       <button class="secondary" id="focus-selected-ligand" type="button">聚焦配体</button>
                       <button class="secondary" id="hide-selected-ligand" type="button">隐藏配体</button>
                       <button class="secondary" id="restore-hidden-ligands" type="button">恢复隐藏</button>
@@ -1257,6 +1346,10 @@
       let proteinComponents = [];
       let activePocket = null;
       let editingLigand = null;
+      let selectedProteinAtom = null;
+      let selectedProteinResidue = null;
+      let selectedProteinChain = null;
+      let proteinPickMode = "component";
       let hiddenComponentKeys = new Set();
       let proteinFocusMode = false;
       let proteinViewer = null;
@@ -1528,20 +1621,177 @@
           resi: Number(component.resi),
         };
       }
+      function atomSelector(atom) {
+        if (!atom) return {};
+        if (atom.serial != null) return { serial: atom.serial };
+        return {
+          resn: atom.resn,
+          chain: atom.chain || "",
+          resi: Number(atom.resi),
+          atom: atom.atom,
+        };
+      }
+      function residueSelector(atom) {
+        if (!atom) return {};
+        return {
+          resn: atom.resn,
+          chain: atom.chain || "",
+          resi: Number(atom.resi),
+        };
+      }
+      function chainSelector(chain) {
+        return { chain: chain || "" };
+      }
+      function normalizeAtom(atom) {
+        return {
+          serial: atom.serial,
+          atom: atom.atom || atom.atomname || "",
+          elem: atom.elem || "",
+          resn: atom.resn || "",
+          chain: atom.chain || "",
+          resi: atom.resi == null ? "" : String(atom.resi),
+          x: Number(atom.x),
+          y: Number(atom.y),
+          z: Number(atom.z),
+          hetflag: Boolean(atom.hetflag),
+        };
+      }
+      function findComponentForAtom(atom) {
+        if (!atom) return null;
+        const chain = atom.chain || "_";
+        const resi = String(atom.resi || "");
+        return proteinComponents.find((component) => component.resn === atom.resn && component.chain === chain && component.resi === resi) || null;
+      }
+      function updateSelectionDetail() {
+        const target = document.getElementById("protein-selection-detail");
+        if (!target) return;
+        if (!selectedProteinAtom) {
+          target.innerHTML = `
+            <strong>当前模式：${escapeHtml(pickModeLabel(proteinPickMode))}</strong>
+            <span>${escapeHtml(pickModeHint(proteinPickMode))}</span>
+          `;
+          return;
+        }
+        const chainLabel = selectedProteinAtom.chain || "_";
+        const coords = [selectedProteinAtom.x, selectedProteinAtom.y, selectedProteinAtom.z]
+          .map((value) => (Number.isFinite(value) ? value.toFixed(2) : "-"))
+          .join(", ");
+        const component = findComponentForAtom(selectedProteinAtom);
+        target.innerHTML = `
+          <strong>${escapeHtml(pickModeLabel(proteinPickMode))} · ${escapeHtml(component ? component.type : "protein")} · ${escapeHtml(selectedProteinAtom.resn)} ${escapeHtml(chainLabel)}:${escapeHtml(selectedProteinAtom.resi)}</strong>
+          <span>${escapeHtml(selectedProteinAtom.atom || "atom")} · ${escapeHtml(selectedProteinAtom.elem || "-")} · ${coords}</span>
+        `;
+      }
+      function pickModeLabel(mode) {
+        return {
+          atom: "原子",
+          residue: "残基",
+          chain: "链",
+          component: "组分",
+          pocket: "口袋",
+        }[mode] || "组分";
+      }
+      function pickModeHint(mode) {
+        return {
+          atom: "单击任意原子，只高亮该原子，用于检查编号、元素和坐标。",
+          residue: "单击残基内任意原子，整残基 stick 高亮，用于局部保留/删除和口袋边界判断。",
+          chain: "单击任意原子，整条链高亮，用于多链蛋白选择和清理。",
+          component: "单击配体、辅因子、金属等 HETATM 组分，整组分高亮；配体会进入编辑状态。",
+          pocket: "单击配体或残基，以该对象中心生成对接口袋参数。",
+        }[mode] || "单击结构选择对象。";
+      }
+      function updatePickModeButtons() {
+        document.querySelectorAll("[data-pick-mode]").forEach((node) => {
+          node.classList.toggle("active", node.dataset.pickMode === proteinPickMode);
+        });
+        updateSelectionDetail();
+      }
+      function setProteinPickMode(mode) {
+        proteinPickMode = mode || "component";
+        selectedProteinAtom = null;
+        selectedProteinResidue = null;
+        selectedProteinChain = null;
+        updatePickModeButtons();
+        applyProteinView(false);
+      }
       function updateLigandEditor() {
         const target = document.getElementById("ligand-editor");
+        updateSelectionDetail();
         if (!editingLigand) {
           target.querySelector("strong").textContent = "选中配体";
-          target.querySelector("small").textContent = "在下方 PDB 组分里点“编辑”后，可单独聚焦、隐藏或用作口袋。";
+          target.querySelector("small").textContent = "在 PDB 组分里点“编辑”，或直接在 3D 视图里单击配体。";
           return;
         }
         target.querySelector("strong").textContent = `${editingLigand.resn} · ${editingLigand.chain}:${editingLigand.resi}`;
         target.querySelector("small").textContent = `atoms ${editingLigand.atomCount} · center ${editingLigand.center.map((value) => value.toFixed(2)).join(", ")} · box ${editingLigand.boxSize.join(", ")} Å`;
       }
+      function handleProteinAtomClick(atom) {
+        if (!atom) return;
+        selectedProteinAtom = normalizeAtom(atom);
+        selectedProteinResidue = proteinPickMode === "residue" ? selectedProteinAtom : null;
+        selectedProteinChain = proteinPickMode === "chain" ? selectedProteinAtom.chain || "" : null;
+        const component = findComponentForAtom(selectedProteinAtom);
+        if (proteinPickMode === "component") {
+          selectedProteinResidue = null;
+          selectedProteinChain = null;
+          if (component && component.type === "ligand") {
+            editingLigand = component;
+            proteinViewState.ligand = true;
+            setStatus(`已选择配体 ${component.reference}，可聚焦、隐藏或用作口袋`, "success");
+          } else if (component) {
+            setStatus(`已选择 ${component.type} ${component.reference}`, "success");
+          } else {
+            selectedProteinResidue = selectedProteinAtom;
+            setStatus(`当前是组分模式；点到的是蛋白残基 ${selectedProteinAtom.resn} ${selectedProteinAtom.chain || "_"}:${selectedProteinAtom.resi}`, "success");
+          }
+        } else if (proteinPickMode === "pocket") {
+          selectedProteinResidue = component ? null : selectedProteinAtom;
+          selectedProteinChain = null;
+          if (component && component.type === "ligand") {
+            editingLigand = component;
+            useComponentAsPocket(component.key);
+            return;
+          }
+          const residuePocket = {
+            key: `residue-pocket|${selectedProteinAtom.chain || "_"}|${selectedProteinAtom.resi}`,
+            resn: selectedProteinAtom.resn,
+            chain: selectedProteinAtom.chain || "_",
+            resi: selectedProteinAtom.resi,
+            atomCount: 1,
+            center: [selectedProteinAtom.x, selectedProteinAtom.y, selectedProteinAtom.z],
+            boxSize: [18, 18, 18],
+            reference: `${selectedProteinAtom.resn} ${selectedProteinAtom.chain || "_"}:${selectedProteinAtom.resi}`,
+            type: "residue",
+          };
+          activePocket = residuePocket;
+          document.getElementById("protein-pocket-ligand").value = residuePocket.reference;
+          document.getElementById("protein-pocket-center").value = residuePocket.center.map((value) => value.toFixed(2)).join(",");
+          document.getElementById("protein-pocket-size").value = residuePocket.boxSize.join(",");
+          document.getElementById("docking-pocket").value = `${residuePocket.reference}; center ${residuePocket.center.map((value) => value.toFixed(2)).join(",")}; box 18,18,18 Å`;
+          proteinViewState.pocket = true;
+          renderPocketSummary();
+          setStatus(`已用残基 ${residuePocket.reference} 生成口袋中心`, "success");
+        } else if (proteinPickMode === "residue") {
+          setStatus(`已选择残基 ${selectedProteinAtom.resn} ${selectedProteinAtom.chain || "_"}:${selectedProteinAtom.resi}`, "success");
+        } else if (proteinPickMode === "chain") {
+          setStatus(`已选择链 ${selectedProteinChain || "_"}`, "success");
+        } else {
+          selectedProteinResidue = null;
+          selectedProteinChain = null;
+          setStatus(`已选择原子 ${selectedProteinAtom.atom || "atom"} · ${selectedProteinAtom.resn} ${selectedProteinAtom.chain || "_"}:${selectedProteinAtom.resi}`, "success");
+        }
+        updateLigandEditor();
+        renderProteinComponents();
+        applyProteinView(false);
+      }
+      function enableProteinClicks(viewer) {
+        viewer.setClickable({}, true, (atom) => handleProteinAtomClick(atom));
+      }
       function editProteinLigand(componentKey) {
         const component = proteinComponents.find((item) => item.key === componentKey);
         if (!component) return;
         editingLigand = component;
+        selectedProteinAtom = null;
         proteinViewState.ligand = true;
         updateLigandEditor();
         renderProteinComponents();
@@ -1645,6 +1895,19 @@
           if (editingLigand && !hiddenComponentKeys.has(editingLigand.key)) {
             viewer.setStyle(componentSelection(editingLigand), { stick: { color: "#e24646", radius: 0.32 } });
           }
+          if (selectedProteinAtom) {
+            const selectedSelector = atomSelector(selectedProteinAtom);
+            const selectedComponent = findComponentForAtom(selectedProteinAtom);
+            if ((proteinPickMode === "component" || proteinPickMode === "pocket") && selectedComponent && !hiddenComponentKeys.has(selectedComponent.key)) {
+              viewer.setStyle(componentSelection(selectedComponent), { stick: { color: "#e24646", radius: 0.32 } });
+            } else if (proteinPickMode === "residue" || selectedProteinResidue) {
+              viewer.setStyle(residueSelector(selectedProteinAtom), { stick: { color: "#ffb703", radius: 0.24 } });
+            } else if (proteinPickMode === "chain" && selectedProteinChain != null) {
+              viewer.setStyle(chainSelector(selectedProteinChain), { cartoon: { color: "#ffb703" }, stick: { color: "#ffb703", radius: 0.14 } });
+            } else if (proteinPickMode === "atom") {
+              viewer.setStyle(selectedSelector, { sphere: { color: "#ffd166", radius: 0.42 } });
+            }
+          }
           if (proteinViewState.waters) {
             viewer.setStyle({ resn: "HOH" }, { sphere: { radius: 0.24, color: "#4da3ff" } });
           } else {
@@ -1673,6 +1936,7 @@
             const hidden = proteinComponents.find((component) => component.key === key);
             if (hidden) viewer.setStyle(componentSelection(hidden), {});
           });
+          enableProteinClicks(viewer);
           if (zoom) viewer.zoomTo();
           viewer.render();
         } catch (error) {
@@ -1693,6 +1957,9 @@
         proteinComponents = parsePdbComponents(activeProteinText);
         activePocket = null;
         editingLigand = null;
+        selectedProteinAtom = null;
+        selectedProteinResidue = null;
+        selectedProteinChain = null;
         hiddenComponentKeys = new Set();
         updateLigandEditor();
         renderProteinComponents();
@@ -2104,6 +2371,9 @@
       document.getElementById("logout").addEventListener("click", logout);
       document.getElementById("refresh-users").addEventListener("click", refreshUsers);
       document.getElementById("toggle-protein-focus").addEventListener("click", toggleProteinFocusMode);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && proteinFocusMode) toggleProteinFocusMode();
+      });
       document.getElementById("focus-selected-ligand").addEventListener("click", () =>
         runAction(() => {
           if (!editingLigand) throw new Error("请先在 PDB 组分里选择一个配体进行编辑");
@@ -2124,6 +2394,9 @@
           proteinViewState[key] = !proteinViewState[key];
           applyProteinView();
         });
+      });
+      document.querySelectorAll("[data-pick-mode]").forEach((node) => {
+        node.addEventListener("click", () => setProteinPickMode(node.dataset.pickMode));
       });
       document.getElementById("create-pocket-asset").addEventListener("click", async () => {
         try {
