@@ -155,6 +155,46 @@
         text-transform: uppercase;
         letter-spacing: 0.08em;
       }
+      .session-chip {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.68);
+        border: 1px solid rgba(255, 255, 255, 0.88);
+        box-shadow:
+          0 12px 28px rgba(47, 65, 90, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      }
+      .session-user {
+        display: flex;
+        flex-direction: column;
+        padding: 2px 8px 2px 12px;
+      }
+      .session-user span {
+        color: #657184;
+        font-size: 11px;
+        line-height: 1.1;
+        font-weight: 700;
+      }
+      .session-user strong {
+        color: #172033;
+        font-size: 13px;
+        line-height: 1.25;
+      }
+      button.logout-button {
+        width: auto;
+        min-height: 34px;
+        margin: 0;
+        padding: 7px 12px;
+        border-radius: 999px;
+        border-color: rgba(170, 183, 201, 0.72);
+        background: rgba(255, 255, 255, 0.76);
+        color: #172033;
+        font-size: 12px;
+        box-shadow: none;
+      }
       section {
         background: rgba(255, 255, 255, 0.74);
         border: 1px solid rgba(255, 255, 255, 0.82);
@@ -330,11 +370,12 @@
   <body>
     <header>
       <h1>Boltz Workbench</h1>
-      <div id="session-chip" class="hidden">
-        <label>
-          User
-          <input id="user-id" value="admin" readonly />
-        </label>
+      <div id="session-chip" class="session-chip hidden">
+        <div class="session-user">
+          <span>当前用户</span>
+          <strong id="user-id">admin</strong>
+        </div>
+        <button class="logout-button" id="logout" type="button">退出</button>
       </div>
     </header>
     <main id="login-screen" class="login-shell">
@@ -542,7 +583,7 @@
       async function enterApp(userId, admin) {
         isAdmin = admin;
         localStorage.setItem("boltz_is_admin", String(admin));
-        document.getElementById("user-id").value = userId;
+        document.getElementById("user-id").textContent = userId;
         document.getElementById("session-chip").classList.remove("hidden");
         document.getElementById("login-screen").classList.add("hidden");
         document.getElementById("app-screen").classList.remove("hidden");
@@ -550,6 +591,22 @@
         await refreshProjects();
         await refresh();
         await refreshUsers();
+      }
+      function logout() {
+        token = "";
+        isAdmin = false;
+        selectedAssetId = null;
+        currentProjectId = null;
+        localStorage.removeItem("boltz_token");
+        localStorage.removeItem("boltz_user_id");
+        localStorage.removeItem("boltz_is_admin");
+        document.getElementById("session-chip").classList.add("hidden");
+        document.getElementById("app-screen").classList.add("hidden");
+        document.getElementById("admin-panel").classList.add("hidden");
+        document.getElementById("login-password").value = "";
+        document.getElementById("login-screen").classList.remove("hidden");
+        setStatus("");
+        setLoginStatus("已退出当前账户");
       }
       document.getElementById("project-id").addEventListener("change", async (event) => {
         currentProjectId = event.target.value;
@@ -583,6 +640,7 @@
           token = result.access_token;
           localStorage.setItem("boltz_token", token);
           localStorage.setItem("boltz_user_id", result.user_id);
+          document.getElementById("login-password").value = "";
           await enterApp(result.user_id, result.is_admin);
         } catch (error) {
           setLoginStatus(error.message);
@@ -603,6 +661,7 @@
           setLoginStatus(error.message);
         }
       });
+      document.getElementById("logout").addEventListener("click", logout);
       document.getElementById("refresh-users").addEventListener("click", refreshUsers);
       document.getElementById("fetch-pdb").addEventListener("click", async () => {
         try {
@@ -675,11 +734,7 @@
       });
       if (token) {
         enterApp(localStorage.getItem("boltz_user_id") || "admin", isAdmin).catch(() => {
-          token = "";
-          localStorage.removeItem("boltz_token");
-          document.getElementById("session-chip").classList.add("hidden");
-          document.getElementById("login-screen").classList.remove("hidden");
-          document.getElementById("app-screen").classList.add("hidden");
+          logout();
         });
       }
     </script>
