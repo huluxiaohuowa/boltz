@@ -1591,6 +1591,7 @@
       let selectedProteinId = "";
       let selectedLigandId = "";
       let currentAssets = [];
+      let currentJobs = [];
       let currentProjectId = null;
       let activeProteinAsset = null;
       let activeProteinText = "";
@@ -1606,6 +1607,7 @@
       let hiddenChainIds = new Set();
       let proteinFocusMode = false;
       let proteinViewer = null;
+      let jobPollTimer = null;
       const routePages = new Set(["project", "protein", "ligand", "docking", "fep", "sar", "admin"]);
       const workbenchStateKey = "boltz_workbench_state";
       const proteinViewState = {
@@ -1734,6 +1736,9 @@
       }
       function emptyList(label) {
         return `<div class="item"><small>${label}</small></div>`;
+      }
+      function compactId(value) {
+        return String(value || "").slice(0, 8);
       }
       function escapeHtml(value) {
         return String(value)
@@ -2774,6 +2779,7 @@
                   <small>${escapeHtml(asset.kind)} · ${escapeHtml(asset.source_type)}<br />${escapeHtml(asset.id)}</small>
                   <div class="item-actions">
                     <button class="secondary" data-preview-asset="${asset.id}" type="button">预览</button>
+                    <button class="secondary" data-copy-asset="${asset.id}" type="button">复制到项目</button>
                     ${
                       primaryFile
                         ? `<button class="secondary" data-download-asset="${asset.id}" data-download-file="${primaryFile.id}" data-download-name="${escapeHtml(primaryFile.filename)}" type="button">下载</button>`
@@ -2839,7 +2845,67 @@
             runAction(() => deleteAsset(node.dataset.deleteAsset));
           });
         });
+        document.querySelectorAll("[data-copy-asset]").forEach((node) => {
+          node.addEventListener("click", (event) => {
+            event.stopPropagation();
+            runAction(() => copyAsset(node.dataset.copyAsset));
+          });
+        });
         bindDownloadButtons();
+      }
+      function renderJobList(jobs, targetId, emptyLabel) {
+        const target = document.getElementById(targetId);
+        target.innerHTML = jobs.length
+          ? jobs
+              .map((job) => {
+                const statusText = {
+                  queued: "排队中",
+                  running: "运行中",
+                  completed: "已完成",
+                  failed: "失败",
+                }[job.status] || job.status;
+                const outputButtons = (job.output_asset_ids || [])
+                  .map((assetId) => `<button class="secondary" data-preview-job-output="${assetId}" type="button">查看输出 ${compactId(assetId)}</button>`)
+                  .join("");
+                const outputFiles = job.result?.output_files?.length ? `输出文件：${job.result.output_files.join("，")}` : "";
+                const removed = job.result?.execution_stats
+                  ? `处理记录：删除链记录 ${job.result.execution_stats.removed_chain_records || 0}，删除组分记录 ${job.result.execution_stats.removed_component_records || 0}，删除水 ${job.result.execution_stats.removed_water_records || 0}`
+                  : "";
+                const canCleanup = (job.output_asset_ids || []).length > 0;
+                const canRetry = job.status === "failed" && job.job_type === "preparation";
+                return `
+                  <div class="item">
+                    <strong>${escapeHtml(job.job_type)} · ${escapeHtml(statusText)}</strong>
+                    <small>
+                      任务 ${escapeHtml(compactId(job.id))}<br />
+                      输入 ${escapeHtml((job.input_asset_ids || []).map(compactId).join("，") || "无")}<br />
+                      输出 ${escapeHtml((job.output_asset_ids || []).map(compactId).join("，") || "无")}
+                      ${outputFiles ? `<br />${escapeHtml(outputFiles)}` : ""}
+                      ${removed ? `<br />${escapeHtml(removed)}` : ""}
+                      ${job.error ? `<br />错误：${escapeHtml(job.error)}` : ""}
+                    </small>
+                    <div class="item-actions">
+                      ${outputButtons}
+                      <button class="secondary" data-job-events="${job.id}" type="button">查看进度</button>
+                      ${canRetry ? `<button class="secondary" data-retry-job="${job.id}" type="button">继续/重跑</button>` : ""}
+                      ${canCleanup ? `<button class="secondary danger" data-cleanup-job="${job.id}" type="button">删除中间/输出文件</button>` : ""}
+                    </div>
+                  </div>`;
+              })
+              .join("")
+          : emptyList(emptyLabel);
+        target.querySelectorAll("[data-preview-job-output]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => previewAsset(node.dataset.previewJobOutput)));
+        });
+        target.querySelectorAll("[data-job-events]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => showJobEvents(node.dataset.jobEvents)));
+        });
+        target.querySelectorAll("[data-retry-job]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => retryJob(node.dataset.retryJob)));
+        });
+        target.querySelectorAll("[data-cleanup-job]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => cleanupJob(node.dataset.cleanupJob)));
+        });
       }
       function renderPreview(asset, targetId) {
         const files = asset.files.length
@@ -2930,6 +2996,25 @@
         setStatus("资产已重命名", "success");
         await refresh();
       }
+      async function copyAsset(assetId) {
+        const asset = currentAssets.find((item) => item.id === assetId) || (await api(`/api/v1/assets/${assetId}`));
+        const projects = Array.from(document.getElementById("project-id").options).map((option) => ({
+          id: option.value,
+          name: option.textContent,
+        }));
+        const projectText = projects.map((project) => `${project.name}：${project.id}`).join("\n");
+        const targetProjectId = window.prompt(`输入目标项目 ID：\n${projectText}`, currentProjectId || "");
+        if (!targetProjectId) return;
+        const name = window.prompt("复制后的资产名称", `${asset.name} copy`);
+        if (!name || !name.trim()) return;
+        const copied = await api(`/api/v1/assets/${assetId}/copy`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project_id: targetProjectId.trim(), name: name.trim() }),
+        });
+        setStatus(`资产已复制到目标项目：${copied.name}`, "success");
+        await refresh();
+      }
       async function deleteAsset(assetId) {
         const asset = currentAssets.find((item) => item.id === assetId);
         const label = asset ? asset.name : assetId;
@@ -2941,6 +3026,34 @@
         if (document.getElementById("docking-pocket-asset").value === assetId) setSelectedPocket("");
         document.getElementById("docking-ligand-asset").value = selectedLigandId;
         setStatus("资产已删除", "success");
+        await refresh();
+      }
+      async function showJobEvents(jobId) {
+        const events = await api(`/api/v1/jobs/${jobId}/events`);
+        const text = events.length
+          ? events
+              .map((event) => {
+                const payload = event.payload || {};
+                const message = payload.message || payload.error || payload.output_files?.join("，") || "";
+                return `${event.status || event.event || "event"}${message ? `：${message}` : ""}`;
+              })
+              .join("；")
+          : "这个任务还没有进度事件";
+        setStatus(`任务 ${compactId(jobId)} 进度：${text}`, events.some((event) => event.event === "failed") ? "error" : "success");
+      }
+      async function cleanupJob(jobId) {
+        if (!window.confirm("确认删除这个任务生成的中间/输出资产和文件？任务记录会保留。")) return;
+        await api(`/api/v1/jobs/${jobId}/cleanup`, { method: "POST" });
+        setStatus("任务输出文件已清理", "success");
+        await refresh();
+      }
+      async function retryJob(jobId) {
+        await api(`/api/v1/jobs/${jobId}/retry`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cleanup_outputs: true }),
+        });
+        setStatus("任务已重新执行", "success");
         await refresh();
       }
       async function deleteCurrentProject() {
@@ -2976,6 +3089,7 @@
         const suffix = currentProjectId ? `?project_id=${encodeURIComponent(currentProjectId)}` : "";
         const [assets, jobs] = await Promise.all([api(`/api/v1/assets${suffix}`), api(`/api/v1/jobs${suffix}`)]);
         currentAssets = assets;
+        currentJobs = jobs;
         renderAssetList(assets, "assets", "当前项目还没有资产");
         renderAssetList(
           assets.filter((asset) => isProteinLike(asset)),
@@ -2998,29 +3112,11 @@
           "还没有配体资产",
         );
         bindAssetSelection();
-        document.getElementById("jobs").innerHTML = jobs
-          .map(
-            (job) => `
-            <div class="item">
-              <strong>${job.job_type}</strong>
-              <small>${job.status}<br />${job.id}</small>
-            </div>`,
-          )
-          .join("");
+        renderJobList(jobs, "jobs", "当前项目还没有任务");
         const dockingJobs = jobs.filter((job) =>
           ["structure_prediction", "affinity_prediction", "batch_screening"].includes(job.job_type),
         );
-        document.getElementById("docking-jobs").innerHTML = dockingJobs.length
-          ? dockingJobs
-              .map(
-                (job) => `
-                <div class="item">
-                  <strong>${job.job_type}</strong>
-                  <small>${job.status}<br />${job.id}</small>
-                </div>`,
-              )
-              .join("")
-          : emptyList("当前项目还没有对接任务");
+        renderJobList(dockingJobs, "docking-jobs", "当前项目还没有对接任务");
       }
       async function refreshProjects() {
         const projects = await api("/api/v1/projects");
@@ -3032,6 +3128,18 @@
           .map((project) => `<option value="${project.id}">${project.name}</option>`)
           .join("");
         document.getElementById("project-id").value = currentProjectId || "";
+      }
+      function startJobPolling() {
+        if (jobPollTimer) return;
+        jobPollTimer = window.setInterval(() => {
+          if (!token || !currentProjectId) return;
+          refresh().catch(() => {});
+        }, 3000);
+      }
+      function stopJobPolling() {
+        if (!jobPollTimer) return;
+        window.clearInterval(jobPollTimer);
+        jobPollTimer = null;
       }
       async function restoreWorkbenchView() {
         const state = readWorkbenchState();
@@ -3095,8 +3203,10 @@
         await refresh();
         await restoreWorkbenchView();
         await refreshUsers();
+        startJobPolling();
       }
       function logout() {
+        stopJobPolling();
         token = "";
         isAdmin = false;
         selectedAssetId = null;

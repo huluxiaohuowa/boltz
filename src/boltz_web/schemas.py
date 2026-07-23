@@ -42,6 +42,11 @@ class AssetUpdateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
 
 
+class AssetCopyRequest(BaseModel):
+    project_id: str
+    name: str | None = None
+
+
 class JobOut(BaseModel):
     id: str
     project_id: str
@@ -96,3 +101,7 @@ class JobCreateRequest(BaseModel):
     input_asset_ids: list[str] = Field(min_length=1)
     project_id: str | None = None
     options: dict[str, Any] = Field(default_factory=dict)
+
+
+class JobRetryRequest(BaseModel):
+    cleanup_outputs: bool = True

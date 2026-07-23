@@ -216,6 +216,25 @@ Terminology used by the workbench:
 - File: concrete stored file under an asset or task output, such as PDB, SDF,
   CSV, logs, or reports.
 
+The workbench now treats protein preparation as a traceable task rather than a
+silent file copy:
+
+- Clicking protein preparation creates a `preparation` task, emits Redis-backed
+  progress events, runs the current text-level PDB cleanup executor, and writes
+  a `prepared_protein` output asset.
+- The built-in executor supports chain deletion, HETATM component deletion, and
+  water removal. It records add-hydrogen, protonation, missing-atom repair, and
+  alternate-location cleanup requests as unsupported worker operations instead
+  of pretending chemistry preparation has been completed.
+- Task cards show status, input assets, output assets, output filenames,
+  cleanup statistics, and progress events. The browser polls the current project
+  task list while the user is logged in.
+- Failed preparation tasks can be retried from the task card. Tasks with output
+  assets can delete generated intermediate/output assets and files while keeping
+  the task record.
+- Output assets can be previewed, renamed, downloaded, deleted, used by later
+  workflow modules, or copied into another project with a new name.
+
 ## VOS Packaging
 
 The VOS package scaffold lives in `ictrek.app/`, but VOS integration is deferred.

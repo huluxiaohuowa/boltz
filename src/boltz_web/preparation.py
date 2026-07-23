@@ -92,6 +92,77 @@ def protein_prepare_metadata(options: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _component_key_from_line(line: str) -> str:
+    resn = line[17:20].strip()
+    chain = line[21:22].strip() or "_"
+    resi = line[22:26].strip()
+    icode = line[26:27].strip()
+    return f"{resn}|{chain}|{resi}|{icode}"
+
+
+def prepare_pdb_text(pdb_text: str, options: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    """Apply safe text-level PDB cleanup operations.
+
+    This intentionally does not pretend to perform chemical preparation steps
+    such as protonation, atom rebuilding, or hydrogen placement. Those require
+    dedicated chemistry tools and are reported as pending worker operations.
+    """
+
+    delete_chains = set((options.get("chain_cleanup") or {}).get("delete_chains") or [])
+    delete_components = {
+        item.get("key")
+        for item in (options.get("component_cleanup") or {}).get("delete_components") or []
+        if item.get("key")
+    }
+    remove_waters = bool(options.get("remove_waters", True))
+    water_names = {"HOH", "WAT", "H2O", "DOD"}
+
+    output_lines: list[str] = []
+    stats = {
+        "input_lines": 0,
+        "output_lines": 0,
+        "removed_chains": sorted(delete_chains),
+        "removed_component_keys": sorted(delete_components),
+        "removed_chain_records": 0,
+        "removed_component_records": 0,
+        "removed_water_records": 0,
+        "unsupported_operations": [],
+    }
+
+    for line in pdb_text.splitlines():
+        stats["input_lines"] += 1
+        record = line[:6]
+        is_atom_record = record in {"ATOM  ", "HETATM"}
+        if is_atom_record:
+            chain = line[21:22].strip() or "_"
+            if chain in delete_chains:
+                stats["removed_chain_records"] += 1
+                continue
+            if record == "HETATM":
+                component_key = _component_key_from_line(line)
+                if component_key in delete_components:
+                    stats["removed_component_records"] += 1
+                    continue
+                if remove_waters and line[17:20].strip() in water_names:
+                    stats["removed_water_records"] += 1
+                    continue
+        output_lines.append(line)
+
+    requested_but_not_text_level = {
+        "add_hydrogens": "requires Reduce/OpenBabel/PDBFixer worker",
+        "assign_protonation": "requires PropKa/PDB2PQR-style worker",
+        "repair_missing_atoms": "requires PDBFixer/Modeller worker",
+        "remove_altloc": "requires conformer-aware PDB parser worker",
+    }
+    for key, reason in requested_but_not_text_level.items():
+        if options.get(key):
+            stats["unsupported_operations"].append({"operation": key, "reason": reason})
+
+    stats["output_lines"] = len(output_lines)
+    prepared = "\n".join(output_lines).rstrip() + "\n"
+    return prepared, stats
+
+
 def ligand_prepare_metadata(options: dict[str, Any]) -> dict[str, Any]:
     return {
         "operation": "ligand_preparation",
