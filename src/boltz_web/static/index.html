@@ -623,6 +623,7 @@
             <button class="nav-button" data-nav="ligand" type="button">配体处理</button>
             <button class="nav-button" data-nav="docking" type="button">对接任务</button>
             <button class="nav-button" data-nav="fep" type="button">FEP / 分析</button>
+            <button class="nav-button" data-nav="sar" type="button">SAR / 构效关系</button>
             <button class="nav-button hidden" data-nav="admin" id="admin-nav" type="button">管理</button>
           </div>
         </section>
@@ -796,6 +797,53 @@
                 <li>ΔΔG / ΔG 表格与误差展示</li>
                 <li>结构、轨迹和相互作用对比</li>
                 <li>可下载报告和可复用输出资产</li>
+              </ul>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" data-page="sar">
+          <section class="page-hero">
+            <h2>SAR / 构效关系</h2>
+            <p class="muted">面向药化决策的化合物系列分析入口，用实验活性、配体结构、对接结果和 FEP 结果建立可解释的趋势视图。</p>
+          </section>
+          <div class="page-grid preview-grid">
+            <section>
+              <h2>数据导入</h2>
+              <label>
+                上传活性表
+                <input id="sar-table-file" type="file" disabled />
+              </label>
+              <div class="field-row">
+                <label>
+                  SMILES 列
+                  <input placeholder="例如 smiles" disabled />
+                </label>
+                <label>
+                  活性列
+                  <input placeholder="例如 IC50 / pIC50 / Ki" disabled />
+                </label>
+              </div>
+              <button class="secondary" type="button" disabled>等待 SAR worker 接入</button>
+              <p class="muted">第一版先作为独立工作流入口；后续会把表格转为 SAR 数据资产，并支持与项目内配体、对接和 FEP 结果合并。</p>
+            </section>
+            <section>
+              <h2>分析视图预留</h2>
+              <ul class="step-list">
+                <li>分子表格：SMILES、活性、选择性、ADMET 和计算结果字段。</li>
+                <li>Scaffold / R-group 分组：按骨架和取代基观察趋势。</li>
+                <li>活性分布：pIC50、Ki、Kd、EC50 等字段的排序和分布图。</li>
+                <li>Matched Molecular Pair：定位小结构变化带来的活性变化。</li>
+                <li>下一轮设计：基于 SAR 趋势生成待合成/待计算候选。</li>
+              </ul>
+            </section>
+            <section class="span-all">
+              <h2>输入和输出关系</h2>
+              <p class="muted">SAR 页面不会替代配体准备、对接或 FEP。它是项目决策层：读取这些模块产生的资产和实验表格，输出可解释的构效关系分析资产、筛选结果和报告。</p>
+              <ul class="step-list">
+                <li>输入：配体资产、活性表、对接打分、FEP 结果、ADMET 字段。</li>
+                <li>处理：标准化字段、按系列分组、计算相似性/MCS/MMPA、合并计算结果。</li>
+                <li>输出：SAR 分析资产、分组表格、趋势图、候选设计列表和报告文件。</li>
               </ul>
             </section>
           </div>

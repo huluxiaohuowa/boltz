@@ -116,6 +116,9 @@ The standalone workbench is organized by workflow module:
 - Ligand: SMILES-to-SDF, ligand upload, and ligand preparation placeholders.
 - Docking: protein/ligand asset selection and placeholder docking jobs.
 - FEP / Analysis: reserved entry for future FEP and downstream analysis jobs.
+- SAR / Structure-activity relationship: reserved entry for compound-series
+  decision analysis using ligand assets, activity tables, docking results, FEP
+  results, and ADMET fields.
 - Admin: user approval and future service/worker status, visible to admins.
 
 Terminology used by the workbench:
@@ -123,7 +126,7 @@ Terminology used by the workbench:
 - User: login account and isolation boundary.
 - Project: a user-owned workspace for one target, study, or compound series.
 - Asset: reusable data object inside a project, such as a protein, ligand,
-  complex, docking result, or FEP result.
+  complex, docking result, FEP result, or SAR analysis.
 - Task: computation over one or more assets. Task outputs should become new
   assets so later tasks can reuse them.
 - File: concrete stored file under an asset or task output, such as PDB, SDF,
