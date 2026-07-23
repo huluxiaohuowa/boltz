@@ -76,6 +76,9 @@
           0 18px 45px rgba(42, 58, 80, 0.08),
           inset 0 1px 0 rgba(255, 255, 255, 0.9);
       }
+      .app-shell > .side-nav {
+        align-self: start;
+      }
       .side-nav > section {
         padding: 0;
         border: 0;
@@ -101,7 +104,7 @@
       .nav-list {
         display: flex;
         gap: 8px;
-        height: 100%;
+        min-height: 48px;
         align-items: center;
         overflow-x: auto;
       }
@@ -639,6 +642,32 @@
         background: rgba(47, 112, 223, 0.12);
         color: #153b82;
       }
+      .pocket-editor-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .pocket-editor-grid label {
+        display: grid;
+        gap: 3px;
+        font-size: 11px;
+        color: #64748b;
+      }
+      .pocket-editor-grid input {
+        min-height: 34px;
+        padding: 6px 7px;
+        font-size: 12px;
+      }
+      .pocket-action-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .pocket-action-row button {
+        min-height: 34px;
+        padding: 6px 8px;
+        font-size: 12px;
+      }
       .protein-canvas canvas {
         display: block;
         cursor: crosshair;
@@ -735,28 +764,33 @@
         box-shadow: 0 38px 110px rgba(19, 34, 56, 0.32);
       }
       .viewer-expanded .workspace-header {
-        min-height: 58px;
-        margin-bottom: 10px;
+        height: 0;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
       }
       .viewer-expanded .workspace-header h2 {
         font-size: 20px;
+      }
+      .viewer-expanded .workspace-header > div {
+        display: none;
       }
       .viewer-expanded .workspace-header .muted {
         display: none;
       }
       .viewer-expanded #toggle-protein-focus {
         position: fixed;
-        top: 18px;
-        left: 18px;
-        z-index: 1003;
+        left: 22px;
+        bottom: 22px;
+        z-index: 2147483000;
         width: auto;
-        min-height: 42px;
+        min-height: 48px;
         margin: 0;
-        padding: 9px 16px;
+        padding: 11px 18px;
         border-color: rgba(47, 112, 223, 0.45);
         background: rgba(47, 112, 223, 0.94);
         color: #fff;
-        box-shadow: 0 16px 36px rgba(47, 112, 223, 0.26);
+        box-shadow: 0 18px 42px rgba(47, 112, 223, 0.34);
       }
       #toggle-protein-focus {
         display: inline-flex;
@@ -769,12 +803,9 @@
         height: 16px;
         flex: 0 0 auto;
       }
-      .viewer-expanded .workspace-header > div {
-        padding-left: 148px;
-      }
       .viewer-expanded .protein-editor-shell {
         grid-template-columns: minmax(0, 1fr) 188px;
-        height: calc(100vh - 98px);
+        height: calc(100vh - 28px);
       }
       .viewer-expanded .protein-canvas {
         height: 100%;
@@ -789,7 +820,7 @@
         position: absolute;
         left: 22px;
         right: 220px;
-        bottom: 18px;
+        bottom: 82px;
         margin: 0;
         pointer-events: none;
       }
@@ -1385,6 +1416,8 @@
       let hiddenComponentKeys = new Set();
       let proteinFocusMode = false;
       let proteinViewer = null;
+      const routePages = new Set(["project", "protein", "ligand", "docking", "fep", "sar", "admin"]);
+      const workbenchStateKey = "boltz_workbench_state";
       const proteinViewState = {
         cartoon: true,
         surface: false,
@@ -1450,13 +1483,64 @@
         }
         return response.json();
       }
-      function showPage(pageName) {
+      function currentRoutePage() {
+        const route = window.location.hash.replace(/^#\/?/, "").split(/[/?]/)[0];
+        return routePages.has(route) ? route : null;
+      }
+      function serializePocket(pocket) {
+        if (!pocket) return null;
+        return {
+          key: pocket.key,
+          resn: pocket.resn,
+          chain: pocket.chain,
+          resi: pocket.resi,
+          icode: pocket.icode,
+          atomCount: pocket.atomCount,
+          center: pocket.center,
+          boxSize: pocket.boxSize,
+          reference: pocket.reference,
+          type: pocket.type,
+          elementCounts: pocket.elementCounts,
+        };
+      }
+      function readWorkbenchState() {
+        try {
+          return JSON.parse(localStorage.getItem(workbenchStateKey) || "{}");
+        } catch {
+          return {};
+        }
+      }
+      function saveWorkbenchState(extra = {}) {
+        const currentPage = document.querySelector("[data-page].active")?.dataset.page || currentRoutePage() || "project";
+        localStorage.setItem(
+          workbenchStateKey,
+          JSON.stringify({
+            page: currentPage,
+            projectId: currentProjectId,
+            selectedProteinId,
+            selectedLigandId,
+            activePocket: serializePocket(activePocket),
+            ...extra,
+          }),
+        );
+      }
+      function writeRoute(pageName, replace = false) {
+        const next = `#/${pageName}`;
+        if (window.location.hash === next) return;
+        if (replace) history.replaceState(null, "", next);
+        else history.pushState(null, "", next);
+      }
+      function showPage(pageName, options = {}) {
+        if (!routePages.has(pageName)) pageName = "project";
+        if (pageName === "admin" && !isAdmin) pageName = "project";
         document.querySelectorAll("[data-page]").forEach((node) => {
           node.classList.toggle("active", node.dataset.page === pageName);
         });
         document.querySelectorAll("[data-nav]").forEach((node) => {
           node.classList.toggle("active", node.dataset.nav === pageName);
         });
+        if (options.updateRoute !== false) writeRoute(pageName, Boolean(options.replaceRoute));
+        saveWorkbenchState({ page: pageName });
       }
       function emptyList(label) {
         return `<div class="item"><small>${label}</small></div>`;
@@ -1484,10 +1568,12 @@
         document.getElementById("protein-viewer-selection").textContent = selectedProteinId
           ? `当前蛋白资产：${selectedProteinId}`
           : "当前没有选中的蛋白资产";
+        saveWorkbenchState();
       }
       function setSelectedPocket(pocketId, pocketText = "") {
         document.getElementById("docking-pocket-asset").value = pocketId || "";
         if (pocketText) document.getElementById("docking-pocket").value = pocketText;
+        saveWorkbenchState();
       }
       function setProteinPlaceholder(title, body) {
         document.getElementById("protein-viewer-placeholder").innerHTML = `
@@ -1661,7 +1747,33 @@
         target.innerHTML = `
           <strong>口袋 · ${escapeHtml(activePocket.reference)}</strong>
           <span>center ${activePocket.center.map((value) => value.toFixed(2)).join(", ")}<br />box ${activePocket.boxSize.join(", ")} Å</span>
+          <div class="pocket-editor-grid">
+            ${["X", "Y", "Z"]
+              .map(
+                (axis, index) => `
+                  <label>${axis}
+                    <input data-pocket-center-index="${index}" type="number" step="0.1" value="${Number(activePocket.center[index]).toFixed(2)}" />
+                  </label>`,
+              )
+              .join("")}
+          </div>
+          <div class="pocket-editor-grid">
+            ${["SX", "SY", "SZ"]
+              .map(
+                (axis, index) => `
+                  <label>${axis}
+                    <input data-pocket-size-index="${index}" type="number" min="4" step="1" value="${Number(activePocket.boxSize[index]).toFixed(0)}" />
+                  </label>`,
+              )
+              .join("")}
+          </div>
+          <div class="pocket-action-row">
+            <button class="secondary" id="apply-pocket-edit" type="button">应用口袋</button>
+            <button class="secondary" id="focus-active-pocket" type="button">聚焦口袋</button>
+          </div>
         `;
+        document.getElementById("apply-pocket-edit")?.addEventListener("click", applyPocketEditorValues);
+        document.getElementById("focus-active-pocket")?.addEventListener("click", focusActivePocket);
       }
       function componentSelection(component) {
         return {
@@ -1710,6 +1822,41 @@
         const chain = atom.chain || "_";
         const resi = String(atom.resi || "");
         return proteinComponents.find((component) => component.resn === atom.resn && component.chain === chain && component.resi === resi) || null;
+      }
+      function parsePocketNumbers(selector, fallback) {
+        return [...document.querySelectorAll(selector)].map((node, index) => {
+          const value = Number(node.value);
+          return Number.isFinite(value) ? value : fallback[index];
+        });
+      }
+      function syncPocketFields() {
+        if (!activePocket) return;
+        document.getElementById("protein-pocket-ligand").value = activePocket.reference;
+        document.getElementById("protein-pocket-center").value = activePocket.center.map((value) => Number(value).toFixed(2)).join(",");
+        document.getElementById("protein-pocket-size").value = activePocket.boxSize.join(",");
+        document.getElementById("docking-pocket").value = `${activePocket.reference}; center ${activePocket.center.map((value) => Number(value).toFixed(2)).join(",")}; box ${activePocket.boxSize.join(",")} Å`;
+      }
+      function applyPocketEditorValues() {
+        if (!activePocket) return;
+        activePocket = {
+          ...activePocket,
+          center: parsePocketNumbers("[data-pocket-center-index]", activePocket.center),
+          boxSize: parsePocketNumbers("[data-pocket-size-index]", activePocket.boxSize).map((value) => Math.max(4, Math.round(value))),
+        };
+        proteinViewState.pocket = true;
+        syncPocketFields();
+        renderPocketSummary();
+        applyProteinView(false);
+        saveWorkbenchState();
+        setStatus("口袋参数已更新", "success");
+      }
+      function focusActivePocket() {
+        if (!activePocket) throw new Error("请先定义口袋");
+        const viewer = ensureProteinViewer();
+        if (!viewer) return;
+        applyProteinView(false);
+        viewer.zoomTo(componentSelection(activePocket));
+        viewer.render();
       }
       function updateSelectionDetail() {
         const target = document.getElementById("protein-selection-detail");
@@ -1856,15 +2003,12 @@
         const component = proteinComponents.find((item) => item.key === componentKey);
         if (!component) return;
         activePocket = component;
-        document.getElementById("protein-pocket-ligand").value = component.reference;
-        document.getElementById("protein-pocket-center").value = component.center.map((value) => value.toFixed(2)).join(",");
-        document.getElementById("protein-pocket-size").value = component.boxSize.join(",");
-        const pocketText = `${component.reference}; center ${component.center.map((value) => value.toFixed(2)).join(",")}; box ${component.boxSize.join(",")} Å`;
-        document.getElementById("docking-pocket").value = pocketText;
         proteinViewState.pocket = true;
+        syncPocketFields();
         renderProteinComponents();
         renderPocketSummary();
         applyProteinView();
+        saveWorkbenchState();
         setStatus("已从参考配体生成口袋参数，可创建口袋资产并用于对接", "success");
       }
       function setPocketFromResidueAtom(atom) {
@@ -1880,12 +2024,10 @@
           type: "residue",
         };
         activePocket = residuePocket;
-        document.getElementById("protein-pocket-ligand").value = residuePocket.reference;
-        document.getElementById("protein-pocket-center").value = residuePocket.center.map((value) => value.toFixed(2)).join(",");
-        document.getElementById("protein-pocket-size").value = residuePocket.boxSize.join(",");
-        document.getElementById("docking-pocket").value = `${residuePocket.reference}; center ${residuePocket.center.map((value) => value.toFixed(2)).join(",")}; box 18,18,18 Å`;
         proteinViewState.pocket = true;
+        syncPocketFields();
         renderPocketSummary();
+        saveWorkbenchState();
         setStatus(`已用残基 ${residuePocket.reference} 生成口袋中心`, "success");
       }
       function drawPocketGuide(viewer, pocket) {
@@ -2122,6 +2264,7 @@
             if (isLigandLike(node.dataset.kind)) {
               selectedLigandId = selectedAssetId;
               document.getElementById("docking-ligand-asset").value = selectedLigandId;
+              saveWorkbenchState();
               runAction(() => previewAsset(selectedAssetId));
               return;
             }
@@ -2216,6 +2359,7 @@
           selectedLigandId = asset.id;
           document.getElementById("docking-ligand-asset").value = asset.id;
           renderPreview(asset, "ligand-preview");
+          saveWorkbenchState();
           showPage("ligand");
         } else if (asset.kind === "pocket") {
           const pocketText = `${asset.metadata.reference || asset.name}; center ${(asset.metadata.center || []).join(",")}; box ${(asset.metadata.box_size || []).join(",")} Å`;
@@ -2305,10 +2449,35 @@
       async function refreshProjects() {
         const projects = await api("/api/v1/projects");
         if (!currentProjectId && projects[0]) currentProjectId = projects[0].id;
+        if (currentProjectId && !projects.some((project) => project.id === currentProjectId) && projects[0]) {
+          currentProjectId = projects[0].id;
+        }
         document.getElementById("project-id").innerHTML = projects
           .map((project) => `<option value="${project.id}">${project.name}</option>`)
           .join("");
         document.getElementById("project-id").value = currentProjectId || "";
+      }
+      async function restoreWorkbenchView() {
+        const state = readWorkbenchState();
+        if (state.selectedProteinId) {
+          const protein = currentAssets.find((asset) => asset.id === state.selectedProteinId && isProteinLike(asset));
+          if (protein) {
+            setSelectedProtein(protein.id);
+            await loadProteinViewer(protein);
+          }
+        }
+        if (state.selectedLigandId && currentAssets.some((asset) => asset.id === state.selectedLigandId && isLigandLike(asset))) {
+          selectedLigandId = state.selectedLigandId;
+          document.getElementById("docking-ligand-asset").value = selectedLigandId;
+        }
+        if (state.activePocket && state.selectedProteinId === selectedProteinId) {
+          activePocket = state.activePocket;
+          proteinViewState.pocket = true;
+          syncPocketFields();
+          renderPocketSummary();
+          applyProteinView(false);
+          saveWorkbenchState();
+        }
       }
       async function refreshUsers() {
         if (!isAdmin) return;
@@ -2337,14 +2506,18 @@
       async function enterApp(userId, admin) {
         isAdmin = admin;
         localStorage.setItem("boltz_is_admin", String(admin));
+        const savedState = readWorkbenchState();
+        if (savedState.projectId) currentProjectId = savedState.projectId;
         document.getElementById("user-id").textContent = userId;
         document.getElementById("session-chip").classList.remove("hidden");
         document.getElementById("login-screen").classList.add("hidden");
         document.getElementById("app-screen").classList.remove("hidden");
         document.getElementById("admin-nav").classList.toggle("hidden", !admin);
-        if (!admin && document.querySelector("[data-page='admin']").classList.contains("active")) showPage("project");
+        const targetPage = currentRoutePage() || savedState.page || "project";
+        showPage(!admin && targetPage === "admin" ? "project" : targetPage, { replaceRoute: true });
         await refreshProjects();
         await refresh();
+        await restoreWorkbenchView();
         await refreshUsers();
       }
       function logout() {
@@ -2362,6 +2535,7 @@
         localStorage.removeItem("boltz_token");
         localStorage.removeItem("boltz_user_id");
         localStorage.removeItem("boltz_is_admin");
+        localStorage.removeItem(workbenchStateKey);
         document.getElementById("session-chip").classList.add("hidden");
         document.getElementById("app-screen").classList.add("hidden");
         document.getElementById("admin-nav").classList.add("hidden");
@@ -2435,6 +2609,12 @@
         renderPocketSummary();
         document.getElementById("docking-ligand-asset").value = "";
         setSelectedPocket("");
+        saveWorkbenchState({
+          projectId: currentProjectId,
+          selectedProteinId: "",
+          selectedLigandId: "",
+          activePocket: null,
+        });
         await refresh();
       });
       document.getElementById("create-project").addEventListener("click", async () => {
@@ -2447,6 +2627,7 @@
           currentProjectId = project.id;
           await refreshProjects();
           await refresh();
+          saveWorkbenchState({ projectId: currentProjectId });
         } catch (error) {
           setStatus(error.message, "error");
         }
@@ -2648,6 +2829,10 @@
         } catch (error) {
           setStatus(error.message, "error");
         }
+      });
+      window.addEventListener("hashchange", () => {
+        if (!token) return;
+        showPage(currentRoutePage() || "project", { updateRoute: false });
       });
       setProteinFocusButtonLabel();
       if (token) {

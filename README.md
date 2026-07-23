@@ -144,11 +144,12 @@ The standalone workbench is organized by workflow module:
   highlights only one atom for inspection, residue mode highlights one residue,
   chain mode highlights a whole chain, and pocket mode creates pocket parameters
   from a clicked ligand or residue center. Defined pockets are shown in the 3D
-  viewer as a blue center marker and box guide, and the right rail shows the
-  pocket reference, center, and box size. The protein workspace also has a true
+  viewer as a blue center marker and box guide. The right rail shows the pocket
+  reference, center, and box size, and allows manual adjustment of center and
+  box dimensions before applying the updated guide. The protein workspace also has a true
   focus editor mode that covers the full browser window, hides the page chrome
   and left-side forms, keeps the 3D viewer wide, leaves display/edit actions in
-  a fixed right rail, and exposes a fixed return button in the top-left corner.
+  a fixed right rail, and exposes a fixed return button in the bottom-left corner.
   A selected ligand can be focused, hidden or restored, and used as a pocket
   reference. The UI computes the pocket center and box size, writes those values
   into protein preparation and docking fields, and can persist them as a
@@ -167,6 +168,21 @@ The standalone workbench is organized by workflow module:
   decision analysis using ligand assets, activity tables, docking results, FEP
   results, and ADMET fields.
 - Admin: user approval and future service/worker status, visible to admins.
+
+The standalone workbench uses hash routes for workflow modules so browser
+refresh keeps the current module without requiring backend SPA fallback routes:
+
+- `/#/project`
+- `/#/protein`
+- `/#/ligand`
+- `/#/docking`
+- `/#/fep`
+- `/#/sar`
+- `/#/admin`
+
+The browser also stores the current project, selected protein, selected ligand,
+and temporary pocket parameters in local storage so a refresh can restore the
+active workbench context.
 
 Protein preparation execution is intentionally separated from the FastAPI web
 image. The web image stores user intent and creates traceable assets; production
