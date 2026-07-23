@@ -130,13 +130,34 @@ docker compose --env-file .env.web \
 See [docs/protein-prep-worker.md](docs/protein-prep-worker.md) for the worker
 component stack and platform notes.
 
-BOLTZ user/project/asset files are stored under `BOLTZ_DATA_HOST_DIR` on the
-host and mounted into the web container at `/data`. Set this to a persistent
-SSD path in production, for example:
+BOLTZ user/project/asset files and model cache are stored under
+`BOLTZ_DATA_HOST_DIR` on the host and mounted into the web container at `/data`.
+Set this to a persistent SSD path in production, for example:
 
 ```bash
 BOLTZ_DATA_HOST_DIR=/data/ssd/jhu/boltz-web/data
 ```
+
+The compose file sets `BOLTZ_CACHE=/data/model-cache`, so Boltz model downloads
+also persist under the same host directory:
+
+```text
+/data/ssd/jhu/boltz-web/data/model-cache
+```
+
+Use the ModelScope mirror for Boltz-2 model files instead of re-downloading from
+the original source:
+
+```bash
+pip install modelscope
+modelscope download \
+  --model huluxiaohuowa/boltz-2-mirror \
+  --local_dir /data/ssd/jhu/boltz-web/data/model-cache
+```
+
+Expected mirrored files include `boltz2_conf.ckpt`, `boltz2_aff.ckpt`, and
+`mols.tar`. Keep them in the persistent cache directory so restarting or
+rebuilding the web/model containers does not lose the model.
 
 VOS packaging is intentionally not part of this development path yet.
 

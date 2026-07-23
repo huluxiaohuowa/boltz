@@ -14,6 +14,7 @@ services:
         condition: service_healthy
     environment:
       BOLTZ_DATA_DIR: /data
+      BOLTZ_CACHE: /data/model-cache
       BOLTZ_MODEL_HUB_DIR: /modelhub
       BOLTZ_DATABASE_URL: postgresql+psycopg://boltz:${BOLTZ_POSTGRES_PASSWORD:-boltz}@boltz-postgres:5432/boltz
       BOLTZ_REDIS_URL: redis://boltz-redis:6379/0
