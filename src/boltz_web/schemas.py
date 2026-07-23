@@ -38,6 +38,10 @@ class AssetOut(BaseModel):
     files: list[AssetFileOut]
 
 
+class AssetUpdateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+
+
 class JobOut(BaseModel):
     id: str
     project_id: str

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+import shutil
 from pathlib import Path
 
 import uvicorn
@@ -40,6 +41,7 @@ from boltz_web.redis_events import list_job_events, publish_job_event, redis_cli
 from boltz_web.repository import add_asset_file, asset_to_out, ensure_project, job_to_out, project_to_out
 from boltz_web.schemas import (
     AssetOut,
+    AssetUpdateRequest,
     DrawLigandRequest,
     JobCreateRequest,
     JobOut,
@@ -374,6 +376,41 @@ def get_asset(
     if asset is None or asset.user_id != user_id:
         raise HTTPException(status_code=404, detail="asset not found")
     return asset_to_out(asset)
+
+
+@app.patch("/api/v1/assets/{asset_id}", response_model=AssetOut)
+def update_asset(
+    asset_id: str,
+    request: AssetUpdateRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AssetOut:
+    user_id = current_user.id
+    asset = db.get(Asset, asset_id)
+    if asset is None or asset.user_id != user_id:
+        raise HTTPException(status_code=404, detail="asset not found")
+    asset.name = request.name.strip()
+    db.commit()
+    db.refresh(asset)
+    return asset_to_out(asset)
+
+
+@app.delete("/api/v1/assets/{asset_id}")
+def delete_asset(
+    asset_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    user_id = current_user.id
+    asset = db.get(Asset, asset_id)
+    if asset is None or asset.user_id != user_id:
+        raise HTTPException(status_code=404, detail="asset not found")
+    root = asset_root(settings, user_id, asset.project_id, asset.id)
+    db.delete(asset)
+    db.commit()
+    if root.exists():
+        shutil.rmtree(root)
+    return {"status": "deleted"}
 
 
 @app.get("/api/v1/assets/{asset_id}/files/{file_id}/download")

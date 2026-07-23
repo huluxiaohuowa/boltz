@@ -89,6 +89,14 @@ The stack starts:
 - `boltz-postgres`: Postgres using the PGV image from `PGV_POSTGRES_IMAGE`.
 - `boltz-redis`: Redis for task event streams and status cache.
 
+BOLTZ user/project/asset files are stored under `BOLTZ_DATA_HOST_DIR` on the
+host and mounted into the web container at `/data`. Set this to a persistent
+SSD path in production, for example:
+
+```bash
+BOLTZ_DATA_HOST_DIR=/data/ssd/jhu/boltz-web/data
+```
+
 VOS packaging is intentionally not part of this development path yet.
 
 Default login:
@@ -100,6 +108,26 @@ New users can submit registration requests from the login screen. Admin approval
 is required before they can use the workbench. The backend also exposes a
 `BOLTZ_USER_PROVISION_TOKEN` protected endpoint for later VOS account
 provisioning.
+
+The standalone workbench is organized by workflow module:
+
+- Project: current project, reusable assets, and recent tasks.
+- Protein: PDB import, protein upload, and protein preparation placeholders.
+- Ligand: SMILES-to-SDF, ligand upload, and ligand preparation placeholders.
+- Docking: protein/ligand asset selection and placeholder docking jobs.
+- FEP / Analysis: reserved entry for future FEP and downstream analysis jobs.
+- Admin: user approval and future service/worker status, visible to admins.
+
+Terminology used by the workbench:
+
+- User: login account and isolation boundary.
+- Project: a user-owned workspace for one target, study, or compound series.
+- Asset: reusable data object inside a project, such as a protein, ligand,
+  complex, docking result, or FEP result.
+- Task: computation over one or more assets. Task outputs should become new
+  assets so later tasks can reuse them.
+- File: concrete stored file under an asset or task output, such as PDB, SDF,
+  CSV, logs, or reports.
 
 ## VOS Packaging
 

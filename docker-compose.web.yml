@@ -24,7 +24,7 @@ services:
     ports:
       - "${BOLTZ_WEB_PORT:-8800}:8800"
     volumes:
-      - boltz-data:/data
+      - ${BOLTZ_DATA_HOST_DIR:-./data}:/data
       - ${MODEL_HUB_SHARED_MODELS_PATH:-./.modelhub}:/modelhub:ro
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 -qO- http://127.0.0.1:8800/health > /dev/null 2>&1 || exit 1"]
@@ -65,6 +65,5 @@ services:
       retries: 6
 
 volumes:
-  boltz-data:
   boltz-postgres-data:
   boltz-redis-data:

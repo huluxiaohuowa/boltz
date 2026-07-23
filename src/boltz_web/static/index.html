@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Boltz Workbench</title>
+    <link rel="icon" href="data:," />
     <style>
       :root {
         color-scheme: light;
@@ -53,6 +54,116 @@
         grid-template-columns: minmax(320px, 380px) 1fr;
         gap: 16px;
         padding: 18px;
+      }
+      .app-shell {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+      .side-nav {
+        position: sticky;
+        top: 72px;
+        z-index: 9;
+        display: grid;
+        grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
+        gap: 18px;
+        align-items: stretch;
+        padding: 12px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.86);
+        backdrop-filter: blur(24px) saturate(180%);
+        box-shadow:
+          0 18px 45px rgba(42, 58, 80, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      }
+      .side-nav > section {
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        backdrop-filter: none;
+      }
+      .project-strip {
+        display: grid;
+        grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) auto;
+        gap: 10px;
+        align-items: end;
+      }
+      .project-strip h2,
+      .module-strip h2 {
+        display: none;
+      }
+      .project-strip button {
+        width: auto;
+        white-space: nowrap;
+      }
+      .nav-list {
+        display: flex;
+        gap: 8px;
+        height: 100%;
+        align-items: center;
+        overflow-x: auto;
+      }
+      .nav-button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: auto;
+        min-height: 44px;
+        margin: 0;
+        padding: 10px 12px;
+        border-color: transparent;
+        border-radius: 13px;
+        background: transparent;
+        color: #39465a;
+        box-shadow: none;
+        text-align: left;
+        white-space: nowrap;
+      }
+      .nav-button::after {
+        content: "";
+        color: #8a96a8;
+      }
+      .nav-button.active {
+        background: rgba(47, 112, 223, 0.11);
+        color: #173c82;
+      }
+      .workspace {
+        min-width: 0;
+      }
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: grid;
+        gap: 16px;
+      }
+      .page-hero {
+        padding: 22px;
+      }
+      .page-hero h2 {
+        font-size: clamp(22px, 3vw, 34px);
+        letter-spacing: -0.02em;
+        margin-bottom: 8px;
+      }
+      .page-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .preview-grid {
+        grid-template-columns: minmax(320px, 0.78fr) minmax(420px, 1.22fr);
+      }
+      .span-all {
+        grid-column: 1 / -1;
+      }
+      .step-list {
+        margin: 12px 0 0;
+        padding-left: 18px;
+        color: #536173;
+        font-size: 13px;
+        line-height: 1.65;
       }
       .login-shell {
         min-height: calc(100vh - 72px);
@@ -307,11 +418,47 @@
         color: #64748b;
         word-break: break-all;
       }
+      .item-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .item-actions button {
+        width: auto;
+        min-height: 34px;
+        margin: 0;
+        padding: 6px 10px;
+      }
+      .danger {
+        border-color: rgba(220, 72, 72, 0.42) !important;
+        color: #9b1c1c !important;
+      }
       .status {
         min-height: 20px;
         margin-top: 10px;
         color: #38506b;
         font-size: 12px;
+      }
+      .status:not(:empty) {
+        min-height: 0;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(124, 144, 174, 0.28);
+        background: rgba(242, 247, 255, 0.92);
+        color: #26476f;
+        font-weight: 650;
+        box-shadow: 0 10px 24px rgba(43, 73, 110, 0.08);
+      }
+      .status.error:not(:empty) {
+        border-color: rgba(220, 72, 72, 0.28);
+        background: rgba(255, 242, 242, 0.96);
+        color: #9b1c1c;
+      }
+      .status.success:not(:empty) {
+        border-color: rgba(40, 152, 105, 0.28);
+        background: rgba(237, 250, 244, 0.96);
+        color: #146b48;
       }
       .toolbar {
         display: flex;
@@ -331,6 +478,23 @@
         font-size: 13px;
         line-height: 1.5;
       }
+      .field-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .asset-preview {
+        min-height: 520px;
+      }
+      .asset-preview pre {
+        overflow: auto;
+        max-height: 260px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(16, 24, 40, 0.05);
+        color: #243247;
+        white-space: pre-wrap;
+      }
       @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
@@ -348,8 +512,17 @@
       @media (max-width: 980px) {
         main,
         .grid,
+        .app-shell,
+        .side-nav,
+        .page-grid,
+        .preview-grid,
+        .project-strip,
+        .field-row,
         .login-panel {
           grid-template-columns: 1fr;
+        }
+        .side-nav {
+          position: static;
         }
         .login-shell {
           min-height: auto;
@@ -427,88 +600,272 @@
         </section>
       </div>
     </main>
-    <main id="app-screen" class="hidden">
-      <section>
-        <h2>准备输入</h2>
-        <label>
-          工程
-          <select id="project-id"></select>
-        </label>
-        <label>
-          新建工程
-          <input id="project-name" placeholder="工程名称" />
-        </label>
-        <button class="secondary" id="create-project">创建工程</button>
-        <label>
-          PDB ID
-          <input id="pdb-id" placeholder="例如 1a2c" />
-        </label>
-        <button id="fetch-pdb">导入 PDB</button>
-        <label>
-          上传文件
-          <input id="upload-file" type="file" />
-        </label>
-        <label>
-          文件类型
-          <select id="upload-kind">
-            <option value="protein">Protein</option>
-            <option value="ligand">Ligand</option>
-            <option value="complex">Complex</option>
-          </select>
-        </label>
-        <button id="upload-asset">上传资产</button>
-        <label>
-          SMILES 列表
-          <textarea id="smiles" placeholder="每行一个 SMILES"></textarea>
-        </label>
-        <button id="create-smiles">生成配体 SDF</button>
-        <div class="status" id="status"></div>
-      </section>
-      <div class="grid">
-        <section id="admin-panel" class="hidden">
-          <h2>用户审核</h2>
-          <button class="secondary" id="refresh-users">刷新用户</button>
-          <div class="list" id="users"></div>
+    <main id="app-screen" class="app-shell hidden">
+      <aside class="side-nav">
+        <section class="project-strip">
+          <h2>项目</h2>
+          <label>
+            当前项目
+            <select id="project-id"></select>
+          </label>
+          <label>
+            新建项目
+            <input id="project-name" placeholder="项目名称" />
+          </label>
+          <button class="secondary" id="create-project">创建项目</button>
+          <div class="status" id="status"></div>
         </section>
-        <section>
-          <h2>资产</h2>
-          <div class="list" id="assets"></div>
-        </section>
-        <section>
-          <h2>任务</h2>
-          <button class="secondary" id="create-job">用选中资产创建占位任务</button>
-          <div class="list" id="jobs"></div>
-        </section>
-        <section style="grid-column: 1 / -1">
-          <h2>3D 工作区</h2>
-          <div class="toolbar">
-            <button class="secondary chip">Cartoon</button>
-            <button class="secondary chip">Surface</button>
-            <button class="secondary chip">Pocket</button>
-            <button class="secondary chip">Ligand</button>
-            <button class="secondary chip">Interactions</button>
+        <section class="module-strip">
+          <h2>模块</h2>
+          <div class="nav-list">
+            <button class="nav-button active" data-nav="project" type="button">项目总览</button>
+            <button class="nav-button" data-nav="protein" type="button">蛋白处理</button>
+            <button class="nav-button" data-nav="ligand" type="button">配体处理</button>
+            <button class="nav-button" data-nav="docking" type="button">对接任务</button>
+            <button class="nav-button" data-nav="fep" type="button">FEP / 分析</button>
+            <button class="nav-button hidden" data-nav="admin" id="admin-nav" type="button">管理</button>
           </div>
-          <div class="viewer" id="viewer">
-            <strong>No structure selected</strong>
-            <p class="muted">Select a protein, ligand, or result asset to inspect it here.</p>
-            <div id="selected"></div>
+        </section>
+      </aside>
+      <div class="workspace">
+        <section class="page page-hero active" data-page="project">
+          <div>
+            <h2>项目工作台</h2>
+            <p class="muted">按项目管理输入资产、输出资产和任务记录。蛋白、配体、对接和 FEP 页面会复用这里的资产。</p>
+          </div>
+          <div class="page-grid preview-grid">
+            <section class="span-all">
+              <h2>关系说明</h2>
+              <p class="muted">一个用户可以有多个项目；每个项目下面有自己的资产和任务；资产代表可复用的数据对象，文件是资产下面保存的具体 PDB、SDF、CSV 或结果文件。</p>
+              <ul class="step-list">
+                <li>项目：一次研究课题或一个工作空间，例如某个靶点、某个系列化合物。</li>
+                <li>资产：项目内可复用的蛋白、配体、复合物、结果等数据对象。</li>
+                <li>任务：对资产执行的计算流程，例如蛋白准备、配体准备、对接、FEP。</li>
+                <li>文件：资产或任务实际产生/引用的磁盘文件，可作为后续任务输入。</li>
+              </ul>
+            </section>
+            <section>
+              <h2>项目资产</h2>
+              <div class="list" id="assets"></div>
+            </section>
+            <section>
+              <h2>项目任务</h2>
+              <div class="list" id="jobs"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" data-page="protein">
+          <section class="page-hero">
+            <h2>蛋白处理</h2>
+            <p class="muted">导入蛋白结构，并为后续口袋分析、配体保留/删除、对接和 Boltz 任务准备蛋白资产。</p>
+          </section>
+          <div class="page-grid">
+            <section>
+              <h2>从 PDB ID 导入</h2>
+              <label>
+                PDB ID
+                <input id="pdb-id" placeholder="例如 1a2c" />
+              </label>
+              <button id="fetch-pdb">导入 PDB</button>
+            </section>
+            <section>
+              <h2>上传蛋白文件</h2>
+              <label>
+                上传文件
+                <input id="protein-upload-file" type="file" />
+              </label>
+              <button id="upload-protein">上传蛋白资产</button>
+            </section>
+            <section>
+              <h2>蛋白资产</h2>
+              <div class="list" id="protein-assets"></div>
+            </section>
+            <section class="asset-preview">
+              <h2>资产预览</h2>
+              <div id="protein-preview">
+                <p class="muted">选择蛋白资产后，在这里查看文件、元数据和后续 3D 预览入口。</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" data-page="ligand">
+          <section class="page-hero">
+            <h2>配体处理</h2>
+            <p class="muted">支持 SDF、SMILES、表格和后续手工绘制入口，生成标准化配体资产。</p>
+          </section>
+          <div class="page-grid preview-grid">
+            <section>
+              <h2>SMILES 列表</h2>
+              <label>
+                SMILES
+                <textarea id="smiles" placeholder="每行一个 SMILES"></textarea>
+              </label>
+              <button id="create-smiles">生成配体 SDF</button>
+            </section>
+            <section>
+              <h2>上传配体文件</h2>
+              <label>
+                上传文件
+                <input id="ligand-upload-file" type="file" />
+              </label>
+              <button id="upload-ligand">上传配体资产</button>
+            </section>
+            <section>
+              <h2>配体资产</h2>
+              <div class="list" id="ligand-assets"></div>
+            </section>
+            <section class="asset-preview">
+              <h2>资产预览</h2>
+              <div id="ligand-preview">
+                <p class="muted">选择配体资产后，在这里查看 SDF、SMILES 元数据和后续结构预览入口。</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" data-page="docking">
+          <section class="page-hero">
+            <h2>对接任务</h2>
+            <p class="muted">选择蛋白和配体资产，配置口袋与参数，提交结构预测/亲和力预测等任务。</p>
+          </section>
+          <div class="page-grid">
+            <section>
+              <h2>任务输入</h2>
+              <div class="field-row">
+                <label>
+                  蛋白资产 ID
+                  <input id="docking-protein-asset" placeholder="从蛋白资产中选择" />
+                </label>
+                <label>
+                  配体资产 ID
+                  <input id="docking-ligand-asset" placeholder="从配体资产中选择" />
+                </label>
+              </div>
+              <label>
+                口袋 / 盒子描述
+                <input id="docking-pocket" placeholder="后续接入交互式口袋选择" />
+              </label>
+              <button id="create-docking-job">创建对接占位任务</button>
+            </section>
+            <section>
+              <h2>对接任务列表</h2>
+              <div class="list" id="docking-jobs"></div>
+            </section>
+            <section class="span-all">
+              <h2>3D 工作区</h2>
+              <div class="toolbar">
+                <button class="secondary chip" type="button">Cartoon</button>
+                <button class="secondary chip" type="button">Surface</button>
+                <button class="secondary chip" type="button">Pocket</button>
+                <button class="secondary chip" type="button">Ligand</button>
+                <button class="secondary chip" type="button">Interactions</button>
+              </div>
+              <div class="viewer" id="viewer">
+                <strong>No structure selected</strong>
+                <p class="muted">Select a protein, ligand, or result asset to inspect it here.</p>
+                <div id="selected"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" data-page="fep">
+          <section class="page-hero">
+            <h2>FEP / 后续分析</h2>
+            <p class="muted">这里先作为后续计算入口，预留 FEP、相对结合自由能、轨迹分析、结果对比和报告生成。</p>
+          </section>
+          <div class="page-grid">
+            <section>
+              <h2>FEP 输入草稿</h2>
+              <label>
+                参考复合物 / 对接结果
+                <input placeholder="后续从输出资产选择" disabled />
+              </label>
+              <label>
+                配体系列
+                <input placeholder="后续从配体资产组选择" disabled />
+              </label>
+              <button class="secondary" type="button" disabled>等待 FEP worker 接入</button>
+            </section>
+            <section>
+              <h2>分析模块预留</h2>
+              <ul class="step-list">
+                <li>FEP 任务队列与资源配置</li>
+                <li>ΔΔG / ΔG 表格与误差展示</li>
+                <li>结构、轨迹和相互作用对比</li>
+                <li>可下载报告和可复用输出资产</li>
+              </ul>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" data-page="admin" id="admin-panel">
+          <section class="page-hero">
+            <h2>管理</h2>
+            <p class="muted">管理员审核新用户，后续这里会加入 worker、队列和模型服务状态。</p>
+          </section>
+          <div class="page-grid">
+            <section>
+              <h2>用户审核</h2>
+              <button class="secondary" id="refresh-users">刷新用户</button>
+              <div class="list" id="users"></div>
+            </section>
           </div>
         </section>
       </div>
     </main>
     <script>
       let selectedAssetId = null;
+      let selectedProteinId = "";
+      let selectedLigandId = "";
+      let currentAssets = [];
       let currentProjectId = null;
       let token = localStorage.getItem("boltz_token") || "";
       let isAdmin = localStorage.getItem("boltz_is_admin") === "true";
       const statusEl = document.getElementById("status");
       const loginStatusEl = document.getElementById("login-status");
       const headers = () => (token ? { Authorization: `Bearer ${token}` } : {});
-      const setStatus = (text) => {
-        statusEl.textContent = text;
+      function paintStatus(element, text, tone = "info") {
+        element.textContent = text;
+        element.classList.remove("error", "success");
+        if (text && tone !== "info") element.classList.add(tone);
+      }
+      function formatApiError(rawText, statusCode) {
+        let detail = rawText;
+        try {
+          const parsed = JSON.parse(rawText);
+          detail = parsed.detail ?? parsed.message ?? rawText;
+        } catch {
+          detail = rawText;
+        }
+        if (Array.isArray(detail)) {
+          detail = detail
+            .map((item) => item.msg || item.message || JSON.stringify(item))
+            .join("；");
+        }
+        if (typeof detail === "object" && detail !== null) {
+          if (detail.missing_asset_ids) return `找不到资产：${detail.missing_asset_ids.join("，")}`;
+          detail = JSON.stringify(detail);
+        }
+        const text = String(detail || "").trim();
+        const translations = {
+          "invalid username or password": "用户名或密码不正确",
+          "select a file first": "请先选择文件",
+          "select protein and ligand assets first": "请先选择蛋白资产和配体资产",
+          "user status is pending": "账户还在等待管理员审核",
+        };
+        if (translations[text]) return translations[text];
+        if (statusCode === 401) return "登录已失效，请重新登录";
+        if (statusCode === 403) return text || "当前账户没有权限执行这个操作";
+        return text || "操作失败，请检查输入后重试";
+      }
+      const setStatus = (text, tone = "info") => {
+        paintStatus(statusEl, text, tone);
       };
-      const setLoginStatus = (text) => {
-        loginStatusEl.textContent = text;
+      const setLoginStatus = (text, tone = "info") => {
+        paintStatus(loginStatusEl, text, tone);
       };
       async function api(path, options = {}) {
         const response = await fetch(path, {
@@ -516,28 +873,198 @@
           headers: { ...headers(), ...(options.headers || {}) },
         });
         if (!response.ok) {
-          throw new Error(await response.text());
+          throw new Error(formatApiError(await response.text(), response.status));
         }
         return response.json();
+      }
+      function showPage(pageName) {
+        document.querySelectorAll("[data-page]").forEach((node) => {
+          node.classList.toggle("active", node.dataset.page === pageName);
+        });
+        document.querySelectorAll("[data-nav]").forEach((node) => {
+          node.classList.toggle("active", node.dataset.nav === pageName);
+        });
+      }
+      function emptyList(label) {
+        return `<div class="item"><small>${label}</small></div>`;
+      }
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+      function renderAssetList(assets, targetId, emptyLabel) {
+        const target = document.getElementById(targetId);
+        target.innerHTML = assets.length
+          ? assets
+              .map(
+                (asset) => `
+                <div class="item" data-asset="${asset.id}" data-kind="${asset.kind}">
+                  <strong>${escapeHtml(asset.name)}</strong>
+                  <small>${escapeHtml(asset.kind)} · ${escapeHtml(asset.source_type)}<br />${escapeHtml(asset.id)}</small>
+                  <div class="item-actions">
+                    <button class="secondary" data-preview-asset="${asset.id}" type="button">预览</button>
+                    <button class="secondary" data-rename-asset="${asset.id}" type="button">重命名</button>
+                    <button class="secondary danger" data-delete-asset="${asset.id}" type="button">删除</button>
+                  </div>
+                </div>`,
+              )
+              .join("")
+          : emptyList(emptyLabel);
+      }
+      async function runAction(action) {
+        try {
+          await action();
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      }
+      function bindAssetSelection() {
+        document.querySelectorAll("[data-asset]").forEach((node) => {
+          node.addEventListener("click", () => {
+            selectedAssetId = node.dataset.asset;
+            if (node.dataset.kind === "protein") {
+              selectedProteinId = selectedAssetId;
+              document.getElementById("docking-protein-asset").value = selectedProteinId;
+            }
+            if (node.dataset.kind === "ligand") {
+              selectedLigandId = selectedAssetId;
+              document.getElementById("docking-ligand-asset").value = selectedLigandId;
+            }
+            document.getElementById("selected").textContent = `Selected asset: ${selectedAssetId}`;
+          });
+        });
+        document.querySelectorAll("[data-preview-asset]").forEach((node) => {
+          node.addEventListener("click", (event) => {
+            event.stopPropagation();
+            runAction(() => previewAsset(node.dataset.previewAsset));
+          });
+        });
+        document.querySelectorAll("[data-rename-asset]").forEach((node) => {
+          node.addEventListener("click", (event) => {
+            event.stopPropagation();
+            runAction(() => renameAsset(node.dataset.renameAsset));
+          });
+        });
+        document.querySelectorAll("[data-delete-asset]").forEach((node) => {
+          node.addEventListener("click", (event) => {
+            event.stopPropagation();
+            runAction(() => deleteAsset(node.dataset.deleteAsset));
+          });
+        });
+      }
+      function renderPreview(asset, targetId) {
+        const files = asset.files.length
+          ? asset.files
+              .map(
+                (file) => `
+                <div class="item">
+                  <strong>${escapeHtml(file.filename)}</strong>
+                  <small>${escapeHtml(file.role)} · ${Math.round(file.size_bytes / 1024)} KB · ${escapeHtml(file.content_type)}</small>
+                  <div class="item-actions">
+                    <button class="secondary" data-download-asset="${asset.id}" data-download-file="${file.id}" data-download-name="${escapeHtml(file.filename)}" type="button">下载</button>
+                  </div>
+                </div>`,
+              )
+              .join("")
+          : emptyList("这个资产还没有文件");
+        const metadataRows = Object.entries(asset.metadata || {})
+          .map(([key, value]) => `<li>${escapeHtml(key)}：${escapeHtml(Array.isArray(value) ? value.join("，") : value)}</li>`)
+          .join("");
+        document.getElementById(targetId).innerHTML = `
+          <div class="item">
+            <strong>${escapeHtml(asset.name)}</strong>
+            <small>${escapeHtml(asset.kind)} · ${escapeHtml(asset.status)} · ${escapeHtml(asset.source_type)}<br />${escapeHtml(asset.id)}</small>
+          </div>
+          <h2>文件</h2>
+          <div class="list">${files}</div>
+          <h2>元数据</h2>
+          <ul class="step-list">${metadataRows || "<li>没有额外元数据</li>"}</ul>
+        `;
+        bindDownloadButtons();
+      }
+      function bindDownloadButtons() {
+        document.querySelectorAll("[data-download-file]").forEach((node) => {
+          node.addEventListener("click", () =>
+            runAction(() => downloadAssetFile(node.dataset.downloadAsset, node.dataset.downloadFile, node.dataset.downloadName)),
+          );
+        });
+      }
+      async function downloadAssetFile(assetId, fileId, filename) {
+        const response = await fetch(`/api/v1/assets/${assetId}/files/${fileId}/download`, {
+          headers: headers(),
+        });
+        if (!response.ok) throw new Error(formatApiError(await response.text(), response.status));
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename || "asset-file";
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+      async function previewAsset(assetId) {
+        const asset = await api(`/api/v1/assets/${assetId}`);
+        selectedAssetId = asset.id;
+        if (asset.kind === "protein") {
+          selectedProteinId = asset.id;
+          document.getElementById("docking-protein-asset").value = asset.id;
+          renderPreview(asset, "protein-preview");
+          showPage("protein");
+        } else if (asset.kind === "ligand") {
+          selectedLigandId = asset.id;
+          document.getElementById("docking-ligand-asset").value = asset.id;
+          renderPreview(asset, "ligand-preview");
+          showPage("ligand");
+        } else {
+          document.getElementById("selected").textContent = `Selected asset: ${asset.id}`;
+          showPage("project");
+        }
+      }
+      async function renameAsset(assetId) {
+        const asset = currentAssets.find((item) => item.id === assetId) || (await api(`/api/v1/assets/${assetId}`));
+        const name = window.prompt("输入新的资产名称", asset.name);
+        if (!name || !name.trim() || name.trim() === asset.name) return;
+        await api(`/api/v1/assets/${assetId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name.trim() }),
+        });
+        setStatus("资产已重命名", "success");
+        await refresh();
+      }
+      async function deleteAsset(assetId) {
+        const asset = currentAssets.find((item) => item.id === assetId);
+        const label = asset ? asset.name : assetId;
+        if (!window.confirm(`确认删除资产“${label}”？对应文件也会删除。`)) return;
+        await api(`/api/v1/assets/${assetId}`, { method: "DELETE" });
+        if (selectedAssetId === assetId) selectedAssetId = null;
+        if (selectedProteinId === assetId) selectedProteinId = "";
+        if (selectedLigandId === assetId) selectedLigandId = "";
+        document.getElementById("docking-protein-asset").value = selectedProteinId;
+        document.getElementById("docking-ligand-asset").value = selectedLigandId;
+        setStatus("资产已删除", "success");
+        await refresh();
       }
       async function refresh() {
         const suffix = currentProjectId ? `?project_id=${encodeURIComponent(currentProjectId)}` : "";
         const [assets, jobs] = await Promise.all([api(`/api/v1/assets${suffix}`), api(`/api/v1/jobs${suffix}`)]);
-        document.getElementById("assets").innerHTML = assets
-          .map(
-            (asset) => `
-            <div class="item" data-asset="${asset.id}">
-              <strong>${asset.name}</strong>
-              <small>${asset.kind} · ${asset.source_type}<br />${asset.id}</small>
-            </div>`,
-          )
-          .join("");
-        document.querySelectorAll("[data-asset]").forEach((node) => {
-          node.addEventListener("click", () => {
-            selectedAssetId = node.dataset.asset;
-            document.getElementById("selected").textContent = `Selected asset: ${selectedAssetId}`;
-          });
-        });
+        currentAssets = assets;
+        renderAssetList(assets, "assets", "当前项目还没有资产");
+        renderAssetList(
+          assets.filter((asset) => asset.kind === "protein"),
+          "protein-assets",
+          "还没有蛋白资产",
+        );
+        renderAssetList(
+          assets.filter((asset) => asset.kind === "ligand"),
+          "ligand-assets",
+          "还没有配体资产",
+        );
+        bindAssetSelection();
         document.getElementById("jobs").innerHTML = jobs
           .map(
             (job) => `
@@ -547,6 +1074,20 @@
             </div>`,
           )
           .join("");
+        const dockingJobs = jobs.filter((job) =>
+          ["structure_prediction", "affinity_prediction", "batch_screening"].includes(job.job_type),
+        );
+        document.getElementById("docking-jobs").innerHTML = dockingJobs.length
+          ? dockingJobs
+              .map(
+                (job) => `
+                <div class="item">
+                  <strong>${job.job_type}</strong>
+                  <small>${job.status}<br />${job.id}</small>
+                </div>`,
+              )
+              .join("")
+          : emptyList("当前项目还没有对接任务");
       }
       async function refreshProjects() {
         const projects = await api("/api/v1/projects");
@@ -587,7 +1128,8 @@
         document.getElementById("session-chip").classList.remove("hidden");
         document.getElementById("login-screen").classList.add("hidden");
         document.getElementById("app-screen").classList.remove("hidden");
-        document.getElementById("admin-panel").classList.toggle("hidden", !admin);
+        document.getElementById("admin-nav").classList.toggle("hidden", !admin);
+        if (!admin && document.querySelector("[data-page='admin']").classList.contains("active")) showPage("project");
         await refreshProjects();
         await refresh();
         await refreshUsers();
@@ -596,21 +1138,45 @@
         token = "";
         isAdmin = false;
         selectedAssetId = null;
+        selectedProteinId = "";
+        selectedLigandId = "";
         currentProjectId = null;
         localStorage.removeItem("boltz_token");
         localStorage.removeItem("boltz_user_id");
         localStorage.removeItem("boltz_is_admin");
         document.getElementById("session-chip").classList.add("hidden");
         document.getElementById("app-screen").classList.add("hidden");
-        document.getElementById("admin-panel").classList.add("hidden");
+        document.getElementById("admin-nav").classList.add("hidden");
         document.getElementById("login-password").value = "";
         document.getElementById("login-screen").classList.remove("hidden");
+        showPage("project");
         setStatus("");
-        setLoginStatus("已退出当前账户");
+        setLoginStatus("已退出当前账户", "success");
       }
+      async function uploadAsset(kind, inputId) {
+        const file = document.getElementById(inputId).files[0];
+        if (!file) throw new Error("select a file first");
+        const form = new FormData();
+        form.append("kind", kind);
+        form.append("file", file);
+        if (currentProjectId) form.append("project_id", currentProjectId);
+        const response = await fetch("/api/v1/assets/upload", {
+          method: "POST",
+          headers: headers(),
+          body: form,
+        });
+        if (!response.ok) throw new Error(formatApiError(await response.text(), response.status));
+      }
+      document.querySelectorAll("[data-nav]").forEach((node) => {
+        node.addEventListener("click", () => showPage(node.dataset.nav));
+      });
       document.getElementById("project-id").addEventListener("change", async (event) => {
         currentProjectId = event.target.value;
         selectedAssetId = null;
+        selectedProteinId = "";
+        selectedLigandId = "";
+        document.getElementById("docking-protein-asset").value = "";
+        document.getElementById("docking-ligand-asset").value = "";
         await refresh();
       });
       document.getElementById("create-project").addEventListener("click", async () => {
@@ -624,7 +1190,7 @@
           await refreshProjects();
           await refresh();
         } catch (error) {
-          setStatus(error.message);
+          setStatus(error.message, "error");
         }
       });
       document.getElementById("login").addEventListener("click", async () => {
@@ -643,7 +1209,7 @@
           document.getElementById("login-password").value = "";
           await enterApp(result.user_id, result.is_admin);
         } catch (error) {
-          setLoginStatus(error.message);
+          setLoginStatus(error.message, "error");
         }
       });
       document.getElementById("register").addEventListener("click", async () => {
@@ -656,9 +1222,9 @@
               password: document.getElementById("register-password").value,
             }),
           });
-          setLoginStatus("注册申请已提交，等待 admin 审核");
+          setLoginStatus("注册申请已提交，等待 admin 审核", "success");
         } catch (error) {
-          setLoginStatus(error.message);
+          setLoginStatus(error.message, "error");
         }
       });
       document.getElementById("logout").addEventListener("click", logout);
@@ -671,29 +1237,30 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ pdb_id: pdbId, project_id: currentProjectId }),
           });
-          setStatus("PDB imported");
+          setStatus("PDB 已导入", "success");
           await refresh();
         } catch (error) {
-          setStatus(error.message);
+          setStatus(error.message, "error");
         }
       });
-      document.getElementById("upload-asset").addEventListener("click", async () => {
+      document.getElementById("upload-protein").addEventListener("click", async () => {
         try {
-          const file = document.getElementById("upload-file").files[0];
-          const form = new FormData();
-          form.append("kind", document.getElementById("upload-kind").value);
-          form.append("file", file);
-          if (currentProjectId) form.append("project_id", currentProjectId);
-          const response = await fetch("/api/v1/assets/upload", {
-            method: "POST",
-            headers: headers(),
-            body: form,
-          });
-          if (!response.ok) throw new Error(await response.text());
-          setStatus("File uploaded");
+          await uploadAsset("protein", "protein-upload-file");
+          setStatus("蛋白资产已上传", "success");
+          showPage("protein");
           await refresh();
         } catch (error) {
-          setStatus(error.message);
+          setStatus(error.message, "error");
+        }
+      });
+      document.getElementById("upload-ligand").addEventListener("click", async () => {
+        try {
+          await uploadAsset("ligand", "ligand-upload-file");
+          setStatus("配体资产已上传", "success");
+          showPage("ligand");
+          await refresh();
+        } catch (error) {
+          setStatus(error.message, "error");
         }
       });
       document.getElementById("create-smiles").addEventListener("click", async () => {
@@ -708,28 +1275,32 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ smiles, project_id: currentProjectId }),
           });
-          setStatus("Ligand asset created");
+          setStatus("配体资产已生成", "success");
+          showPage("ligand");
           await refresh();
         } catch (error) {
-          setStatus(error.message);
+          setStatus(error.message, "error");
         }
       });
-      document.getElementById("create-job").addEventListener("click", async () => {
+      document.getElementById("create-docking-job").addEventListener("click", async () => {
         try {
-          if (!selectedAssetId) throw new Error("select an asset first");
+          const proteinId = document.getElementById("docking-protein-asset").value.trim();
+          const ligandId = document.getElementById("docking-ligand-asset").value.trim();
+          if (!proteinId || !ligandId) throw new Error("select protein and ligand assets first");
           await api("/api/v1/jobs", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              job_type: "visualization",
-              input_asset_ids: [selectedAssetId],
+              job_type: "structure_prediction",
+              input_asset_ids: [proteinId, ligandId],
               project_id: currentProjectId,
             }),
           });
-          setStatus("Job queued");
+          setStatus("对接占位任务已进入队列", "success");
+          showPage("docking");
           await refresh();
         } catch (error) {
-          setStatus(error.message);
+          setStatus(error.message, "error");
         }
       });
       if (token) {
