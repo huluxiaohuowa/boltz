@@ -45,7 +45,17 @@ chain J: 34H J:1 + LEU J:2 + PRJ J:3 + OAR J:4
 7. 点击 `从 RCSB 导入 PDB`。
 8. 在左侧 `选择蛋白资产` 里点击新导入的 `1A2C`，再点 `预览`。
 
+导入前页面如下：
+
+![1A2C import form](images/1a2c-01-import-pdb.png)
+
+导入完成后，左侧会出现 `1A2C` 蛋白资产：
+
+![1A2C protein asset](images/1a2c-02-protein-assets.png)
+
 右侧 3D 工作区应显示蛋白结构，并能看到链、配体、水、金属等对象。
+
+![1A2C viewer and components](images/1a2c-03-viewer-components.png)
 
 ## 3. 选择参考配体并定义口袋
 
@@ -56,6 +66,11 @@ chain J: 34H J:1 + LEU J:2 + PRJ J:3 + OAR J:4
    - `PRJ · ligand · J:3`
 4. 点击 `PRJ J:3` 对象卡片，或在 3D 视图里点击对应配体片段。
 5. 点击 `用作口袋`。
+
+专注编辑窗口中，底部横向对象条会列出蛋白链、配体、金属、水等 PDB 对象：
+
+![1A2C focus editor](images/1a2c-04-focus-editor.png)
+
 6. 打开 `Pocket` 显示开关，确认 3D 视图里出现蓝色口袋 box。
 7. 在右侧口袋参数中把 box 调整为：
    - `SX = 20`
@@ -67,6 +82,10 @@ chain J: 34H J:1 + LEU J:2 + PRJ J:3 + OAR J:4
    - `SZ = 22`
 9. 调整时观察蓝色 box 是否覆盖 `34H/LEU/PRJ/OAR` 所在区域。
 10. 点击 `创建口袋资产`。
+
+选择 `PRJ J:3` 后，用它作为口袋参考：
+
+![PRJ pocket reference](images/1a2c-05-prj-pocket.png)
 
 创建后，这个口袋资产会出现在项目资产里，并会自动填入后续对接任务的口袋输入。
 
@@ -105,6 +124,10 @@ chain J: 34H J:1 + LEU J:2 + PRJ J:3 + OAR J:4
 6. 输出名称建议填写：
    - `1A2C_thrombin_HL_PRJ_pocket_prepared`
 
+准备参数确认页面：
+
+![1A2C protein preparation form](images/1a2c-06-prep-form.png)
+
 ## 5. 执行蛋白准备任务
 
 1. 在 `当前蛋白资产` 确认选择的是原始 `1A2C` 资产。
@@ -119,6 +142,10 @@ chain J: 34H J:1 + LEU J:2 + PRJ J:3 + OAR J:4
 - `completed`
 
 完成后会生成一个新的 `prepared_protein` 资产。
+
+任务完成后，可以在项目总览看到任务卡片和输出资产：
+
+![1A2C task output](images/1a2c-07-task-output.png)
 
 ## 6. 查看、下载和复用输出
 
@@ -160,4 +187,3 @@ chain J: 34H J:1 + LEU J:2 + PRJ J:3 + OAR J:4
 - alternate location 的构象选择。
 
 这些步骤会记录在任务元数据的 `unsupported_operations` 里，后续需要接入 PDBFixer/OpenMM、PropKa/PDB2PQR、Reduce 或同类 worker 后再执行。
-
