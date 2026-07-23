@@ -112,11 +112,19 @@ provisioning.
 The standalone workbench is organized by workflow module:
 
 - Project: current project, reusable assets, and recent tasks.
-- Protein: PDB import, protein upload, and protein preparation placeholders.
-- Ligand: SMILES-to-SDF, ligand upload, and ligand preparation placeholders.
-- Docking: protein/ligand asset selection and placeholder docking jobs.
-- FEP / Analysis: reserved entry for future FEP and downstream analysis jobs.
-- SAR / Structure-activity relationship: reserved entry for compound-series
+- Protein: left-side PDB/upload/asset/preparation controls and a wide right-side
+  3D workspace. The first CADD preparation form records water removal,
+  metal/cofactor retention, hydrogen/protonation settings, missing atom repair,
+  alternate-location handling, pH, and pocket definition, then creates a
+  `prepared_protein` asset that later workers can consume.
+- Ligand: left-side SMILES/upload/asset controls and a wide right-side ligand
+  preview/editing workspace.
+- Docking: left-side protein/ligand/task controls and a wide right-side 3D
+  docking workspace for pocket, pose, interaction, and score inspection.
+- FEP / Analysis: left-side input/settings controls and a wide right-side
+  analysis workspace reserved for FEP and downstream reports.
+- SAR / Structure-activity relationship: left-side data-mapping controls and a
+  wide right-side compound-series workspace reserved for compound-series
   decision analysis using ligand assets, activity tables, docking results, FEP
   results, and ADMET fields.
 - Admin: user approval and future service/worker status, visible to admins.

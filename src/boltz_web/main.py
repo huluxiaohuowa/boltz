@@ -439,7 +439,7 @@ def prepare_protein(
 ) -> AssetOut:
     user_id = current_user.id
     source = db.get(Asset, request.asset_id)
-    if source is None or source.user_id != user_id or source.kind not in {"protein", "complex"}:
+    if source is None or source.user_id != user_id or source.kind not in {"protein", "prepared_protein", "complex"}:
         raise HTTPException(status_code=404, detail="protein asset not found")
     try:
         project = ensure_project(db, user_id, request.project_id or source.project_id)

@@ -79,9 +79,16 @@ def protein_prepare_metadata(options: dict[str, Any]) -> dict[str, Any]:
         "remove_waters": options.get("remove_waters", True),
         "keep_metals": options.get("keep_metals", True),
         "keep_cofactors": options.get("keep_cofactors", True),
+        "add_hydrogens": options.get("add_hydrogens", True),
+        "repair_missing_atoms": options.get("repair_missing_atoms", True),
+        "assign_protonation": options.get("assign_protonation", True),
+        "remove_altloc": options.get("remove_altloc", True),
+        "build_biological_unit": options.get("build_biological_unit", False),
+        "validate_geometry": options.get("validate_geometry", True),
         "ph": options.get("ph", 7.4),
         "pocket": options.get("pocket", {}),
-        "status": "placeholder",
+        "status": "workflow_configured",
+        "worker_note": "structure copied; chemistry execution is delegated to the future preparation worker",
     }
 
 
@@ -94,4 +101,3 @@ def ligand_prepare_metadata(options: dict[str, Any]) -> dict[str, Any]:
         "generate_3d": options.get("generate_3d", True),
         "status": "placeholder",
     }
-

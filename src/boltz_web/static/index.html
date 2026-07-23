@@ -152,6 +152,37 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 16px;
       }
+      .workflow-layout {
+        display: grid;
+        grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .operation-column,
+      .workspace-column {
+        display: grid;
+        gap: 16px;
+        min-width: 0;
+      }
+      .operation-column {
+        align-content: start;
+      }
+      .workspace-column {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .workspace-card {
+        min-height: 640px;
+      }
+      .workspace-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 12px;
+      }
+      .workspace-header h2 {
+        margin-bottom: 4px;
+      }
       .preview-grid {
         grid-template-columns: minmax(320px, 0.78fr) minmax(420px, 1.22fr);
       }
@@ -391,6 +422,19 @@
           linear-gradient(180deg, #fbfdff, #f6f9fc);
         padding: 14px;
       }
+      .viewer.large {
+        min-height: 560px;
+        display: grid;
+        align-content: start;
+        gap: 10px;
+      }
+      .viewer-overlay {
+        margin-top: 10px;
+        padding: 14px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.82);
+      }
       .list {
         display: grid;
         gap: 8px;
@@ -483,6 +527,37 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
       }
+      .option-grid {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .option-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 13px;
+        background: rgba(246, 249, 253, 0.78);
+        border: 1px solid rgba(214, 224, 237, 0.72);
+        color: #26344a;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .option-row input {
+        width: auto;
+        min-height: 0;
+        margin: 2px 0 0;
+      }
+      .operation-note {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(232, 241, 255, 0.72);
+        border: 1px solid rgba(149, 180, 233, 0.35);
+        color: #2d4d7c;
+        font-size: 12px;
+        line-height: 1.55;
+      }
       .asset-preview {
         min-height: 520px;
       }
@@ -515,6 +590,7 @@
         .app-shell,
         .side-nav,
         .page-grid,
+        .workflow-layout,
         .preview-grid,
         .project-strip,
         .field-row,
@@ -659,35 +735,98 @@
         <section class="page" data-page="protein">
           <section class="page-hero">
             <h2>蛋白处理</h2>
-            <p class="muted">导入蛋白结构，并为后续口袋分析、配体保留/删除、对接和 Boltz 任务准备蛋白资产。</p>
+            <p class="muted">导入蛋白结构，选择口袋、保留关键组分，并为后续对接、Boltz 和 FEP 任务生成可复用蛋白资产。</p>
           </section>
-          <div class="page-grid">
-            <section>
-              <h2>从 PDB ID 导入</h2>
-              <label>
-                PDB ID
-                <input id="pdb-id" placeholder="例如 1a2c" />
-              </label>
-              <button id="fetch-pdb">导入 PDB</button>
-            </section>
-            <section>
-              <h2>上传蛋白文件</h2>
-              <label>
-                上传文件
-                <input id="protein-upload-file" type="file" />
-              </label>
-              <button id="upload-protein">上传蛋白资产</button>
-            </section>
-            <section>
-              <h2>蛋白资产</h2>
-              <div class="list" id="protein-assets"></div>
-            </section>
-            <section class="asset-preview">
-              <h2>资产预览</h2>
-              <div id="protein-preview">
-                <p class="muted">选择蛋白资产后，在这里查看文件、元数据和后续 3D 预览入口。</p>
-              </div>
-            </section>
+          <div class="workflow-layout">
+            <div class="operation-column">
+              <section>
+                <h2>导入蛋白</h2>
+                <label>
+                  PDB ID
+                  <input id="pdb-id" placeholder="例如 1a2c" />
+                </label>
+                <button id="fetch-pdb">从 RCSB 导入 PDB</button>
+                <label>
+                  上传本地蛋白文件
+                  <input id="protein-upload-file" type="file" />
+                </label>
+                <button class="secondary" id="upload-protein">上传蛋白资产</button>
+              </section>
+              <section>
+                <h2>选择蛋白资产</h2>
+                <div class="list" id="protein-assets"></div>
+              </section>
+              <section>
+                <h2>CADD 蛋白前处理</h2>
+                <label>
+                  当前蛋白资产
+                  <input id="protein-prep-asset" placeholder="从蛋白资产中选择" readonly />
+                </label>
+                <div class="option-grid">
+                  <label class="option-row"><input id="prep-remove-waters" type="checkbox" checked /> 删除结晶水，但允许在右侧预览中标记保留水</label>
+                  <label class="option-row"><input id="prep-keep-metals" type="checkbox" checked /> 保留金属离子并进入口袋检查</label>
+                  <label class="option-row"><input id="prep-keep-cofactors" type="checkbox" checked /> 保留辅因子、共价配体或关键小分子</label>
+                  <label class="option-row"><input id="prep-add-hydrogens" type="checkbox" checked /> 加氢并按指定 pH 处理质子化</label>
+                  <label class="option-row"><input id="prep-repair-missing" type="checkbox" checked /> 修复缺失原子/侧链，记录无法自动修复的残基</label>
+                  <label class="option-row"><input id="prep-remove-altloc" type="checkbox" checked /> 处理 alternate location，只保留主构象</label>
+                </div>
+                <div class="field-row">
+                  <label>
+                    pH
+                    <input id="protein-prep-ph" type="number" value="7.4" step="0.1" />
+                  </label>
+                  <label>
+                    参考配体/残基
+                    <input id="protein-pocket-ligand" placeholder="例如 HEM / LIG / A:145" />
+                  </label>
+                </div>
+                <label>
+                  口袋中心
+                  <input id="protein-pocket-center" placeholder="例如 x,y,z；可由 3D 选择器写入" />
+                </label>
+                <label>
+                  口袋盒子大小
+                  <input id="protein-pocket-size" placeholder="例如 22,22,22 Å" />
+                </label>
+                <button id="prepare-protein">生成准备后蛋白资产</button>
+                <div class="operation-note">当前版本先保存完整前处理方案并生成准备后资产；后续接入 OpenMM/PDBFixer/Reduce/PropKa/MDAnalysis worker 后，右侧操作区会执行真实清洗、修复、加氢和口袋编辑。</div>
+              </section>
+            </div>
+            <div class="workspace-column">
+              <section class="workspace-card">
+                <div class="workspace-header">
+                  <div>
+                    <h2>主工作区 / 3D 预览</h2>
+                    <p class="muted">这里是最大化结构操作区：口袋、配体、金属、水分子、相互作用和后续编辑都集中在右侧。</p>
+                  </div>
+                </div>
+                <div class="toolbar">
+                  <button class="secondary chip" type="button">Cartoon</button>
+                  <button class="secondary chip" type="button">Surface</button>
+                  <button class="secondary chip" type="button">Pocket</button>
+                  <button class="secondary chip" type="button">Ligand</button>
+                  <button class="secondary chip" type="button">Waters</button>
+                  <button class="secondary chip" type="button">Metals</button>
+                  <button class="secondary chip" type="button">H-bonds</button>
+                  <button class="secondary chip" type="button">Clashes</button>
+                </div>
+                <div class="viewer large" id="protein-viewer">
+                  <strong>No protein selected</strong>
+                  <p class="muted">选择蛋白资产后，这里会作为后续 3Dmol/NGL 工作区：预览结构、框选口袋、保留/删除配体片段、显示氢键/疏水/盐桥/金属配位。</p>
+                  <div class="viewer-overlay" id="protein-viewer-selection">当前没有选中的蛋白资产</div>
+                </div>
+              </section>
+              <section class="asset-preview">
+                <h2>资产预览</h2>
+                <div id="protein-preview">
+                  <p class="muted">选择蛋白资产后，在这里查看文件、元数据和准备方案。</p>
+                </div>
+              </section>
+              <section>
+                <h2>准备产物</h2>
+                <div class="list" id="prepared-protein-assets"></div>
+              </section>
+            </div>
           </div>
         </section>
 
@@ -696,33 +835,43 @@
             <h2>配体处理</h2>
             <p class="muted">支持 SDF、SMILES、表格和后续手工绘制入口，生成标准化配体资产。</p>
           </section>
-          <div class="page-grid preview-grid">
-            <section>
-              <h2>SMILES 列表</h2>
-              <label>
-                SMILES
-                <textarea id="smiles" placeholder="每行一个 SMILES"></textarea>
-              </label>
-              <button id="create-smiles">生成配体 SDF</button>
-            </section>
-            <section>
-              <h2>上传配体文件</h2>
-              <label>
-                上传文件
-                <input id="ligand-upload-file" type="file" />
-              </label>
-              <button id="upload-ligand">上传配体资产</button>
-            </section>
-            <section>
-              <h2>配体资产</h2>
-              <div class="list" id="ligand-assets"></div>
-            </section>
-            <section class="asset-preview">
-              <h2>资产预览</h2>
-              <div id="ligand-preview">
-                <p class="muted">选择配体资产后，在这里查看 SDF、SMILES 元数据和后续结构预览入口。</p>
-              </div>
-            </section>
+          <div class="workflow-layout">
+            <div class="operation-column">
+              <section>
+                <h2>生成配体</h2>
+                <label>
+                  SMILES
+                  <textarea id="smiles" placeholder="每行一个 SMILES"></textarea>
+                </label>
+                <button id="create-smiles">生成配体 SDF</button>
+              </section>
+              <section>
+                <h2>上传配体</h2>
+                <label>
+                  上传文件
+                  <input id="ligand-upload-file" type="file" />
+                </label>
+                <button class="secondary" id="upload-ligand">上传配体资产</button>
+                <p class="muted">后续会补表格导入和手工绘制，仍然放在左侧操作区。</p>
+              </section>
+              <section>
+                <h2>配体资产</h2>
+                <div class="list" id="ligand-assets"></div>
+              </section>
+            </div>
+            <div class="workspace-column">
+              <section class="workspace-card asset-preview">
+                <div class="workspace-header">
+                  <div>
+                    <h2>主工作区 / 配体预览</h2>
+                    <p class="muted">右侧保留给分子绘制、构象预览、枚举结果、性质表和后续交互编辑。</p>
+                  </div>
+                </div>
+                <div id="ligand-preview">
+                  <p class="muted">选择配体资产后，在这里查看 SDF、SMILES 元数据和后续结构预览入口。</p>
+                </div>
+              </section>
+            </div>
           </div>
         </section>
 
@@ -731,10 +880,10 @@
             <h2>对接任务</h2>
             <p class="muted">选择蛋白和配体资产，配置口袋与参数，提交结构预测/亲和力预测等任务。</p>
           </section>
-          <div class="page-grid">
-            <section>
-              <h2>任务输入</h2>
-              <div class="field-row">
+          <div class="workflow-layout">
+            <div class="operation-column">
+              <section>
+                <h2>任务输入</h2>
                 <label>
                   蛋白资产 ID
                   <input id="docking-protein-asset" placeholder="从蛋白资产中选择" />
@@ -743,32 +892,39 @@
                   配体资产 ID
                   <input id="docking-ligand-asset" placeholder="从配体资产中选择" />
                 </label>
-              </div>
-              <label>
-                口袋 / 盒子描述
-                <input id="docking-pocket" placeholder="后续接入交互式口袋选择" />
-              </label>
-              <button id="create-docking-job">创建对接占位任务</button>
-            </section>
-            <section>
-              <h2>对接任务列表</h2>
-              <div class="list" id="docking-jobs"></div>
-            </section>
-            <section class="span-all">
-              <h2>3D 工作区</h2>
-              <div class="toolbar">
-                <button class="secondary chip" type="button">Cartoon</button>
-                <button class="secondary chip" type="button">Surface</button>
-                <button class="secondary chip" type="button">Pocket</button>
-                <button class="secondary chip" type="button">Ligand</button>
-                <button class="secondary chip" type="button">Interactions</button>
-              </div>
-              <div class="viewer" id="viewer">
-                <strong>No structure selected</strong>
-                <p class="muted">Select a protein, ligand, or result asset to inspect it here.</p>
-                <div id="selected"></div>
-              </div>
-            </section>
+                <label>
+                  口袋 / 盒子描述
+                  <input id="docking-pocket" placeholder="后续接入交互式口袋选择" />
+                </label>
+                <button id="create-docking-job">创建对接占位任务</button>
+              </section>
+              <section>
+                <h2>对接任务列表</h2>
+                <div class="list" id="docking-jobs"></div>
+              </section>
+            </div>
+            <div class="workspace-column">
+              <section class="workspace-card">
+                <div class="workspace-header">
+                  <div>
+                    <h2>主工作区 / 3D 对接预览</h2>
+                    <p class="muted">右侧用于复合物叠合、口袋盒子、对接构象、相互作用和打分结果预览。</p>
+                  </div>
+                </div>
+                <div class="toolbar">
+                  <button class="secondary chip" type="button">Cartoon</button>
+                  <button class="secondary chip" type="button">Surface</button>
+                  <button class="secondary chip" type="button">Pocket</button>
+                  <button class="secondary chip" type="button">Ligand</button>
+                  <button class="secondary chip" type="button">Interactions</button>
+                </div>
+                <div class="viewer large" id="viewer">
+                  <strong>No structure selected</strong>
+                  <p class="muted">Select a protein, ligand, or result asset to inspect it here.</p>
+                  <div class="viewer-overlay" id="selected"></div>
+                </div>
+              </section>
+            </div>
           </div>
         </section>
 
@@ -777,28 +933,45 @@
             <h2>FEP / 后续分析</h2>
             <p class="muted">这里先作为后续计算入口，预留 FEP、相对结合自由能、轨迹分析、结果对比和报告生成。</p>
           </section>
-          <div class="page-grid">
-            <section>
-              <h2>FEP 输入草稿</h2>
-              <label>
-                参考复合物 / 对接结果
-                <input placeholder="后续从输出资产选择" disabled />
-              </label>
-              <label>
-                配体系列
-                <input placeholder="后续从配体资产组选择" disabled />
-              </label>
-              <button class="secondary" type="button" disabled>等待 FEP worker 接入</button>
-            </section>
-            <section>
-              <h2>分析模块预留</h2>
-              <ul class="step-list">
-                <li>FEP 任务队列与资源配置</li>
-                <li>ΔΔG / ΔG 表格与误差展示</li>
-                <li>结构、轨迹和相互作用对比</li>
-                <li>可下载报告和可复用输出资产</li>
-              </ul>
-            </section>
+          <div class="workflow-layout">
+            <div class="operation-column">
+              <section>
+                <h2>FEP 输入草稿</h2>
+                <label>
+                  参考复合物 / 对接结果
+                  <input placeholder="后续从输出资产选择" disabled />
+                </label>
+                <label>
+                  配体系列
+                  <input placeholder="后续从配体资产组选择" disabled />
+                </label>
+                <button class="secondary" type="button" disabled>等待 FEP worker 接入</button>
+              </section>
+              <section>
+                <h2>计算设置</h2>
+                <ul class="step-list">
+                  <li>体系构建、溶剂化、离子强度</li>
+                  <li>lambda 窗口、采样时间、重复次数</li>
+                  <li>GPU 队列、优先级和失败重试</li>
+                </ul>
+              </section>
+            </div>
+            <div class="workspace-column">
+              <section class="workspace-card">
+                <div class="workspace-header">
+                  <div>
+                    <h2>主工作区 / FEP 分析</h2>
+                    <p class="muted">右侧用于 ΔΔG 表格、轨迹预览、误差分析、构象对比和报告输出。</p>
+                  </div>
+                </div>
+                <ul class="step-list">
+                  <li>FEP 任务队列与资源配置</li>
+                  <li>ΔΔG / ΔG 表格与误差展示</li>
+                  <li>结构、轨迹和相互作用对比</li>
+                  <li>可下载报告和可复用输出资产</li>
+                </ul>
+              </section>
+            </div>
           </div>
         </section>
 
@@ -807,14 +980,14 @@
             <h2>SAR / 构效关系</h2>
             <p class="muted">面向药化决策的化合物系列分析入口，用实验活性、配体结构、对接结果和 FEP 结果建立可解释的趋势视图。</p>
           </section>
-          <div class="page-grid preview-grid">
-            <section>
-              <h2>数据导入</h2>
-              <label>
-                上传活性表
-                <input id="sar-table-file" type="file" disabled />
-              </label>
-              <div class="field-row">
+          <div class="workflow-layout">
+            <div class="operation-column">
+              <section>
+                <h2>数据导入</h2>
+                <label>
+                  上传活性表
+                  <input id="sar-table-file" type="file" disabled />
+                </label>
                 <label>
                   SMILES 列
                   <input placeholder="例如 smiles" disabled />
@@ -823,29 +996,35 @@
                   活性列
                   <input placeholder="例如 IC50 / pIC50 / Ki" disabled />
                 </label>
-              </div>
-              <button class="secondary" type="button" disabled>等待 SAR worker 接入</button>
-              <p class="muted">第一版先作为独立工作流入口；后续会把表格转为 SAR 数据资产，并支持与项目内配体、对接和 FEP 结果合并。</p>
-            </section>
-            <section>
-              <h2>分析视图预留</h2>
-              <ul class="step-list">
-                <li>分子表格：SMILES、活性、选择性、ADMET 和计算结果字段。</li>
-                <li>Scaffold / R-group 分组：按骨架和取代基观察趋势。</li>
-                <li>活性分布：pIC50、Ki、Kd、EC50 等字段的排序和分布图。</li>
-                <li>Matched Molecular Pair：定位小结构变化带来的活性变化。</li>
-                <li>下一轮设计：基于 SAR 趋势生成待合成/待计算候选。</li>
-              </ul>
-            </section>
-            <section class="span-all">
-              <h2>输入和输出关系</h2>
-              <p class="muted">SAR 页面不会替代配体准备、对接或 FEP。它是项目决策层：读取这些模块产生的资产和实验表格，输出可解释的构效关系分析资产、筛选结果和报告。</p>
-              <ul class="step-list">
-                <li>输入：配体资产、活性表、对接打分、FEP 结果、ADMET 字段。</li>
-                <li>处理：标准化字段、按系列分组、计算相似性/MCS/MMPA、合并计算结果。</li>
-                <li>输出：SAR 分析资产、分组表格、趋势图、候选设计列表和报告文件。</li>
-              </ul>
-            </section>
+                <button class="secondary" type="button" disabled>等待 SAR worker 接入</button>
+                <p class="muted">后续会把表格转为 SAR 数据资产，并与项目内配体、对接和 FEP 结果合并。</p>
+              </section>
+              <section>
+                <h2>输入和输出关系</h2>
+                <ul class="step-list">
+                  <li>输入：配体资产、活性表、对接打分、FEP 结果、ADMET 字段。</li>
+                  <li>处理：标准化字段、按系列分组、计算相似性/MCS/MMPA。</li>
+                  <li>输出：SAR 分析资产、趋势图、候选设计列表和报告文件。</li>
+                </ul>
+              </section>
+            </div>
+            <div class="workspace-column">
+              <section class="workspace-card">
+                <div class="workspace-header">
+                  <div>
+                    <h2>主工作区 / SAR 分析视图</h2>
+                    <p class="muted">右侧用于最大化分子表格、骨架/R-group、活性趋势、MMPA 和下一轮设计视图。</p>
+                  </div>
+                </div>
+                <ul class="step-list">
+                  <li>分子表格：SMILES、活性、选择性、ADMET 和计算结果字段。</li>
+                  <li>Scaffold / R-group 分组：按骨架和取代基观察趋势。</li>
+                  <li>活性分布：pIC50、Ki、Kd、EC50 等字段的排序和分布图。</li>
+                  <li>Matched Molecular Pair：定位小结构变化带来的活性变化。</li>
+                  <li>下一轮设计：基于 SAR 趋势生成待合成/待计算候选。</li>
+                </ul>
+              </section>
+            </div>
           </div>
         </section>
 
@@ -944,6 +1123,22 @@
           .replaceAll('"', "&quot;")
           .replaceAll("'", "&#039;");
       }
+      function isProteinLike(assetOrKind) {
+        const kind = typeof assetOrKind === "string" ? assetOrKind : assetOrKind.kind;
+        return ["protein", "prepared_protein", "complex"].includes(kind);
+      }
+      function isLigandLike(assetOrKind) {
+        const kind = typeof assetOrKind === "string" ? assetOrKind : assetOrKind.kind;
+        return ["ligand", "prepared_ligand"].includes(kind);
+      }
+      function setSelectedProtein(assetId) {
+        selectedProteinId = assetId || "";
+        document.getElementById("docking-protein-asset").value = selectedProteinId;
+        document.getElementById("protein-prep-asset").value = selectedProteinId;
+        document.getElementById("protein-viewer-selection").textContent = selectedProteinId
+          ? `当前蛋白资产：${selectedProteinId}`
+          : "当前没有选中的蛋白资产";
+      }
       function renderAssetList(assets, targetId, emptyLabel) {
         const target = document.getElementById(targetId);
         target.innerHTML = assets.length
@@ -974,11 +1169,10 @@
         document.querySelectorAll("[data-asset]").forEach((node) => {
           node.addEventListener("click", () => {
             selectedAssetId = node.dataset.asset;
-            if (node.dataset.kind === "protein") {
-              selectedProteinId = selectedAssetId;
-              document.getElementById("docking-protein-asset").value = selectedProteinId;
+            if (isProteinLike(node.dataset.kind)) {
+              setSelectedProtein(selectedAssetId);
             }
-            if (node.dataset.kind === "ligand") {
+            if (isLigandLike(node.dataset.kind)) {
               selectedLigandId = selectedAssetId;
               document.getElementById("docking-ligand-asset").value = selectedLigandId;
             }
@@ -1020,7 +1214,10 @@
               .join("")
           : emptyList("这个资产还没有文件");
         const metadataRows = Object.entries(asset.metadata || {})
-          .map(([key, value]) => `<li>${escapeHtml(key)}：${escapeHtml(Array.isArray(value) ? value.join("，") : value)}</li>`)
+          .map(([key, value]) => {
+            const rendered = typeof value === "object" && value !== null ? JSON.stringify(value) : value;
+            return `<li>${escapeHtml(key)}：${escapeHtml(Array.isArray(rendered) ? rendered.join("，") : rendered)}</li>`;
+          })
           .join("");
         document.getElementById(targetId).innerHTML = `
           <div class="item">
@@ -1057,12 +1254,11 @@
       async function previewAsset(assetId) {
         const asset = await api(`/api/v1/assets/${assetId}`);
         selectedAssetId = asset.id;
-        if (asset.kind === "protein") {
-          selectedProteinId = asset.id;
-          document.getElementById("docking-protein-asset").value = asset.id;
+        if (isProteinLike(asset)) {
+          setSelectedProtein(asset.id);
           renderPreview(asset, "protein-preview");
           showPage("protein");
-        } else if (asset.kind === "ligand") {
+        } else if (isLigandLike(asset)) {
           selectedLigandId = asset.id;
           document.getElementById("docking-ligand-asset").value = asset.id;
           renderPreview(asset, "ligand-preview");
@@ -1090,9 +1286,8 @@
         if (!window.confirm(`确认删除资产“${label}”？对应文件也会删除。`)) return;
         await api(`/api/v1/assets/${assetId}`, { method: "DELETE" });
         if (selectedAssetId === assetId) selectedAssetId = null;
-        if (selectedProteinId === assetId) selectedProteinId = "";
+        if (selectedProteinId === assetId) setSelectedProtein("");
         if (selectedLigandId === assetId) selectedLigandId = "";
-        document.getElementById("docking-protein-asset").value = selectedProteinId;
         document.getElementById("docking-ligand-asset").value = selectedLigandId;
         setStatus("资产已删除", "success");
         await refresh();
@@ -1103,12 +1298,17 @@
         currentAssets = assets;
         renderAssetList(assets, "assets", "当前项目还没有资产");
         renderAssetList(
-          assets.filter((asset) => asset.kind === "protein"),
+          assets.filter((asset) => isProteinLike(asset)),
           "protein-assets",
           "还没有蛋白资产",
         );
         renderAssetList(
-          assets.filter((asset) => asset.kind === "ligand"),
+          assets.filter((asset) => asset.kind === "prepared_protein"),
+          "prepared-protein-assets",
+          "还没有准备后蛋白资产",
+        );
+        renderAssetList(
+          assets.filter((asset) => isLigandLike(asset)),
           "ligand-assets",
           "还没有配体资产",
         );
@@ -1215,15 +1415,34 @@
         });
         if (!response.ok) throw new Error(formatApiError(await response.text(), response.status));
       }
+      function checked(id) {
+        return document.getElementById(id).checked;
+      }
+      function collectProteinPrepOptions() {
+        return {
+          remove_waters: checked("prep-remove-waters"),
+          keep_metals: checked("prep-keep-metals"),
+          keep_cofactors: checked("prep-keep-cofactors"),
+          add_hydrogens: checked("prep-add-hydrogens"),
+          repair_missing_atoms: checked("prep-repair-missing"),
+          assign_protonation: checked("prep-add-hydrogens"),
+          remove_altloc: checked("prep-remove-altloc"),
+          ph: Number(document.getElementById("protein-prep-ph").value || 7.4),
+          pocket: {
+            reference: document.getElementById("protein-pocket-ligand").value.trim(),
+            center: document.getElementById("protein-pocket-center").value.trim(),
+            box_size: document.getElementById("protein-pocket-size").value.trim(),
+          },
+        };
+      }
       document.querySelectorAll("[data-nav]").forEach((node) => {
         node.addEventListener("click", () => showPage(node.dataset.nav));
       });
       document.getElementById("project-id").addEventListener("change", async (event) => {
         currentProjectId = event.target.value;
         selectedAssetId = null;
-        selectedProteinId = "";
+        setSelectedProtein("");
         selectedLigandId = "";
-        document.getElementById("docking-protein-asset").value = "";
         document.getElementById("docking-ligand-asset").value = "";
         await refresh();
       });
@@ -1295,6 +1514,28 @@
         try {
           await uploadAsset("protein", "protein-upload-file");
           setStatus("蛋白资产已上传", "success");
+          showPage("protein");
+          await refresh();
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      });
+      document.getElementById("prepare-protein").addEventListener("click", async () => {
+        try {
+          const assetId = document.getElementById("protein-prep-asset").value.trim();
+          if (!assetId) throw new Error("请先选择蛋白资产");
+          const asset = await api("/api/v1/preparations/protein", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              asset_id: assetId,
+              project_id: currentProjectId,
+              options: collectProteinPrepOptions(),
+            }),
+          });
+          setSelectedProtein(asset.id);
+          renderPreview(asset, "protein-preview");
+          setStatus("准备后蛋白资产已生成", "success");
           showPage("protein");
           await refresh();
         } catch (error) {
