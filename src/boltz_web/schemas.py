@@ -58,6 +58,11 @@ class AssetCopyRequest(BaseModel):
     name: str | None = None
 
 
+class PasswordChangeRequest(BaseModel):
+    current_password: str | None = None
+    new_password: str = Field(min_length=8, max_length=256)
+
+
 class JobOut(BaseModel):
     id: str
     project_id: str
@@ -101,6 +106,13 @@ class LigandEditRequest(BaseModel):
     name: str = "edited ligand"
     project_id: str | None = None
     edit_reason: str | None = None
+
+
+class ProteinLigandExtractRequest(BaseModel):
+    components: list[dict[str, Any]] = Field(min_length=1)
+    target_ligand_asset_id: str | None = None
+    name: str = "extracted ligands"
+    project_id: str | None = None
 
 
 class LigandMoleculeOut(BaseModel):

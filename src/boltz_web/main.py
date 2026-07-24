@@ -6,6 +6,7 @@ import platform
 import secrets
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import uvicorn
@@ -61,8 +62,10 @@ from boltz_web.schemas import (
     JobRetryRequest,
     LigandEditRequest,
     LigandMoleculeOut,
+    PasswordChangeRequest,
     PocketCreateRequest,
     PreparationRequest,
+    ProteinLigandExtractRequest,
     ProteinPdbRequest,
     ProjectCreateRequest,
     ProjectOut,
@@ -118,6 +121,78 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)) -> UserOut
     return UserOut(id=user.id, is_admin=user.is_admin, status=user.status)
 
 
+def user_data_summary(db: Session, username: str) -> dict:
+    username = validate_username(username)
+    user = db.get(User, username)
+    if user is None:
+        raise HTTPException(status_code=404, detail="user not found")
+    projects = db.scalars(select(Project).where(Project.user_id == username).order_by(Project.created_at.desc())).all()
+    project_names = {project.id: project.name for project in projects}
+    assets = db.scalars(select(Asset).where(Asset.user_id == username).order_by(Asset.created_at.desc())).all()
+    jobs = db.scalars(select(Job).where(Job.user_id == username).order_by(Job.created_at.desc())).all()
+    asset_rows = []
+    total_files = 0
+    total_bytes = 0
+    for asset in assets:
+        files = [
+            {
+                "id": item.id,
+                "role": item.role,
+                "filename": item.filename,
+                "content_type": item.content_type,
+                "size_bytes": item.size_bytes,
+                "sha256": item.sha256,
+            }
+            for item in asset.files
+        ]
+        total_files += len(files)
+        total_bytes += sum(item["size_bytes"] for item in files)
+        asset_rows.append(
+            {
+                **asset_to_out(asset).model_dump(),
+                "project_name": project_names.get(asset.project_id, ""),
+                "files": files,
+            },
+        )
+    return {
+        "user": {"id": user.id, "is_admin": user.is_admin, "status": user.status},
+        "counts": {
+            "projects": len(projects),
+            "assets": len(assets),
+            "jobs": len(jobs),
+            "files": total_files,
+            "bytes": total_bytes,
+        },
+        "projects": [project_to_out(project).model_dump() for project in projects],
+        "assets": asset_rows,
+        "jobs": [job_to_out(job).model_dump() for job in jobs],
+    }
+
+
+@app.post("/api/v1/account/password")
+def change_own_password(
+    request: PasswordChangeRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    user = db.get(User, current_user.id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="user not found")
+    if not request.current_password or not verify_password(request.current_password, user.password_hash):
+        raise HTTPException(status_code=403, detail="current password is incorrect")
+    user.password_hash = hash_password(request.new_password)
+    db.commit()
+    return {"status": "updated"}
+
+
+@app.get("/api/v1/account/summary")
+def account_summary(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    return user_data_summary(db, current_user.id)
+
+
 @app.get("/api/v1/admin/users", response_model=list[UserOut])
 def list_users(
     _admin: CurrentUser = Depends(require_admin),
@@ -139,6 +214,30 @@ def approve_user(
     user.status = "active"
     db.commit()
     return UserOut(id=user.id, is_admin=user.is_admin, status=user.status)
+
+
+@app.post("/api/v1/admin/users/{username}/password")
+def admin_change_user_password(
+    username: str,
+    request: PasswordChangeRequest,
+    _admin: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    user = db.get(User, validate_username(username))
+    if user is None:
+        raise HTTPException(status_code=404, detail="user not found")
+    user.password_hash = hash_password(request.new_password)
+    db.commit()
+    return {"status": "updated", "user_id": user.id}
+
+
+@app.get("/api/v1/admin/users/{username}/summary")
+def admin_user_summary(
+    username: str,
+    _admin: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> dict:
+    return user_data_summary(db, username)
 
 
 def bytes_to_gib(value: int) -> float:
@@ -193,7 +292,37 @@ def read_cpu_info() -> dict:
         "architecture": platform.machine(),
         "logical_count": os.cpu_count() or 0,
         "frequency_mhz": frequency_mhz,
+        "cores": read_cpu_core_usage(),
     }
+
+
+def read_cpu_core_usage() -> list[dict]:
+    def snapshot() -> dict[str, tuple[int, int]]:
+        values: dict[str, tuple[int, int]] = {}
+        for line in Path("/proc/stat").read_text().splitlines():
+            parts = line.split()
+            if not parts or not parts[0].startswith("cpu") or parts[0] == "cpu":
+                continue
+            numbers = [int(value) for value in parts[1:8]]
+            idle = numbers[3] + numbers[4]
+            total = sum(numbers)
+            values[parts[0]] = (total, idle)
+        return values
+
+    try:
+        first = snapshot()
+        time.sleep(0.12)
+        second = snapshot()
+    except Exception:  # noqa: BLE001
+        return []
+    cores: list[dict] = []
+    for core_id, (total, idle) in sorted(second.items()):
+        previous_total, previous_idle = first.get(core_id, (total, idle))
+        delta_total = max(total - previous_total, 0)
+        delta_idle = max(idle - previous_idle, 0)
+        used_percent = round(((delta_total - delta_idle) / delta_total) * 100, 1) if delta_total else 0
+        cores.append({"id": core_id, "used_percent": used_percent})
+    return cores
 
 
 def read_disk_info() -> list[dict]:
@@ -238,9 +367,9 @@ def read_gpu_info() -> list[dict]:
             timeout=3,
         )
     except Exception:  # noqa: BLE001
-        return []
+        return read_rocm_gpu_info() or read_jetson_gpu_info()
     if result.returncode != 0:
-        return []
+        return read_rocm_gpu_info() or read_jetson_gpu_info()
     gpus = []
     for line in result.stdout.splitlines():
         parts = [item.strip() for item in line.split(",")]
@@ -262,23 +391,148 @@ def read_gpu_info() -> list[dict]:
                 "power_limit_w": power_limit,
                 "power_used_percent": power_used_percent,
                 "graphics_clock_mhz": clock,
+                "backend": "nvidia-smi",
+            },
+        )
+    return gpus or read_jetson_gpu_info()
+
+
+def read_rocm_gpu_info() -> list[dict]:
+    try:
+        result = subprocess.run(
+            ["rocm-smi", "--showproductname", "--showmemuse", "--showuse", "--json"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+    except Exception:  # noqa: BLE001
+        return []
+    if result.returncode != 0 or not result.stdout.strip():
+        return []
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return []
+    gpus: list[dict] = []
+    for key, value in payload.items():
+        if not isinstance(value, dict):
+            continue
+        gpus.append(
+            {
+                "name": value.get("Card series") or value.get("Card model") or key,
+                "backend": "rocm-smi",
+                "memory_total_mib": "",
+                "memory_used_mib": value.get("GPU Memory Allocated (VRAM%)") or "",
+                "utilization_percent": value.get("GPU use (%)") or "",
+                "power_draw_w": "",
+                "power_limit_w": "",
+                "power_used_percent": None,
+                "graphics_clock_mhz": "",
             },
         )
     return gpus
+
+
+def read_jetson_gpu_info() -> list[dict]:
+    try:
+        result = subprocess.run(
+            ["tegrastats", "--interval", "100", "--count", "1"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            line = result.stdout.strip().splitlines()[-1]
+            return [
+                {
+                    "name": "Jetson integrated GPU",
+                    "backend": "tegrastats",
+                    "raw": line,
+                    "memory_total_mib": "",
+                    "memory_used_mib": "",
+                    "utilization_percent": "",
+                    "power_draw_w": "",
+                    "power_limit_w": "",
+                    "power_used_percent": None,
+                    "graphics_clock_mhz": "",
+                },
+            ]
+    except Exception:  # noqa: BLE001
+        pass
+    candidates = [
+        Path("/sys/devices/platform/17000000.gpu/devfreq/17000000.gpu"),
+        Path("/sys/devices/gpu.0/devfreq/17000000.gpu"),
+    ]
+    for root in candidates:
+        if not root.exists():
+            continue
+        try:
+            cur_freq = root.joinpath("cur_freq").read_text().strip() if root.joinpath("cur_freq").exists() else ""
+            max_freq = root.joinpath("max_freq").read_text().strip() if root.joinpath("max_freq").exists() else ""
+            return [
+                {
+                    "name": "Jetson integrated GPU",
+                    "backend": "sysfs",
+                    "memory_total_mib": "",
+                    "memory_used_mib": "",
+                    "utilization_percent": "",
+                    "power_draw_w": "",
+                    "power_limit_w": "",
+                    "power_used_percent": None,
+                    "graphics_clock_mhz": round(int(cur_freq) / 1_000_000, 1) if cur_freq.isdigit() else "",
+                    "max_clock_mhz": round(int(max_freq) / 1_000_000, 1) if max_freq.isdigit() else "",
+                },
+            ]
+        except Exception:  # noqa: BLE001
+            continue
+    return []
+
+
+def system_info_payload() -> dict:
+    host_metrics = read_host_metrics_snapshot()
+    if host_metrics:
+        return host_metrics
+    gpus = read_gpu_info()
+    return {
+        "host": platform.node(),
+        "platform": platform.platform(),
+        "metrics_source": "web-container",
+        "cpu": read_cpu_info(),
+        "memory": read_meminfo(),
+        "gpus": gpus,
+        "gpu_note": ""
+        if gpus
+        else "No GPU interface is visible inside the web container. Expose nvidia-smi, Jetson sysfs/tegrastats, or add a host metrics sidecar to show GPU details.",
+        "disks": read_disk_info(),
+    }
+
+
+def read_host_metrics_snapshot() -> dict | None:
+    path = settings.data_dir / "system-metrics" / "host.json"
+    try:
+        payload = json.loads(path.read_text())
+    except Exception:  # noqa: BLE001
+        return None
+    if not isinstance(payload, dict):
+        return None
+    payload.setdefault("metrics_source", "host-metrics-json")
+    return payload
+
+
+@app.get("/api/v1/system")
+def system_info(
+    _current_user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    return system_info_payload()
 
 
 @app.get("/api/v1/admin/system")
 def admin_system_info(
     _admin: CurrentUser = Depends(require_admin),
 ) -> dict:
-    return {
-        "host": platform.node(),
-        "platform": platform.platform(),
-        "cpu": read_cpu_info(),
-        "memory": read_meminfo(),
-        "gpus": read_gpu_info(),
-        "disks": read_disk_info(),
-    }
+    return system_info_payload()
 
 
 def admin_job_to_out(job: Job) -> dict:
@@ -717,6 +971,14 @@ def ligand_records_for_asset(asset: Asset) -> list[dict]:
     return []
 
 
+def protein_structure_file(asset: Asset) -> AssetFile | None:
+    return (
+        next((item for item in asset.files if item.filename.lower().endswith(".pdb")), None)
+        or next((item for item in asset.files if item.role in {"structure", "prepared_structure", "source"}), None)
+        or (asset.files[0] if asset.files else None)
+    )
+
+
 def ligand_sdf_file_or_error(asset: Asset) -> AssetFile:
     structure_file = ligand_structure_file(asset)
     if structure_file is None or not structure_file.filename.lower().endswith(".sdf"):
@@ -748,6 +1010,136 @@ def rewrite_ligand_sdf(db: Session, asset: Asset, records: list[dict]) -> None:
         "last_library_edit": {"operation": "rewrite", "count": len(records)},
     }
     db.flush()
+
+
+def pdb_component_matches_line(line: str, component: dict[str, Any]) -> bool:
+    if not line.startswith(("ATOM  ", "HETATM")):
+        return False
+    chain = (line[21:22].strip() or "_")
+    resi = line[22:26].strip()
+    icode = line[26:27].strip()
+    resn = line[17:20].strip()
+    return (
+        str(component.get("chain") or "_") == chain
+        and str(component.get("resi") or "") == resi
+        and str(component.get("resn") or "").upper() == resn.upper()
+        and str(component.get("icode") or "") == icode
+    )
+
+
+def pdb_block_for_component(pdb_text: str, component: dict[str, Any]) -> str:
+    lines = [line for line in pdb_text.splitlines() if pdb_component_matches_line(line, component)]
+    if not lines:
+        reference = f"{component.get('resn', '')} {component.get('chain', '')}:{component.get('resi', '')}"
+        raise ValueError(f"component has no PDB records: {reference.strip()}")
+    return "\n".join(lines) + "\nEND\n"
+
+
+def ligand_records_from_pdb_components(pdb_text: str, components: list[dict[str, Any]]) -> tuple[list[bytes], list[dict[str, Any]]]:
+    chunks: list[bytes] = []
+    records: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for index, component in enumerate(components):
+        if component.get("type") != "ligand":
+            continue
+        reference = f"{component.get('resn', 'LIG')} {component.get('chain', '_')}:{component.get('resi', '')}"
+        try:
+            block = pdb_block_for_component(pdb_text, component)
+            from rdkit import Chem
+
+            mol = Chem.MolFromPDBBlock(block, sanitize=False, removeHs=False)
+            if mol is None:
+                raise ValueError("RDKit could not parse PDB ligand block")
+            try:
+                Chem.SanitizeMol(mol)
+            except Exception:
+                Chem.SanitizeMol(mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES)
+            data, record = molblock_or_smiles_to_record(None, Chem.MolToMolBlock(mol), reference, len(records))
+            record["source_component"] = component
+            chunks.append(data)
+            records.append(record)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{reference}: {exc}")
+    if errors:
+        raise ValueError("; ".join(errors))
+    if not records:
+        raise ValueError("no ligand components were selected")
+    return chunks, records
+
+
+@app.post("/api/v1/assets/proteins/{asset_id}/ligands/extract", response_model=AssetOut)
+def extract_ligands_from_protein(
+    asset_id: str,
+    request: ProteinLigandExtractRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AssetOut:
+    user_id = current_user.id
+    protein = db.get(Asset, asset_id)
+    if protein is None or protein.user_id != user_id or protein.kind not in {"protein", "prepared_protein", "complex"}:
+        raise HTTPException(status_code=404, detail="protein asset not found")
+    structure_file = protein_structure_file(protein)
+    if structure_file is None:
+        raise HTTPException(status_code=400, detail="protein asset has no PDB structure file")
+    try:
+        project = ensure_project(db, user_id, request.project_id or protein.project_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if protein.project_id != project.id:
+        raise HTTPException(status_code=400, detail="protein asset is not in the selected project")
+    pdb_text = Path(structure_file.storage_path).read_text(errors="replace")
+    try:
+        chunks, extracted_records = ligand_records_from_pdb_components(pdb_text, request.components)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if request.target_ligand_asset_id:
+        target = db.get(Asset, request.target_ligand_asset_id)
+        if target is None or target.user_id != user_id or target.kind not in {"ligand", "prepared_ligand", "prepared_ligand_library"}:
+            raise HTTPException(status_code=404, detail="target ligand asset not found")
+        if target.project_id != project.id:
+            raise HTTPException(status_code=400, detail="target ligand asset is not in the selected project")
+        records = ligand_records_for_asset(target)
+        start = len(records)
+        for offset, record in enumerate(extracted_records):
+            record["index"] = start + offset
+            records.append(record)
+        rewrite_ligand_sdf(db, target, records)
+        target.metadata_json = {
+            **(target.metadata_json or {}),
+            "count": len(records),
+            "last_extraction": {
+                "protein_asset_id": protein.id,
+                "source_components": request.components,
+                "added_count": len(extracted_records),
+            },
+        }
+        db.commit()
+        db.refresh(target)
+        return asset_to_out(target)
+
+    asset = Asset(
+        user_id=user_id,
+        project_id=project.id,
+        kind="ligand",
+        name=request.name.strip() or f"{protein.name} extracted ligands",
+        parent_asset_id=protein.id,
+        source_type="pdb_ligand_extraction",
+        metadata_json={
+            "operation": "extract_ligands_from_protein",
+            "protein_asset_id": protein.id,
+            "count": len(extracted_records),
+            "source_components": request.components,
+        },
+    )
+    db.add(asset)
+    db.flush()
+    path = asset_root(settings, user_id, project.id, asset.id) / "extracted_ligands.sdf"
+    size, sha = write_bytes(path, b"".join(chunks))
+    add_asset_file(db, asset, "structure", path.name, "chemical/x-mdl-sdfile", path, size, sha)
+    db.commit()
+    db.refresh(asset)
+    return asset_to_out(asset)
 
 
 @app.get("/api/v1/assets/{asset_id}/ligand-molecules", response_model=list[LigandMoleculeOut])
@@ -1107,6 +1499,23 @@ def download_asset_file(
     asset = db.get(Asset, asset_id)
     asset_file = db.get(AssetFile, file_id)
     if asset is None or asset_file is None or asset.user_id != user_id or asset_file.asset_id != asset_id:
+        raise HTTPException(status_code=404, detail="file not found")
+    path = Path(asset_file.storage_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="stored file missing")
+    return FileResponse(path, media_type=asset_file.content_type, filename=asset_file.filename)
+
+
+@app.get("/api/v1/admin/assets/{asset_id}/files/{file_id}/download")
+def admin_download_asset_file(
+    asset_id: str,
+    file_id: str,
+    _admin: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    asset = db.get(Asset, asset_id)
+    asset_file = db.get(AssetFile, file_id)
+    if asset is None or asset_file is None or asset_file.asset_id != asset_id:
         raise HTTPException(status_code=404, detail="file not found")
     path = Path(asset_file.storage_path)
     if not path.exists():

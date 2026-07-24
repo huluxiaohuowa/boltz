@@ -1,0 +1,20 @@
+services:
+  boltz-host-metrics:
+    build:
+      context: .
+      dockerfile: Dockerfile.host-metrics
+      args:
+        HOST_METRICS_BASE_IMAGE: ${HOST_METRICS_BASE_IMAGE:-python:3.11-slim}
+    image: ${BOLTZ_HOST_METRICS_IMAGE:-boltz-host-metrics:dev}
+    restart: unless-stopped
+    profiles: ["metrics", "host-metrics"]
+    privileged: true
+    pid: host
+    environment:
+      BOLTZ_HOST_METRICS_OUT: /data/system-metrics/host.json
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: utility,compute
+    volumes:
+      - ${BOLTZ_DATA_HOST_DIR:-./data}:/data
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro

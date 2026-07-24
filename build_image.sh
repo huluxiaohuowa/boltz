@@ -22,7 +22,7 @@ die() { err "$*"; exit 1; }
 usage() {
   cat <<'EOF'
 Usage:
-  ./build_image.sh [--component web|protein-prep-arm|protein-prep-amd|ligand-prep-arm|ligand-prep-amd|all] [--tag amd_YYYYMMDD|arm_YYYYMMDD] [--registry REGISTRY] [--no-push]
+  ./build_image.sh [--component web|host-metrics|protein-prep-arm|protein-prep-amd|ligand-prep-arm|ligand-prep-amd|all] [--tag amd_YYYYMMDD|arm_YYYYMMDD] [--registry REGISTRY] [--no-push]
 
 Image naming follows the ictrek app convention:
   ${REGISTRY}/${image_name}:${PLATFORM_TAG}
@@ -121,6 +121,14 @@ build_web() {
     --build-arg "APT_SECURITY_MIRROR=${APT_SECURITY_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn/debian-security}"
 }
 
+build_host_metrics() {
+  load_env_if_present
+  build_and_push "boltz-host-metrics" "Dockerfile.host-metrics" \
+    --build-arg "HOST_METRICS_BASE_IMAGE=${HOST_METRICS_BASE_IMAGE:-python:3.11-slim}" \
+    --build-arg "APT_MIRROR=${APT_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn/debian}" \
+    --build-arg "APT_SECURITY_MIRROR=${APT_SECURITY_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn/debian-security}"
+}
+
 build_protein_prep_arm() {
   load_env_if_present
   build_and_push "boltz-protein-prep" "Dockerfile.protein-prep.arm" \
@@ -166,6 +174,9 @@ case "$COMPONENT" in
   web)
     build_web
     ;;
+  host-metrics)
+    build_host_metrics
+    ;;
   protein-prep-arm)
     build_protein_prep_arm
     ;;
@@ -180,11 +191,12 @@ case "$COMPONENT" in
     ;;
   all)
     build_web
+    build_host_metrics
     if [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
       build_protein_prep_arm
       build_ligand_prep_arm
     else
-      log "Skipping protein-prep-arm on non-arm host"
+      build_protein_prep_amd
       build_ligand_prep_amd
     fi
     ;;

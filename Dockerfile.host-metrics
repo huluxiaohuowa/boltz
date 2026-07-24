@@ -1,0 +1,32 @@
+ARG HOST_METRICS_BASE_IMAGE=python:3.11-slim
+FROM ${HOST_METRICS_BASE_IMAGE}
+
+ARG APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian
+ARG APT_SECURITY_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian-security
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN set -eux; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+      sed -i \
+        -e "s|http://deb.debian.org/debian-security|${APT_SECURITY_MIRROR}|g" \
+        -e "s|http://deb.debian.org/debian|${APT_MIRROR}|g" \
+        /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+      sed -i \
+        -e "s|http://deb.debian.org/debian-security|${APT_SECURITY_MIRROR}|g" \
+        -e "s|http://deb.debian.org/debian|${APT_MIRROR}|g" \
+        /etc/apt/sources.list; \
+    fi; \
+    apt-get update \
+    && apt-get install -y --no-install-recommends util-linux \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY scripts/write_host_metrics.py /app/write_host_metrics.py
+
+VOLUME ["/data"]
+
+CMD ["python", "/app/write_host_metrics.py", "--output", "/data/system-metrics/host.json", "--interval", "5", "--disk", "/data", "--disk", "/"]

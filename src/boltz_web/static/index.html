@@ -96,7 +96,8 @@
         color: #173c82;
       }
       .project-popover,
-      .task-popover {
+      .task-popover,
+      .user-popover {
         position: absolute;
         top: calc(100% + 10px);
         right: 0;
@@ -112,11 +113,13 @@
         box-shadow: 0 22px 60px rgba(24, 39, 62, 0.18);
       }
       .project-menu.open .project-popover,
-      .task-menu.open .task-popover {
+      .task-menu.open .task-popover,
+      .user-menu.open .user-popover {
         display: grid;
       }
       .project-popover input,
-      .project-popover select {
+      .project-popover select,
+      .user-popover input {
         min-height: 38px;
       }
       .project-popover-actions {
@@ -131,6 +134,18 @@
       .task-menu {
         position: relative;
       }
+      .user-menu {
+        position: relative;
+      }
+      .user-menu-actions {
+        display: grid;
+        gap: 8px;
+      }
+      .user-menu-actions button {
+        min-height: 38px;
+        margin: 0;
+        text-align: left;
+      }
       .task-popover {
         max-height: min(520px, calc(100vh - 88px));
         overflow: auto;
@@ -142,6 +157,48 @@
         z-index: 60;
         width: min(420px, calc(100vw - 44px));
         pointer-events: none;
+      }
+      .dialog-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        display: none;
+        place-items: center;
+        padding: 22px;
+        background: rgba(15, 23, 42, 0.24);
+        backdrop-filter: blur(18px) saturate(160%);
+      }
+      .dialog-backdrop.open {
+        display: grid;
+      }
+      .dialog-card {
+        width: min(520px, 100%);
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.22);
+      }
+      .dialog-card.wide {
+        width: min(860px, 100%);
+      }
+      .dialog-card h2 {
+        margin: 0;
+      }
+      .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .dialog-actions button {
+        width: auto;
+        min-height: 38px;
+        margin: 0;
+      }
+      #copy-target-project option:disabled {
+        color: #94a3b8;
       }
       .side-nav {
         position: sticky;
@@ -492,6 +549,20 @@
         flex-direction: column;
         padding: 2px 8px 2px 12px;
       }
+      .session-user-button {
+        justify-content: flex-start;
+        min-height: 48px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        color: inherit;
+      }
+      .session-user-button:hover {
+        transform: none;
+        background: rgba(232, 241, 255, 0.82);
+      }
       .session-user span {
         color: #657184;
         font-size: 11px;
@@ -631,6 +702,10 @@
         transform: translateY(-1px);
         border-color: rgba(55, 117, 224, 0.4);
         background: rgba(255, 255, 255, 0.9);
+      }
+      .item.selected {
+        border-color: rgba(47, 112, 223, 0.72);
+        background: rgba(232, 241, 255, 0.9);
       }
       .item strong {
         display: block;
@@ -1281,6 +1356,10 @@
         z-index: 1000;
         overflow: hidden;
         padding: 14px;
+        box-sizing: border-box;
+        width: 100vw;
+        height: 100dvh;
+        min-height: 0;
         border-radius: 0;
         background: rgba(248, 251, 255, 0.98);
         backdrop-filter: none;
@@ -1310,7 +1389,7 @@
       }
       .ligand-editor-expanded .ligand-editor-workbench {
         min-height: 0;
-        height: calc(100vh - 92px);
+        height: calc(100dvh - 92px);
         grid-template-columns: minmax(0, 1fr) 360px;
       }
       .ligand-editor-expanded .ligand-editor-side {
@@ -1467,6 +1546,27 @@
         min-height: 120px;
         max-height: 220px;
       }
+      .current-ligand-summary {
+        display: grid;
+        gap: 4px;
+        padding: 10px;
+        border: 1px solid rgba(213, 222, 235, 0.95);
+        border-radius: 14px;
+        background: rgba(248, 251, 255, 0.82);
+      }
+      .editor-molecule-list {
+        display: grid;
+        gap: 8px;
+        max-height: 220px;
+        overflow: auto;
+      }
+      .editor-molecule-list .molecule-row {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+      .editor-molecule-list .molecule-actions {
+        justify-content: flex-start;
+      }
       .ligand-editor-actions {
         display: grid;
         grid-template-columns: 1fr;
@@ -1615,6 +1715,22 @@
         border-radius: inherit;
         background: linear-gradient(90deg, #3b82f6, #22c55e);
       }
+      .cpu-core-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .cpu-core {
+        padding: 8px;
+        border: 1px solid rgba(213, 222, 235, 0.95);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.74);
+      }
+      .cpu-core strong {
+        margin: 0 0 4px;
+        font-size: 12px;
+      }
       @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
@@ -1717,12 +1833,19 @@
             <div class="task-summary-list" id="task-center-list"></div>
           </div>
         </div>
-        <div id="session-chip" class="session-chip hidden">
-          <div class="session-user">
+        <div id="session-chip" class="session-chip user-menu hidden">
+          <button id="user-menu-toggle" class="session-user session-user-button" type="button" aria-expanded="false">
             <span>当前用户</span>
             <strong id="user-id">admin</strong>
+          </button>
+          <div class="user-popover" role="dialog" aria-label="用户菜单">
+            <div class="user-menu-actions">
+              <button class="secondary" id="open-change-password" type="button">修改密码</button>
+              <button class="secondary" id="open-my-files" type="button">查看本用户文件</button>
+              <button class="secondary" id="open-my-tasks" type="button">查看本用户任务</button>
+              <button class="logout-button" id="logout" type="button">退出</button>
+            </div>
           </div>
-          <button class="logout-button" id="logout" type="button">退出</button>
         </div>
       </div>
     </header>
@@ -1794,6 +1917,47 @@
         </section>
       </aside>
       <div class="toast-region"><div class="status" id="status"></div></div>
+      <div id="copy-asset-dialog" class="dialog-backdrop" aria-hidden="true">
+        <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="copy-asset-title">
+          <h2 id="copy-asset-title">复制资产到项目</h2>
+          <p class="muted" id="copy-asset-summary">选择目标项目。已经存在该资产复制件的项目会显示为灰色。</p>
+          <label>
+            目标项目
+            <select id="copy-target-project"></select>
+          </label>
+          <label>
+            复制后的资产名称
+            <input id="copy-asset-name" placeholder="默认使用原资产名" />
+          </label>
+          <div class="operation-note">灰色项目表示已经复制过同一来源资产；删除目标项目里的复制件并刷新后会恢复可选。</div>
+          <div class="dialog-actions">
+            <button class="secondary" id="copy-asset-cancel" type="button">取消</button>
+            <button id="copy-asset-submit" type="button">复制</button>
+          </div>
+        </div>
+      </div>
+      <div id="password-dialog" class="dialog-backdrop" aria-hidden="true">
+        <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="password-dialog-title">
+          <h2 id="password-dialog-title">修改密码</h2>
+          <p class="muted" id="password-dialog-summary">修改当前登录用户的密码。</p>
+          <label id="password-current-row">
+            当前密码
+            <input id="password-current" type="password" autocomplete="current-password" />
+          </label>
+          <label>
+            新密码
+            <input id="password-new" type="password" autocomplete="new-password" />
+          </label>
+          <label>
+            确认新密码
+            <input id="password-confirm" type="password" autocomplete="new-password" />
+          </label>
+          <div class="dialog-actions">
+            <button class="secondary" id="password-cancel" type="button">取消</button>
+            <button id="password-submit" type="button">保存</button>
+          </div>
+        </div>
+      </div>
       <div class="workspace">
         <section class="page page-hero active" data-page="project">
           <div>
@@ -2158,6 +2322,19 @@
                   </div>
                   <aside class="ligand-editor-side">
                     <section>
+                      <h2>当前配体资产</h2>
+                      <div class="current-ligand-summary" id="current-ligand-summary">
+                        <strong>未选择</strong>
+                        <small>先在左侧配体资产列表点击“设为当前”，再追加或替换分子。</small>
+                      </div>
+                    </section>
+                    <section>
+                      <h2>资产内分子</h2>
+                      <div class="editor-molecule-list" id="ligand-editor-molecule-list">
+                        <div class="item"><small>当前配体资产为空或未解析。</small></div>
+                      </div>
+                    </section>
+                    <section>
                       <h2>当前分子</h2>
                       <label>
                         编辑后名称
@@ -2172,8 +2349,8 @@
                     <section>
                       <h2>结构文本</h2>
                       <label>
-                        SMILES
-                        <textarea id="ligand-edit-smiles" placeholder="从分子表点击“编辑”带入，或手工输入 SMILES"></textarea>
+                        SMILES（单行）
+                        <textarea id="ligand-edit-smiles" placeholder="可手工输入 SMILES；如果从 Ketcher 得不到 SMILES，这里会保持为空"></textarea>
                       </label>
                       <label>
                         MolBlock
@@ -2621,13 +2798,17 @@ POST /api/v1/assets/ligands/smiles
 {"name":"library","project_id":"project_id","smiles":["CCO"],"names":["ethanol"]}
 → AssetOut: ligand asset_id
 
-POST /api/v1/assets/ligands/{asset_id}/molecules
-{"name":"new_mol","smiles":"CCN","molblock":null}
-→ same ligand asset with appended molecule
+	POST /api/v1/assets/ligands/{asset_id}/molecules
+	{"name":"new_mol","smiles":"CCN","molblock":null}
+	→ same ligand asset with appended molecule
 
-PUT /api/v1/assets/ligands/{asset_id}/molecules/{index}
-{"name":"replacement","smiles":"CCC","molblock":null}
-→ same ligand asset with replaced molecule</pre>
+	PUT /api/v1/assets/ligands/{asset_id}/molecules/{index}
+	{"name":"replacement","smiles":"CCC","molblock":null}
+	→ same ligand asset with replaced molecule
+
+	POST /api/v1/assets/proteins/{protein_asset_id}/ligands/extract
+	{"project_id":"project_id","target_ligand_asset_id":null,"components":[{"type":"ligand","resn":"PRJ","chain":"J","resi":"3"}]}
+	→ AssetOut: extracted ligand asset, or appended target ligand asset</pre>
               </section>
               <section class="asset-preview workspace-tab-panel" data-workbench-panel="api:prep">
                 <h2>准备与 Boltz API / Preparation and Boltz APIs</h2>
@@ -2675,15 +2856,22 @@ DELETE /api/v1/jobs/{job_id}</pre>
               </section>
               <section class="asset-preview workspace-tab-panel" data-workbench-panel="api:admin">
                 <h2>管理 API / Admin APIs</h2>
-                <pre class="yaml-preview">GET /api/v1/admin/users
-POST /api/v1/admin/users/{username}/approve
-DELETE /api/v1/admin/users/{username}
+	                <pre class="yaml-preview">POST /api/v1/account/password
+	GET /api/v1/account/summary
+	GET /api/v1/system
 
-GET /api/v1/admin/jobs
-POST /api/v1/admin/jobs/{job_id}/cancel
-POST /api/v1/admin/jobs/{job_id}/cleanup
-DELETE /api/v1/admin/jobs/{job_id}
-GET /api/v1/admin/system</pre>
+	GET /api/v1/admin/users
+	POST /api/v1/admin/users/{username}/approve
+	POST /api/v1/admin/users/{username}/password
+	GET /api/v1/admin/users/{username}/summary
+	DELETE /api/v1/admin/users/{username}
+
+	GET /api/v1/admin/jobs
+	POST /api/v1/admin/jobs/{job_id}/cancel
+	POST /api/v1/admin/jobs/{job_id}/cleanup
+	DELETE /api/v1/admin/jobs/{job_id}
+	GET /api/v1/admin/assets/{asset_id}/files/{file_id}/download
+	GET /api/v1/admin/system</pre>
                 <p class="muted">admin 删除用户会级联停止并删除该用户任务、项目、资产和持久化文件。普通用户只能操作自己的任务和文件。</p>
               </section>
             </div>
@@ -2693,33 +2881,44 @@ GET /api/v1/admin/system</pre>
         <section class="page" data-page="admin" id="admin-panel">
           <section class="page-hero">
             <h2>管理</h2>
-            <p class="muted">管理员审核用户、查看所有任务、停止或清理任务，并查看当前部署机器的 CPU、内存、GPU 和磁盘资源。</p>
+            <p class="muted">管理账户、任务、文件和系统资源。admin 可以查看全局用户与任务；普通用户只能查看和操作自己的数据。</p>
           </section>
           <div class="admin-layout">
             <section>
               <h2>管理模块</h2>
               <div class="admin-tabs">
-                <button class="admin-tab active" data-admin-tab="users" type="button">用户管理</button>
+                <button class="admin-tab active admin-only" data-admin-tab="users" type="button">用户管理</button>
+                <button class="admin-tab secondary" data-admin-tab="files" type="button">文件 / 项目</button>
                 <button class="admin-tab secondary" data-admin-tab="jobs" type="button">任务管理</button>
                 <button class="admin-tab secondary" data-admin-tab="system" type="button">系统资源</button>
               </div>
-              <p class="muted">普通用户只通过项目页查看自己的任务；这里是 admin 全局视图。</p>
+              <p class="muted" id="admin-scope-note">admin 全局视图：可管理用户、全局任务和用户文件。</p>
             </section>
             <section class="admin-panel active" data-admin-panel="users">
               <div class="workspace-header">
                 <div>
                   <h2>用户管理</h2>
-                  <p class="muted">审核注册申请；删除用户会停止并删除该用户的任务、项目、资产和持久化文件。</p>
+                  <p class="muted">审核注册申请；修改用户密码；查看用户文件、项目和任务；删除用户会停止并删除该用户全部数据。</p>
                 </div>
                 <button class="secondary" id="refresh-users" type="button">刷新用户</button>
               </div>
               <div class="list" id="users"></div>
             </section>
+            <section class="admin-panel" data-admin-panel="files">
+              <div class="workspace-header">
+                <div>
+                  <h2 id="account-summary-title">文件 / 项目</h2>
+                  <p class="muted">按用户查看项目、资产和资产文件；文件可下载，资产可回到项目页继续作为输入。</p>
+                </div>
+                <button class="secondary" id="refresh-account-summary" type="button">刷新文件</button>
+              </div>
+              <div class="list" id="account-summary"></div>
+            </section>
             <section class="admin-panel" data-admin-panel="jobs">
               <div class="workspace-header">
                 <div>
-                  <h2>全局任务</h2>
-                  <p class="muted">查看所有用户正在跑和历史任务；admin 可停止、清理输出或删除任务记录。</p>
+                  <h2 id="managed-jobs-title">任务管理</h2>
+                  <p class="muted">查看正在跑和历史任务；可停止、清理输出或删除任务记录。普通用户仅限自己的任务。</p>
                 </div>
                 <button class="secondary" id="refresh-admin-jobs" type="button">刷新任务</button>
               </div>
@@ -2729,9 +2928,12 @@ GET /api/v1/admin/system</pre>
               <div class="workspace-header">
                 <div>
                   <h2>系统资源</h2>
-                  <p class="muted">部署机器资源概览；没有 NVIDIA GPU 时 GPU 区域会显示为空，不影响页面。</p>
+                  <p class="muted">部署机器资源概览；host-metrics runner 默认每 5 秒写入宿主机采样，页面会自动刷新。</p>
                 </div>
-                <button class="secondary" id="refresh-system" type="button">刷新资源</button>
+                <div class="item-actions">
+                  <label class="option-row"><input id="system-auto-refresh" type="checkbox" checked /> 自动刷新</label>
+                  <button class="secondary" id="refresh-system" type="button">立即刷新</button>
+                </div>
               </div>
               <div id="system-metrics" class="metric-grid"></div>
             </section>
@@ -2751,9 +2953,11 @@ GET /api/v1/admin/system</pre>
       let selectedProteinId = "";
       let selectedLigandId = "";
       let currentAssets = [];
+      let currentAllAssets = [];
       let currentJobs = [];
       let currentProjects = [];
       let currentLigandMolecules = [];
+      let activeCopyAssetId = "";
       let selectedLigandMoleculeIndex = 0;
       let ketcherLoaded = false;
       let ketcherScriptPromise = null;
@@ -2774,7 +2978,10 @@ GET /api/v1/admin/system</pre>
       let ligandEditorFocusMode = false;
       let proteinViewer = null;
       let jobPollTimer = null;
+      let systemMetricTimer = null;
       let openApiSchemaLoaded = false;
+      let passwordDialogTargetUser = "";
+      let managedSummaryUser = "";
       const routePages = new Set(["project", "protein", "ligand", "docking", "generation", "tpd", "fep", "sar", "api", "admin"]);
       const workbenchStateKey = "boltz_workbench_state";
       const proteinViewState = {
@@ -2846,6 +3053,15 @@ GET /api/v1/admin/system</pre>
         }
         return response.json();
       }
+      function isMolBlockText(value) {
+        const text = String(value || "");
+        return /\\bV2000\\b|\\bV3000\\b|M  END|-INDIGO-/i.test(text) || text.split(/\\r?\\n/).length > 3;
+      }
+      function cleanSmilesText(value) {
+        const text = String(value || "").trim();
+        if (!text || isMolBlockText(text)) return "";
+        return text;
+      }
       function currentRoutePage() {
         const route = window.location.hash.replace(/^#\/?/, "").split(/[/?]/)[0];
         return routePages.has(route) ? route : null;
@@ -2895,7 +3111,6 @@ GET /api/v1/admin/system</pre>
       }
       function showPage(pageName, options = {}) {
         if (!routePages.has(pageName)) pageName = "project";
-        if (pageName === "admin" && !isAdmin) pageName = "project";
         document.querySelectorAll("[data-page]").forEach((node) => {
           node.classList.toggle("active", node.dataset.page === pageName);
         });
@@ -2934,7 +3149,7 @@ GET /api/v1/admin/system</pre>
         const menu = document.getElementById(menuId);
         if (!menu) return;
         const shouldOpen = open === null ? !menu.classList.contains("open") : open;
-        document.querySelectorAll(".project-menu.open, .task-menu.open").forEach((node) => {
+        document.querySelectorAll(".project-menu.open, .task-menu.open, .user-menu.open").forEach((node) => {
           if (node !== menu) {
             node.classList.remove("open");
             node.querySelector("button")?.setAttribute("aria-expanded", "false");
@@ -2942,6 +3157,44 @@ GET /api/v1/admin/system</pre>
         });
         menu.classList.toggle("open", shouldOpen);
         menu.querySelector("button")?.setAttribute("aria-expanded", String(shouldOpen));
+      }
+      function openPasswordDialog(username = "") {
+        passwordDialogTargetUser = username || "";
+        const isAdminTarget = Boolean(passwordDialogTargetUser);
+        document.getElementById("password-dialog-title").textContent = isAdminTarget ? `修改 ${passwordDialogTargetUser} 的密码` : "修改密码";
+        document.getElementById("password-dialog-summary").textContent = isAdminTarget
+          ? "admin 可直接重置该用户密码。"
+          : "修改当前账户密码需要先输入当前密码。";
+        document.getElementById("password-current-row").classList.toggle("hidden", isAdminTarget);
+        document.getElementById("password-current").value = "";
+        document.getElementById("password-new").value = "";
+        document.getElementById("password-confirm").value = "";
+        document.getElementById("password-dialog").classList.add("open");
+        document.getElementById("password-dialog").setAttribute("aria-hidden", "false");
+      }
+      function closePasswordDialog() {
+        passwordDialogTargetUser = "";
+        document.getElementById("password-dialog").classList.remove("open");
+        document.getElementById("password-dialog").setAttribute("aria-hidden", "true");
+      }
+      async function submitPasswordDialog() {
+        const currentPassword = document.getElementById("password-current").value;
+        const nextPassword = document.getElementById("password-new").value;
+        const confirmPassword = document.getElementById("password-confirm").value;
+        if (nextPassword !== confirmPassword) throw new Error("两次输入的新密码不一致");
+        const endpoint = passwordDialogTargetUser
+          ? `/api/v1/admin/users/${passwordDialogTargetUser}/password`
+          : "/api/v1/account/password";
+        const body = passwordDialogTargetUser
+          ? { new_password: nextPassword }
+          : { current_password: currentPassword, new_password: nextPassword };
+        await api(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        closePasswordDialog();
+        setStatus("密码已更新", "success");
       }
       function jobStatusText(status) {
         return {
@@ -3339,12 +3592,25 @@ GET /api/v1/admin/system</pre>
                   <button class="secondary" data-export-component="${escapeHtml(component.key)}" type="button">下载</button>
                   <button class="secondary ${hiddenComponentKeys.has(component.key) ? "" : "danger"}" data-toggle-component="${escapeHtml(component.key)}" type="button">${hiddenComponentKeys.has(component.key) ? "恢复" : "删除标记"}</button>
                   <button class="secondary" data-keep-component="${escapeHtml(component.key)}" type="button">只保留</button>
-                  ${component.type === "ligand" ? `<button class="secondary" data-edit-component="${escapeHtml(component.key)}" type="button">编辑</button><button data-pocket-component="${escapeHtml(component.key)}" type="button">用作口袋</button>` : ""}
+                  ${
+                    component.type === "ligand"
+                      ? `<button class="secondary" data-edit-component="${escapeHtml(component.key)}" type="button">编辑</button><button class="secondary" data-extract-component="${escapeHtml(component.key)}" type="button">提取为配体</button><button class="secondary" data-append-component="${escapeHtml(component.key)}" type="button">追加到当前配体</button><button data-pocket-component="${escapeHtml(component.key)}" type="button">用作口袋</button>`
+                      : ""
+                  }
                 </div>
               </div>`,
           )
           .join("");
+        const ligandCount = proteinComponents.filter((item) => item.type === "ligand").length;
         target.innerHTML =
+          (ligandCount
+            ? `<div class="operation-note">共晶配体：可单独提取，也可把全部配体提取/追加到当前项目的配体资产中。
+                <div class="item-actions">
+                  <button class="secondary" data-extract-all-ligands type="button">提取全部配体为新资产</button>
+                  <button class="secondary" data-append-all-ligands type="button">全部追加到当前配体资产</button>
+                </div>
+              </div>`
+            : "") +
           cards +
           (waterCount
             ? `<div class="component-card"><strong>水分子</strong><small>HOH/WAT 记录 ${waterCount} 个，可通过 Waters 开关显示。</small></div>`
@@ -3357,6 +3623,18 @@ GET /api/v1/admin/system</pre>
         });
         document.querySelectorAll("[data-pocket-component]").forEach((node) => {
           node.addEventListener("click", () => useComponentAsPocket(node.dataset.pocketComponent));
+        });
+        document.querySelectorAll("[data-extract-component]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => extractProteinLigands([node.dataset.extractComponent], false)));
+        });
+        document.querySelectorAll("[data-append-component]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => extractProteinLigands([node.dataset.appendComponent], true)));
+        });
+        document.querySelectorAll("[data-extract-all-ligands]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => extractProteinLigands(proteinComponents.filter((item) => item.type === "ligand").map((item) => item.key), false)));
+        });
+        document.querySelectorAll("[data-append-all-ligands]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => extractProteinLigands(proteinComponents.filter((item) => item.type === "ligand").map((item) => item.key), true)));
         });
         document.querySelectorAll("[data-export-component]").forEach((node) => {
           node.addEventListener("click", () => exportComponentPdb(node.dataset.exportComponent));
@@ -3462,7 +3740,7 @@ GET /api/v1/admin/system</pre>
                     item.type === "chain"
                       ? `<button class="secondary" data-strip-focus-chain="${escapeHtml(item.id)}" type="button">定位</button><button class="secondary" data-strip-export-chain="${escapeHtml(item.id)}" type="button">下载</button><button class="secondary danger" data-strip-toggle-chain="${escapeHtml(item.id)}" type="button">${item.hidden ? "恢复" : "删除"}</button>`
                       : item.type === "component"
-                        ? `<button class="secondary" data-strip-focus-component="${escapeHtml(item.id)}" type="button">定位</button><button class="secondary" data-strip-export-component="${escapeHtml(item.id)}" type="button">下载</button><button class="secondary danger" data-strip-toggle-component="${escapeHtml(item.id)}" type="button">${item.hidden ? "恢复" : "删除"}</button>${item.componentType === "ligand" ? `<button data-strip-pocket-component="${escapeHtml(item.id)}" type="button">口袋</button>` : ""}`
+                        ? `<button class="secondary" data-strip-focus-component="${escapeHtml(item.id)}" type="button">定位</button><button class="secondary" data-strip-export-component="${escapeHtml(item.id)}" type="button">下载</button><button class="secondary danger" data-strip-toggle-component="${escapeHtml(item.id)}" type="button">${item.hidden ? "恢复" : "删除"}</button>${item.componentType === "ligand" ? `<button class="secondary" data-strip-extract-component="${escapeHtml(item.id)}" type="button">提取</button><button class="secondary" data-strip-append-component="${escapeHtml(item.id)}" type="button">追加</button><button data-strip-pocket-component="${escapeHtml(item.id)}" type="button">口袋</button>` : ""}`
                         : `<button class="secondary" data-protein-control="waters" type="button">${proteinViewState.waters ? "隐藏水" : "显示水"}</button>`
                   }
                 </div>
@@ -3492,6 +3770,12 @@ GET /api/v1/admin/system</pre>
         });
         document.querySelectorAll("[data-strip-pocket-component]").forEach((node) => {
           node.addEventListener("click", () => useComponentAsPocket(node.dataset.stripPocketComponent));
+        });
+        document.querySelectorAll("[data-strip-extract-component]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => extractProteinLigands([node.dataset.stripExtractComponent], false)));
+        });
+        document.querySelectorAll("[data-strip-append-component]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => extractProteinLigands([node.dataset.stripAppendComponent], true)));
         });
         document.querySelectorAll("#focus-object-strip [data-protein-control]").forEach((node) => {
           node.addEventListener("click", () => {
@@ -3776,6 +4060,48 @@ GET /api/v1/admin/system</pre>
         renderProteinComponents();
         focusProteinComponent(component.key);
         setStatus(`正在编辑配体 ${component.reference}`, "success");
+      }
+      function componentApiPayload(component) {
+        return {
+          key: component.key,
+          type: component.type,
+          resn: component.resn,
+          chain: component.chain,
+          resi: String(component.resi),
+          icode: component.icode || "",
+          reference: component.reference,
+          center: component.center,
+          box_size: component.boxSize,
+          atom_count: component.atomCount,
+        };
+      }
+      async function extractProteinLigands(componentKeys, appendToCurrent = false) {
+        if (!activeProteinAsset) throw new Error("请先选择蛋白资产");
+        const components = componentKeys
+          .map((key) => proteinComponents.find((item) => item.key === key))
+          .filter((item) => item && item.type === "ligand");
+        if (!components.length) throw new Error("没有可提取的配体组分");
+        if (appendToCurrent && !selectedLigandId) throw new Error("请先在配体处理页选择或创建当前配体资产");
+        const name = components.length === 1
+          ? `${activeProteinAsset.name}_${components[0].resn}_${components[0].chain}${components[0].resi}_ligand`
+          : `${activeProteinAsset.name}_cocrystal_ligands`;
+        const asset = await api(`/api/v1/assets/proteins/${activeProteinAsset.id}/ligands/extract`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id: currentProjectId,
+            name,
+            target_ligand_asset_id: appendToCurrent ? selectedLigandId : null,
+            components: components.map(componentApiPayload),
+          }),
+        });
+        selectedLigandId = asset.id;
+        document.getElementById("docking-ligand-asset").value = asset.id;
+        document.getElementById("boltz-ligand-asset").value = asset.id;
+        await refresh();
+        await setCurrentLigandAsset(asset.id, { preview: true, showMolecules: true });
+        showPage("ligand");
+        setStatus(appendToCurrent ? "共晶配体已追加到当前配体资产" : "共晶配体已提取为新的配体资产", "success");
       }
       function focusProteinComponent(componentKey) {
         const component = proteinComponents.find((item) => item.key === componentKey);
@@ -4164,12 +4490,14 @@ GET /api/v1/admin/system</pre>
               .map(
                 (asset) => {
                   const primaryFile = getPrimaryAssetFile(asset);
+                  const isCurrentLigand = isLigandLike(asset) && asset.id === selectedLigandId;
                   return `
-                <div class="item" data-asset="${asset.id}" data-kind="${asset.kind}">
+                <div class="item ${isCurrentLigand ? "selected" : ""}" data-asset="${asset.id}" data-kind="${asset.kind}">
                   <strong>${escapeHtml(asset.name)}</strong>
-                  <small>${escapeHtml(asset.kind)} · ${escapeHtml(asset.source_type)}<br />${escapeHtml(asset.id)}</small>
+                  <small>${escapeHtml(asset.kind)} · ${escapeHtml(asset.source_type)}${isCurrentLigand ? " · 当前配体资产" : ""}<br />${escapeHtml(asset.id)}</small>
                   <div class="item-actions">
                     <button class="secondary" data-preview-asset="${asset.id}" type="button">预览</button>
+                    ${isLigandLike(asset) ? `<button class="secondary" data-use-ligand-asset="${asset.id}" type="button">${isCurrentLigand ? "当前" : "设为当前"}</button>` : ""}
                     <button class="secondary" data-copy-asset="${asset.id}" type="button">复制到项目</button>
                     ${
                       primaryFile
@@ -4195,6 +4523,21 @@ GET /api/v1/admin/system</pre>
           setStatus(error.message, "error");
         }
       }
+      async function setCurrentLigandAsset(assetId, { preview = false, showMolecules = true } = {}) {
+        const asset = currentAssets.find((item) => item.id === assetId) || (await api(`/api/v1/assets/${assetId}`));
+        if (!isLigandLike(asset)) throw new Error("请选择 ligand 或 prepared_ligand 资产");
+        selectedAssetId = asset.id;
+        selectedLigandId = asset.id;
+        document.getElementById("docking-ligand-asset").value = selectedLigandId;
+        document.getElementById("boltz-ligand-asset").value = selectedLigandId;
+        if (document.getElementById("ligand-prep-asset")) document.getElementById("ligand-prep-asset").value = selectedLigandId;
+        saveWorkbenchState();
+        await loadLigandMolecules(selectedLigandId);
+        if (showMolecules) showWorkbenchPanel("ligand:molecules");
+        if (preview) await previewAsset(selectedLigandId);
+        renderCurrentLigandSummary();
+        updateCurrentLigandMarkers();
+      }
       function bindAssetSelection() {
         document.querySelectorAll("[data-asset]").forEach((node) => {
           node.addEventListener("click", () => {
@@ -4205,12 +4548,7 @@ GET /api/v1/admin/system</pre>
               return;
             }
             if (isLigandLike(node.dataset.kind)) {
-              selectedLigandId = selectedAssetId;
-              document.getElementById("docking-ligand-asset").value = selectedLigandId;
-              document.getElementById("boltz-ligand-asset").value = selectedLigandId;
-              if (document.getElementById("ligand-prep-asset")) document.getElementById("ligand-prep-asset").value = selectedLigandId;
-              saveWorkbenchState();
-              runAction(() => previewAsset(selectedAssetId));
+              runAction(() => setCurrentLigandAsset(selectedAssetId, { preview: true }));
               return;
             }
             if (isBoltzInput(node.dataset.kind)) {
@@ -4228,6 +4566,12 @@ GET /api/v1/admin/system</pre>
           node.addEventListener("click", (event) => {
             event.stopPropagation();
             runAction(() => previewAsset(node.dataset.previewAsset));
+          });
+        });
+        document.querySelectorAll("[data-use-ligand-asset]").forEach((node) => {
+          node.addEventListener("click", (event) => {
+            event.stopPropagation();
+            runAction(() => setCurrentLigandAsset(node.dataset.useLigandAsset, { preview: true }));
           });
         });
         document.querySelectorAll("[data-rename-asset]").forEach((node) => {
@@ -4401,9 +4745,15 @@ GET /api/v1/admin/system</pre>
           if (silent) return;
           throw new Error("Ketcher 还没有初始化");
         }
-        const [molfile, smiles] = await Promise.all([window.BoltzKetcher.getMolfile(), window.BoltzKetcher.getSmiles()]);
-        document.getElementById("ligand-edit-molblock").value = molfile.trim();
-        document.getElementById("ligand-edit-smiles").value = smiles.trim();
+        const [molfileRaw, smilesRaw] = await Promise.all([
+          window.BoltzKetcher.getMolfile().catch(() => ""),
+          window.BoltzKetcher.getSmiles().catch(() => ""),
+        ]);
+        const molfile = String(molfileRaw || "").trim();
+        const smilesCandidate = String(smilesRaw || "").trim();
+        const smiles = isMolBlockText(smilesCandidate) ? "" : cleanSmilesText(smilesCandidate);
+        document.getElementById("ligand-edit-molblock").value = molfile || (isMolBlockText(smilesCandidate) ? smilesCandidate : "");
+        document.getElementById("ligand-edit-smiles").value = smiles;
         if (!silent) setKetcherStatus("已把 Ketcher 结构同步到 MolBlock / SMILES 表单", "success");
       }
       async function clearKetcher() {
@@ -4435,11 +4785,16 @@ GET /api/v1/admin/system</pre>
       }
       async function collectLigandEditorPayload(defaultName = "edited ligand") {
         await syncKetcherToForm({ silent: true });
+        const rawSmiles = document.getElementById("ligand-edit-smiles").value.trim();
+        const rawMolblock = document.getElementById("ligand-edit-molblock").value.trim();
+        const smiles = isMolBlockText(rawSmiles) ? "" : cleanSmilesText(rawSmiles);
+        const molblock = rawMolblock || (isMolBlockText(rawSmiles) ? rawSmiles : "");
+        if (!smiles && !molblock) throw new Error("请先画分子，或填写有效的 SMILES / MolBlock");
         return {
           project_id: currentProjectId,
           name: document.getElementById("ligand-edit-name").value.trim() || defaultName,
-          smiles: document.getElementById("ligand-edit-smiles").value.trim() || null,
-          molblock: document.getElementById("ligand-edit-molblock").value.trim() || null,
+          smiles: smiles || null,
+          molblock: molblock || null,
         };
       }
       async function saveLigandEditor(mode) {
@@ -4494,8 +4849,8 @@ GET /api/v1/admin/system</pre>
       }
       function renderLigandMolecules(molecules = currentLigandMolecules) {
         const target = document.getElementById("ligand-molecule-table");
-        if (!target) return;
-        target.innerHTML = molecules.length
+        const editorTarget = document.getElementById("ligand-editor-molecule-list");
+        const html = molecules.length
           ? molecules
               .map(
                 (mol) => `
@@ -4515,12 +4870,32 @@ GET /api/v1/admin/system</pre>
               )
               .join("")
           : emptyList("当前配体资产没有解析出可编辑分子；如果是 MOL2/PDB，请后续通过格式转换 worker 处理。");
-        target.querySelectorAll("[data-select-ligand-molecule]").forEach((node) => {
+        if (target) target.innerHTML = html;
+        if (editorTarget) editorTarget.innerHTML = html;
+        document.querySelectorAll("[data-select-ligand-molecule]").forEach((node) => {
           node.addEventListener("click", () => selectLigandMolecule(Number(node.dataset.selectLigandMolecule), false));
         });
-        target.querySelectorAll("[data-edit-ligand-molecule]").forEach((node) => {
+        document.querySelectorAll("[data-edit-ligand-molecule]").forEach((node) => {
           node.addEventListener("click", () => selectLigandMolecule(Number(node.dataset.editLigandMolecule), true));
         });
+        renderCurrentLigandSummary();
+      }
+      function updateCurrentLigandMarkers() {
+        document.querySelectorAll("[data-asset]").forEach((node) => {
+          const isCurrent = node.dataset.asset === selectedLigandId && isLigandLike(node.dataset.kind);
+          node.classList.toggle("selected", isCurrent);
+          const button = node.querySelector("[data-use-ligand-asset]");
+          if (button) button.textContent = isCurrent ? "当前" : "设为当前";
+        });
+      }
+      function renderCurrentLigandSummary() {
+        const target = document.getElementById("current-ligand-summary");
+        if (!target) return;
+        const asset = currentAssets.find((item) => item.id === selectedLigandId);
+        target.innerHTML = asset
+          ? `<strong>${escapeHtml(asset.name)}</strong>
+             <small>${escapeHtml(asset.kind)} · ${escapeHtml(asset.source_type)}<br />${escapeHtml(asset.id)}<br />分子数：${currentLigandMolecules.length}</small>`
+          : `<strong>未选择</strong><small>先在左侧配体资产列表点击“设为当前”，再追加或替换分子。</small>`;
       }
       async function loadLigandMolecules(assetId) {
         currentLigandMolecules = await api(`/api/v1/assets/${assetId}/ligand-molecules`);
@@ -4534,7 +4909,7 @@ GET /api/v1/admin/system</pre>
         const mol = currentLigandMolecules.find((item) => item.index === index);
         if (mol && edit) {
           document.getElementById("ligand-edit-name").value = `${mol.name || `ligand_${index + 1}`}_edited`;
-          document.getElementById("ligand-edit-smiles").value = mol.smiles || "";
+          document.getElementById("ligand-edit-smiles").value = cleanSmilesText(mol.smiles || "");
           document.getElementById("ligand-edit-molblock").value = mol.molblock || "";
           showWorkbenchPanel("ligand:editor");
           ensureKetcher()
@@ -4551,8 +4926,9 @@ GET /api/v1/admin/system</pre>
           );
         });
       }
-      async function downloadAssetFile(assetId, fileId, filename) {
-        const response = await fetch(`/api/v1/assets/${assetId}/files/${fileId}/download`, {
+      async function downloadAssetFile(assetId, fileId, filename, adminDownload = false) {
+        const endpoint = adminDownload ? `/api/v1/admin/assets/${assetId}/files/${fileId}/download` : `/api/v1/assets/${assetId}/files/${fileId}/download`;
+        const response = await fetch(endpoint, {
           headers: headers(),
         });
         if (!response.ok) throw new Error(formatApiError(await response.text(), response.status));
@@ -4606,26 +4982,65 @@ GET /api/v1/admin/system</pre>
         setStatus("资产已重命名", "success");
         await refresh();
       }
+      function assetCopyRootId(asset) {
+        return asset?.metadata?.copied_from_asset_id || asset?.parent_asset_id || asset?.id || "";
+      }
+      function assetExistsInProject(sourceAsset, projectId) {
+        const sourceRootId = assetCopyRootId(sourceAsset);
+        return currentAllAssets.some((asset) => {
+          if (asset.project_id !== projectId) return false;
+          if (asset.id === sourceAsset.id) return true;
+          return assetCopyRootId(asset) === sourceRootId || asset.parent_asset_id === sourceAsset.id || asset.metadata?.copied_from_asset_id === sourceAsset.id;
+        });
+      }
+      function renderCopyProjectOptions(sourceAsset) {
+        const select = document.getElementById("copy-target-project");
+        const options = currentProjects.map((project) => {
+          const isCurrent = project.id === sourceAsset.project_id;
+          const exists = assetExistsInProject(sourceAsset, project.id);
+          const disabled = isCurrent || exists;
+          const suffix = isCurrent ? "（当前项目）" : exists ? "（已有）" : "";
+          return `<option value="${escapeHtml(project.id)}" ${disabled ? "disabled" : ""}>${escapeHtml(project.name)}${suffix}</option>`;
+        });
+        select.innerHTML = options.join("");
+        const firstAvailable = Array.from(select.options).find((option) => !option.disabled);
+        select.value = firstAvailable?.value || "";
+        document.getElementById("copy-asset-submit").disabled = !firstAvailable;
+      }
       async function copyAsset(assetId) {
-        const asset = currentAssets.find((item) => item.id === assetId) || (await api(`/api/v1/assets/${assetId}`));
-        const projects = currentProjects.length
-          ? currentProjects
-          : Array.from(document.getElementById("project-id").options).map((option) => ({ id: option.value, name: option.textContent }));
-        const projectText = projects.map((project, index) => `${index + 1}. ${project.name}${project.id === currentProjectId ? "（当前）" : ""}`).join("\n");
-        const choice = window.prompt(`选择目标项目，输入编号或项目名：\n${projectText}`, "1");
-        if (!choice) return;
-        const normalized = choice.trim();
-        const byIndex = projects[Number(normalized) - 1];
-        const byName = projects.find((project) => project.name === normalized);
-        const targetProject = byIndex || byName;
-        if (!targetProject) throw new Error("没有找到目标项目，请输入列表中的编号或项目名");
-        const name = window.prompt("复制后的资产名称", `${asset.name} copy`);
-        if (!name || !name.trim()) return;
-        const copied = await api(`/api/v1/assets/${assetId}/copy`, {
+        const asset = currentAllAssets.find((item) => item.id === assetId) || currentAssets.find((item) => item.id === assetId) || (await api(`/api/v1/assets/${assetId}`));
+        activeCopyAssetId = asset.id;
+        document.getElementById("copy-asset-summary").textContent = `复制资产“${asset.name}”。已经存在该资产复制件的项目会显示为灰色。`;
+        document.getElementById("copy-asset-name").value = asset.name;
+        renderCopyProjectOptions(asset);
+        const dialog = document.getElementById("copy-asset-dialog");
+        dialog.classList.add("open");
+        dialog.setAttribute("aria-hidden", "false");
+        document.getElementById("copy-target-project").focus();
+      }
+      function closeCopyAssetDialog() {
+        activeCopyAssetId = "";
+        const dialog = document.getElementById("copy-asset-dialog");
+        dialog.classList.remove("open");
+        dialog.setAttribute("aria-hidden", "true");
+      }
+      async function submitCopyAsset() {
+        if (!activeCopyAssetId) return;
+        const asset = currentAllAssets.find((item) => item.id === activeCopyAssetId) || (await api(`/api/v1/assets/${activeCopyAssetId}`));
+        const targetProjectId = document.getElementById("copy-target-project").value;
+        const targetProject = currentProjects.find((project) => project.id === targetProjectId);
+        if (!targetProject) throw new Error("请选择目标项目");
+        if (assetExistsInProject(asset, targetProjectId)) {
+          renderCopyProjectOptions(asset);
+          throw new Error("目标项目已经有这个资产的复制件；如需重新复制，请先删除已有复制件");
+        }
+        const name = document.getElementById("copy-asset-name").value.trim() || asset.name;
+        const copied = await api(`/api/v1/assets/${activeCopyAssetId}/copy`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ project_id: targetProject.id, name: name.trim() }),
+          body: JSON.stringify({ project_id: targetProject.id, name }),
         });
+        closeCopyAssetDialog();
         setStatus(`资产已复制到项目“${targetProject.name}”：${copied.name}`, "success");
         await refresh();
       }
@@ -4754,8 +5169,9 @@ GET /api/v1/admin/system</pre>
       }
       async function refresh() {
         const suffix = currentProjectId ? `?project_id=${encodeURIComponent(currentProjectId)}` : "";
-        const [assets, jobs] = await Promise.all([api(`/api/v1/assets${suffix}`), api(`/api/v1/jobs${suffix}`)]);
+        const [assets, allAssets, jobs] = await Promise.all([api(`/api/v1/assets${suffix}`), api("/api/v1/assets"), api(`/api/v1/jobs${suffix}`)]);
         currentAssets = assets;
+        currentAllAssets = allAssets;
         currentJobs = jobs;
         renderAssetList(assets, "assets", "当前项目还没有资产");
         renderAssetList(
@@ -4790,6 +5206,8 @@ GET /api/v1/admin/system</pre>
         );
         refreshBoltzSelectors(assets);
         bindAssetSelection();
+        updateCurrentLigandMarkers();
+        renderCurrentLigandSummary();
         renderJobList(jobs, "jobs", "当前项目还没有任务");
         renderTaskCenter(jobs);
         const dockingJobs = jobs.filter((job) =>
@@ -4848,6 +5266,9 @@ GET /api/v1/admin/system</pre>
         }
       }
       async function refreshUsers() {
+        document.querySelectorAll(".admin-only").forEach((node) => node.classList.toggle("hidden", !isAdmin));
+        const note = document.getElementById("admin-scope-note");
+        if (note) note.textContent = isAdmin ? "admin 全局视图：可管理用户、全局任务和用户文件。" : "普通用户视图：只能管理自己的账户、文件和任务。";
         if (!isAdmin) return;
         const users = await api("/api/v1/admin/users");
         document.getElementById("users").innerHTML = users
@@ -4858,6 +5279,8 @@ GET /api/v1/admin/system</pre>
               <small>${user.status} · ${user.is_admin ? "admin" : "user"}</small>
               <div class="item-actions">
                 ${user.status === "pending" ? `<button class="secondary" data-approve="${user.id}" type="button">批准</button>` : ""}
+                <button class="secondary" data-admin-password-user="${user.id}" type="button">修改密码</button>
+                <button class="secondary" data-view-user-data="${user.id}" type="button">查看文件/任务</button>
                 ${user.id !== document.getElementById("user-id").textContent ? `<button class="secondary danger" data-delete-user="${user.id}" type="button">删除用户和数据</button>` : ""}
               </div>
             </div>`,
@@ -4869,37 +5292,124 @@ GET /api/v1/admin/system</pre>
             await refreshUsers();
           });
         });
+        document.querySelectorAll("[data-admin-password-user]").forEach((node) => {
+          node.addEventListener("click", () => openPasswordDialog(node.dataset.adminPasswordUser));
+        });
+        document.querySelectorAll("[data-view-user-data]").forEach((node) => {
+          node.addEventListener("click", () =>
+            runAction(async () => {
+              managedSummaryUser = node.dataset.viewUserData;
+              showAdminTab("files");
+            }),
+          );
+        });
         document.querySelectorAll("[data-delete-user]").forEach((node) => {
           node.addEventListener("click", async () => {
             if (!window.confirm(`确认删除用户 ${node.dataset.deleteUser}？该用户的任务、项目、资产和文件都会删除。`)) return;
             await api(`/api/v1/admin/users/${node.dataset.deleteUser}`, { method: "DELETE" });
-            await Promise.all([refreshUsers(), refreshAdminJobs()]);
+            await Promise.all([refreshUsers(), refreshAdminJobs(), refreshAccountSummary()]);
           });
         });
       }
       function showAdminTab(tab) {
+        if (!isAdmin && tab === "users") tab = "files";
         document.querySelectorAll("[data-admin-tab]").forEach((node) => {
           node.classList.toggle("active", node.dataset.adminTab === tab);
           node.classList.toggle("secondary", node.dataset.adminTab !== tab);
+          if (node.classList.contains("admin-only")) node.classList.toggle("hidden", !isAdmin);
         });
         document.querySelectorAll("[data-admin-panel]").forEach((node) => {
           node.classList.toggle("active", node.dataset.adminPanel === tab);
         });
+        if (tab === "system") startSystemMetricPolling();
+        else stopSystemMetricPolling();
+        if (tab === "files") refreshAccountSummary().catch((error) => setStatus(error.message, "error"));
         if (tab === "jobs") refreshAdminJobs().catch((error) => setStatus(error.message, "error"));
         if (tab === "system") refreshSystemMetrics().catch((error) => setStatus(error.message, "error"));
       }
+      async function refreshAccountSummary(username = managedSummaryUser) {
+        managedSummaryUser = username || "";
+        const data = isAdmin && managedSummaryUser
+          ? await api(`/api/v1/admin/users/${managedSummaryUser}/summary`)
+          : await api("/api/v1/account/summary");
+        const title = document.getElementById("account-summary-title");
+        const target = document.getElementById("account-summary");
+        if (title) title.textContent = `文件 / 项目：${data.user.id}`;
+        const counts = data.counts || {};
+        const projects = data.projects || [];
+        const assets = data.assets || [];
+        target.innerHTML = `
+          <div class="item selected">
+            <strong>${escapeHtml(data.user.id)}</strong>
+            <small>projects ${counts.projects || 0} · assets ${counts.assets || 0} · files ${counts.files || 0} · ${(Number(counts.bytes || 0) / (1024 * 1024)).toFixed(2)} MiB</small>
+          </div>
+          <div class="item">
+            <strong>项目</strong>
+            <small>${projects.map((project) => `${escapeHtml(project.name)} (${compactId(project.id)})`).join("；") || "没有项目"}</small>
+          </div>
+          ${
+            assets.length
+              ? assets
+                  .map(
+                    (asset) => `
+                      <div class="item">
+                        <strong>${escapeHtml(asset.name)}</strong>
+                        <small>${escapeHtml(asset.kind)} · 项目 ${escapeHtml(asset.project_name || compactId(asset.project_id))}<br />${escapeHtml(asset.id)}</small>
+                        <div class="item-actions">
+                          ${asset.files
+                            .map(
+                              (file) => `<button class="secondary" data-managed-download-asset="${asset.id}" data-managed-download-file="${file.id}" data-managed-download-name="${escapeHtml(file.filename)}" data-managed-download-admin="${isAdmin && managedSummaryUser ? "true" : "false"}" type="button">下载 ${escapeHtml(file.filename)}</button>`,
+                            )
+                            .join("")}
+                        </div>
+                      </div>`,
+                  )
+                  .join("")
+              : emptyList("没有资产文件")
+          }`;
+        target.querySelectorAll("[data-managed-download-file]").forEach((node) => {
+          node.addEventListener("click", () =>
+            runAction(() =>
+              downloadAssetFile(
+                node.dataset.managedDownloadAsset,
+                node.dataset.managedDownloadFile,
+                node.dataset.managedDownloadName,
+                node.dataset.managedDownloadAdmin === "true",
+              ),
+            ),
+          );
+        });
+      }
       function renderMetric(label, lines, percent = null) {
         const value = Number(percent || 0);
+        const visibleLines = lines.filter((line) => String(line || "").trim());
         return `
           <div class="metric-card">
             <strong>${escapeHtml(label)}</strong>
-            <small>${lines.map((line) => escapeHtml(line)).join("<br />")}</small>
+            <small>${visibleLines.map((line) => escapeHtml(line)).join("<br />")}</small>
             ${percent === null ? "" : `<div class="meter" aria-label="${escapeHtml(label)} ${value}%"><span style="--value:${Math.max(0, Math.min(100, value))}%"></span></div>`}
           </div>`;
       }
+      function renderCpuCoreGrid(cores = []) {
+        if (!cores.length) return "";
+        return `<div class="metric-card span-all">
+          <strong>CPU 逻辑线程 / Logical CPUs (${cores.length})</strong>
+          <div class="cpu-core-grid">
+            ${cores
+              .map((core) => {
+                const percent = Number(core.used_percent || 0);
+                return `<div class="cpu-core">
+                  <strong>${escapeHtml(core.id || "cpu")}</strong>
+                  <small>${percent}%</small>
+                  <div class="meter"><span style="--value:${Math.max(0, Math.min(100, percent))}%"></span></div>
+                </div>`;
+              })
+              .join("")}
+          </div>
+        </div>`;
+      }
       async function refreshSystemMetrics() {
-        if (!isAdmin) return;
-        const data = await api("/api/v1/admin/system");
+        const data = await api("/api/v1/system");
         const cpu = data.cpu || {};
         const memory = data.memory || {};
         const disks = data.disks || [];
@@ -4914,16 +5424,19 @@ GET /api/v1/admin/system</pre>
                   `GPU ${index + 1}`,
                   [
                     `model: ${gpu.name}`,
+                    `backend: ${gpu.backend || "unknown"}`,
                     `driver: ${gpu.driver_version}`,
                     `memory: ${gpu.memory_used_mib}/${gpu.memory_total_mib} MiB`,
                     `util: ${gpu.utilization_percent}%`,
                     `power: ${gpu.power_draw_w}/${gpu.power_limit_w} W`,
                     `graphics clock: ${gpu.graphics_clock_mhz} MHz`,
+                    gpu.raw ? `raw: ${gpu.raw}` : "",
                   ],
                   gpu.power_used_percent,
                 ),
               )
             : [renderMetric("GPU", ["没有检测到 NVIDIA GPU / nvidia-smi 不可用"])]),
+          ...(data.gpu_note ? [renderMetric("GPU 可见性 / GPU Visibility", [data.gpu_note])] : []),
           ...disks.map((disk) =>
             disk.error
               ? renderMetric(`磁盘 / Disk ${disk.path}`, [`error: ${disk.error}`])
@@ -4934,12 +5447,25 @@ GET /api/v1/admin/system</pre>
                 ),
           ),
         ];
-        document.getElementById("system-metrics").innerHTML = cards.join("");
+        document.getElementById("system-metrics").innerHTML = cards.join("") + renderCpuCoreGrid(cpu.cores || []);
+      }
+      function startSystemMetricPolling() {
+        const toggle = document.getElementById("system-auto-refresh");
+        if (!toggle?.checked || systemMetricTimer) return;
+        systemMetricTimer = window.setInterval(() => {
+          if (!token || !document.querySelector('[data-admin-panel="system"]')?.classList.contains("active")) return;
+          refreshSystemMetrics().catch(() => {});
+        }, 5000);
+      }
+      function stopSystemMetricPolling() {
+        if (!systemMetricTimer) return;
+        window.clearInterval(systemMetricTimer);
+        systemMetricTimer = null;
       }
       async function refreshAdminJobs() {
-        if (!isAdmin) return;
-        const jobs = await api("/api/v1/admin/jobs");
+        const jobs = await api(isAdmin ? "/api/v1/admin/jobs" : "/api/v1/jobs");
         const target = document.getElementById("admin-jobs");
+        document.getElementById("managed-jobs-title").textContent = isAdmin ? "全局任务" : "我的任务";
         target.innerHTML = jobs.length
           ? jobs
               .map((job) => {
@@ -4950,7 +5476,7 @@ GET /api/v1/admin/system</pre>
                   <div class="item">
                     <strong>${escapeHtml(job.job_type)} · ${escapeHtml(statusText)}</strong>
                     <small>
-                      用户 ${escapeHtml(job.user_id || "")}<br />
+                      ${isAdmin ? `用户 ${escapeHtml(job.user_id || "")}<br />` : ""}
                       项目 ${escapeHtml(compactId(job.project_id || ""))} · 任务 ${escapeHtml(compactId(job.id))}<br />
                       输入 ${escapeHtml((job.input_asset_ids || []).map(compactId).join("，") || "无")}<br />
                       输出 ${escapeHtml((job.output_asset_ids || []).map(compactId).join("，") || "无")}
@@ -4958,9 +5484,9 @@ GET /api/v1/admin/system</pre>
                     </small>
                     <div class="item-actions">
                       <button class="secondary" data-job-events="${job.id}" type="button">查看进度</button>
-                      ${canCancel ? `<button class="secondary danger" data-admin-cancel-job="${job.id}" type="button">停止任务</button>` : ""}
-                      ${canCleanup ? `<button class="secondary danger" data-admin-cleanup-job="${job.id}" type="button">清理输出</button>` : ""}
-                      <button class="secondary danger" data-admin-delete-job="${job.id}" type="button">删除任务</button>
+                      ${canCancel ? `<button class="secondary danger" data-managed-cancel-job="${job.id}" type="button">停止任务</button>` : ""}
+                      ${canCleanup ? `<button class="secondary danger" data-managed-cleanup-job="${job.id}" type="button">清理输出</button>` : ""}
+                      <button class="secondary danger" data-managed-delete-job="${job.id}" type="button">删除任务</button>
                     </div>
                   </div>`;
               })
@@ -4969,29 +5495,29 @@ GET /api/v1/admin/system</pre>
         target.querySelectorAll("[data-job-events]").forEach((node) => {
           node.addEventListener("click", () => runAction(() => showJobEvents(node.dataset.jobEvents)));
         });
-        target.querySelectorAll("[data-admin-cancel-job]").forEach((node) => {
-          node.addEventListener("click", () => runAction(() => adminCancelJob(node.dataset.adminCancelJob)));
+        target.querySelectorAll("[data-managed-cancel-job]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => managedCancelJob(node.dataset.managedCancelJob)));
         });
-        target.querySelectorAll("[data-admin-cleanup-job]").forEach((node) => {
-          node.addEventListener("click", () => runAction(() => adminCleanupJob(node.dataset.adminCleanupJob)));
+        target.querySelectorAll("[data-managed-cleanup-job]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => managedCleanupJob(node.dataset.managedCleanupJob)));
         });
-        target.querySelectorAll("[data-admin-delete-job]").forEach((node) => {
-          node.addEventListener("click", () => runAction(() => adminDeleteJob(node.dataset.adminDeleteJob)));
+        target.querySelectorAll("[data-managed-delete-job]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => managedDeleteJob(node.dataset.managedDeleteJob)));
         });
       }
-      async function adminCancelJob(jobId) {
+      async function managedCancelJob(jobId) {
         if (!window.confirm("确认停止这个任务？")) return;
-        await api(`/api/v1/admin/jobs/${jobId}/cancel`, { method: "POST" });
+        await api(isAdmin ? `/api/v1/admin/jobs/${jobId}/cancel` : `/api/v1/jobs/${jobId}/cancel`, { method: "POST" });
         await refreshAdminJobs();
       }
-      async function adminCleanupJob(jobId) {
+      async function managedCleanupJob(jobId) {
         if (!window.confirm("确认清理这个任务的输出资产和文件？")) return;
-        await api(`/api/v1/admin/jobs/${jobId}/cleanup`, { method: "POST" });
+        await api(isAdmin ? `/api/v1/admin/jobs/${jobId}/cleanup` : `/api/v1/jobs/${jobId}/cleanup`, { method: "POST" });
         await refreshAdminJobs();
       }
-      async function adminDeleteJob(jobId) {
+      async function managedDeleteJob(jobId) {
         if (!window.confirm("确认删除这个任务记录并清理输出？")) return;
-        await api(`/api/v1/admin/jobs/${jobId}`, { method: "DELETE" });
+        await api(isAdmin ? `/api/v1/admin/jobs/${jobId}` : `/api/v1/jobs/${jobId}`, { method: "DELETE" });
         await refreshAdminJobs();
       }
       async function enterApp(userId, admin) {
@@ -5005,21 +5531,21 @@ GET /api/v1/admin/system</pre>
         document.getElementById("task-menu").classList.remove("hidden");
         document.getElementById("login-screen").classList.add("hidden");
         document.getElementById("app-screen").classList.remove("hidden");
-        document.getElementById("admin-nav").classList.toggle("hidden", !admin);
+        document.getElementById("admin-nav").classList.remove("hidden");
+        document.querySelectorAll(".admin-only").forEach((node) => node.classList.toggle("hidden", !admin));
         const targetPage = currentRoutePage() || savedState.page || "project";
-        showPage(!admin && targetPage === "admin" ? "project" : targetPage, { replaceRoute: true });
+        showPage(targetPage, { replaceRoute: true });
         await refreshProjects();
         await refresh();
         await restoreWorkbenchView();
         await refreshUsers();
-        if (admin) {
-          await refreshAdminJobs();
-          await refreshSystemMetrics();
-        }
+        if (!admin) showAdminTab("files");
+        await Promise.all([refreshAdminJobs(), refreshSystemMetrics(), refreshAccountSummary()]);
         startJobPolling();
       }
       function logout() {
         stopJobPolling();
+        stopSystemMetricPolling();
         token = "";
         isAdmin = false;
         selectedAssetId = null;
@@ -5036,6 +5562,9 @@ GET /api/v1/admin/system</pre>
         hiddenChainIds = new Set();
         if (proteinFocusMode) toggleProteinFocusMode();
         if (ligandEditorFocusMode) toggleLigandEditorFocusMode();
+        closePasswordDialog();
+        closeCopyAssetDialog();
+        togglePopover("session-chip", false);
         localStorage.removeItem("boltz_token");
         localStorage.removeItem("boltz_user_id");
         localStorage.removeItem("boltz_is_admin");
@@ -5147,11 +5676,44 @@ GET /api/v1/admin/system</pre>
         renderTaskCenter();
         togglePopover("task-menu");
       });
+      document.getElementById("user-menu-toggle").addEventListener("click", (event) => {
+        event.stopPropagation();
+        togglePopover("session-chip");
+      });
+      document.getElementById("open-change-password").addEventListener("click", (event) => {
+        event.stopPropagation();
+        togglePopover("session-chip", false);
+        openPasswordDialog();
+      });
+      document.getElementById("open-my-files").addEventListener("click", (event) => {
+        event.stopPropagation();
+        togglePopover("session-chip", false);
+        managedSummaryUser = "";
+        showPage("admin");
+        showAdminTab("files");
+      });
+      document.getElementById("open-my-tasks").addEventListener("click", (event) => {
+        event.stopPropagation();
+        togglePopover("session-chip", false);
+        showPage("admin");
+        showAdminTab("jobs");
+      });
+      document.getElementById("copy-asset-cancel").addEventListener("click", closeCopyAssetDialog);
+      document.getElementById("copy-asset-submit").addEventListener("click", () => runAction(submitCopyAsset));
+      document.getElementById("copy-asset-dialog").addEventListener("click", (event) => {
+        if (event.target.id === "copy-asset-dialog") closeCopyAssetDialog();
+      });
+      document.getElementById("password-cancel").addEventListener("click", closePasswordDialog);
+      document.getElementById("password-submit").addEventListener("click", () => runAction(submitPasswordDialog));
+      document.getElementById("password-dialog").addEventListener("click", (event) => {
+        if (event.target.id === "password-dialog") closePasswordDialog();
+      });
       document.getElementById("refresh-task-center").addEventListener("click", () => runAction(refresh));
       document.addEventListener("click", (event) => {
-        if (!event.target.closest(".project-menu") && !event.target.closest(".task-menu")) {
+        if (!event.target.closest(".project-menu") && !event.target.closest(".task-menu") && !event.target.closest(".user-menu")) {
           togglePopover("project-menu", false);
           togglePopover("task-menu", false);
+          togglePopover("session-chip", false);
         }
       });
       document.getElementById("project-id").addEventListener("change", async (event) => {
@@ -5242,8 +5804,13 @@ GET /api/v1/admin/system</pre>
       });
       document.getElementById("logout").addEventListener("click", logout);
       document.getElementById("refresh-users").addEventListener("click", refreshUsers);
+      document.getElementById("refresh-account-summary").addEventListener("click", () => runAction(() => refreshAccountSummary()));
       document.getElementById("refresh-admin-jobs").addEventListener("click", refreshAdminJobs);
       document.getElementById("refresh-system").addEventListener("click", refreshSystemMetrics);
+      document.getElementById("system-auto-refresh").addEventListener("change", (event) => {
+        if (event.target.checked) startSystemMetricPolling();
+        else stopSystemMetricPolling();
+      });
       document.getElementById("toggle-protein-focus").addEventListener("click", toggleProteinFocusMode);
       document.getElementById("toggle-ligand-focus").addEventListener("click", toggleLigandEditorFocusMode);
       document.getElementById("ligand-focus-exit").addEventListener("click", () => {
@@ -5258,8 +5825,17 @@ GET /api/v1/admin/system</pre>
         if (proteinFocusMode) toggleProteinFocusMode();
       });
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && proteinFocusMode) toggleProteinFocusMode();
-        if (event.key === "Escape" && ligandEditorFocusMode) toggleLigandEditorFocusMode();
+        if (event.key !== "Escape") return;
+        if (document.getElementById("copy-asset-dialog").classList.contains("open")) {
+          closeCopyAssetDialog();
+          return;
+        }
+        if (document.getElementById("password-dialog").classList.contains("open")) {
+          closePasswordDialog();
+          return;
+        }
+        if (proteinFocusMode) toggleProteinFocusMode();
+        if (ligandEditorFocusMode) toggleLigandEditorFocusMode();
       });
       document.getElementById("focus-selected-ligand").addEventListener("click", () =>
         runAction(() => {
