@@ -50,13 +50,14 @@ RUN set -eux; \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml README.md README.origin.md LICENSE /app/
-COPY src /app/src
-COPY --from=ketcher-assets /build/src/boltz_web/static/vendor/ketcher /app/src/boltz_web/static/vendor/ketcher
 
 RUN python3 -m pip install --no-cache-dir --break-system-packages \
     --index-url "${PIP_INDEX_URL}" --trusted-host "${PIP_TRUSTED_HOST}" \
     fastapi "uvicorn[standard]" sqlalchemy "psycopg[binary]" redis python-multipart \
     requests pandas openpyxl rdkit
+
+COPY src /app/src
+COPY --from=ketcher-assets /build/src/boltz_web/static/vendor/ketcher /app/src/boltz_web/static/vendor/ketcher
 
 EXPOSE 8800
 

@@ -28,7 +28,7 @@
       header {
         position: sticky;
         top: 0;
-        z-index: 10;
+        z-index: 20;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -59,16 +59,97 @@
         grid-template-columns: 1fr;
         align-items: start;
       }
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .project-menu {
+        position: relative;
+      }
+      .project-button,
+      .task-center-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: auto;
+        min-height: 38px;
+        margin: 0;
+        padding: 7px 12px;
+        border-radius: 999px;
+        border-color: rgba(170, 183, 201, 0.72);
+        background: rgba(255, 255, 255, 0.72);
+        color: #172033;
+        box-shadow: none;
+        white-space: nowrap;
+      }
+      .project-button strong,
+      .task-center-button strong {
+        max-width: 210px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .task-center-button[data-active="true"] {
+        border-color: rgba(47, 112, 223, 0.34);
+        background: rgba(232, 241, 255, 0.86);
+        color: #173c82;
+      }
+      .project-popover,
+      .task-popover {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        z-index: 50;
+        width: min(420px, calc(100vw - 28px));
+        display: none;
+        gap: 10px;
+        padding: 12px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(26px) saturate(180%);
+        box-shadow: 0 22px 60px rgba(24, 39, 62, 0.18);
+      }
+      .project-menu.open .project-popover,
+      .task-menu.open .task-popover {
+        display: grid;
+      }
+      .project-popover input,
+      .project-popover select {
+        min-height: 38px;
+      }
+      .project-popover-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .project-popover-actions button {
+        min-height: 38px;
+        margin: 0;
+      }
+      .task-menu {
+        position: relative;
+      }
+      .task-popover {
+        max-height: min(520px, calc(100vh - 88px));
+        overflow: auto;
+      }
+      .toast-region {
+        position: fixed;
+        right: 22px;
+        top: 70px;
+        z-index: 60;
+        width: min(420px, calc(100vw - 44px));
+        pointer-events: none;
+      }
       .side-nav {
         position: sticky;
-        top: 56px;
+        top: 58px;
         z-index: 9;
-        display: grid;
-        grid-template-columns: minmax(440px, auto) minmax(0, 1fr);
-        gap: 14px;
-        align-items: center;
-        min-height: 64px;
-        padding: 8px 12px;
+        display: block;
+        min-height: 0;
+        padding: 6px 10px;
         border-radius: 18px;
         background: rgba(255, 255, 255, 0.72);
         border: 1px solid rgba(255, 255, 255, 0.86);
@@ -89,10 +170,7 @@
         backdrop-filter: none;
       }
       .project-strip {
-        display: grid;
-        grid-template-columns: 170px 180px auto auto;
-        gap: 8px;
-        align-items: center;
+        display: none !important;
       }
       .project-strip h2,
       .module-strip h2 {
@@ -129,7 +207,7 @@
       .nav-list {
         display: flex;
         gap: 8px;
-        min-height: 40px;
+        min-height: 38px;
         align-items: center;
         overflow-x: auto;
       }
@@ -138,9 +216,9 @@
         align-items: center;
         justify-content: space-between;
         width: auto;
-        min-height: 38px;
+        min-height: 34px;
         margin: 0;
-        padding: 8px 11px;
+        padding: 7px 11px;
         border-color: transparent;
         border-radius: 13px;
         background: transparent;
@@ -230,7 +308,7 @@
       }
       .workbench-tabs {
         position: sticky;
-        top: 136px;
+        top: 112px;
         z-index: 8;
         display: flex;
         gap: 8px;
@@ -271,7 +349,7 @@
         gap: 12px;
       }
       .workspace-card {
-        min-height: 640px;
+        min-height: 560px;
       }
       .workspace-header {
         display: flex;
@@ -596,6 +674,131 @@
         color: #26476f;
         font-weight: 650;
         box-shadow: 0 10px 24px rgba(43, 73, 110, 0.08);
+      }
+      .toast-region .status:not(:empty) {
+        margin: 0;
+        animation: toast-in 180ms ease-out;
+      }
+      .task-summary-list {
+        display: grid;
+        gap: 8px;
+      }
+      .task-summary-item {
+        display: grid;
+        gap: 6px;
+        padding: 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(213, 222, 235, 0.95);
+        background: rgba(255, 255, 255, 0.78);
+      }
+      .task-summary-item.running {
+        border-color: rgba(47, 112, 223, 0.42);
+        background: rgba(232, 241, 255, 0.86);
+      }
+      .task-summary-item.failed {
+        border-color: rgba(220, 72, 72, 0.32);
+        background: rgba(255, 242, 242, 0.92);
+      }
+      .task-summary-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .task-summary-head strong {
+        font-size: 13px;
+      }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 24px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(226, 232, 240, 0.72);
+        color: #43536a;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .status-pill.running,
+      .status-pill.queued {
+        background: rgba(232, 241, 255, 0.94);
+        color: #173c82;
+      }
+      .status-pill.completed {
+        background: rgba(237, 250, 244, 0.96);
+        color: #146b48;
+      }
+      .status-pill.failed {
+        background: rgba(255, 242, 242, 0.96);
+        color: #9b1c1c;
+      }
+      .task-timeline {
+        display: grid;
+        gap: 0;
+        margin-top: 8px;
+      }
+      .task-step {
+        position: relative;
+        display: grid;
+        grid-template-columns: 22px minmax(0, 1fr);
+        gap: 8px;
+        padding: 0 0 12px;
+      }
+      .task-step::before {
+        content: "";
+        position: absolute;
+        left: 8px;
+        top: 18px;
+        bottom: -2px;
+        width: 2px;
+        background: rgba(190, 205, 225, 0.72);
+      }
+      .task-step:last-child::before {
+        display: none;
+      }
+      .task-dot {
+        width: 18px;
+        height: 18px;
+        margin-top: 1px;
+        border-radius: 999px;
+        border: 2px solid rgba(170, 183, 201, 0.92);
+        background: #fff;
+      }
+      .task-step.done .task-dot {
+        border-color: rgba(40, 152, 105, 0.72);
+        background: #23a36b;
+      }
+      .task-step.active .task-dot {
+        border-color: rgba(47, 112, 223, 0.72);
+        background: #2f70df;
+        box-shadow: 0 0 0 4px rgba(47, 112, 223, 0.12);
+      }
+      .task-step.failed .task-dot {
+        border-color: rgba(220, 72, 72, 0.72);
+        background: #d94848;
+      }
+      .task-step strong {
+        display: block;
+        font-size: 12px;
+        color: #1f2937;
+      }
+      .task-step small {
+        display: block;
+        margin-top: 2px;
+        color: #64748b;
+        font-size: 11px;
+        line-height: 1.4;
+      }
+      @keyframes toast-in {
+        from {
+          opacity: 0;
+          transform: translateY(-6px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
       }
       .status.error:not(:empty) {
         border-color: rgba(220, 72, 72, 0.28);
@@ -1069,6 +1272,68 @@
         padding: 0;
         margin: 0;
       }
+      body.ligand-editor-focus-active {
+        overflow: hidden;
+      }
+      .ligand-editor-expanded {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        overflow: hidden;
+        padding: 14px;
+        border-radius: 0;
+        background: rgba(248, 251, 255, 0.98);
+        backdrop-filter: none;
+        box-shadow: 0 38px 110px rgba(19, 34, 56, 0.32);
+      }
+      body.ligand-editor-focus-active header,
+      body.ligand-editor-focus-active .side-nav,
+      body.ligand-editor-focus-active [data-page='ligand'] > .page-hero,
+      body.ligand-editor-focus-active [data-page='ligand'] > .workflow-layout > .operation-column,
+      body.ligand-editor-focus-active [data-page='ligand'] .workbench-shell,
+      body.ligand-editor-focus-active [data-page='ligand'] [data-workbench-panel='ligand:molecules'],
+      body.ligand-editor-focus-active [data-page='ligand'] [data-workbench-panel='ligand:boltz'],
+      body.ligand-editor-focus-active [data-page='ligand'] [data-workbench-panel='ligand:outputs'] {
+        display: none !important;
+      }
+      body.ligand-editor-focus-active .app-shell,
+      body.ligand-editor-focus-active [data-page='ligand'],
+      body.ligand-editor-focus-active [data-page='ligand'] > .workflow-layout,
+      body.ligand-editor-focus-active [data-page='ligand'] > .workflow-layout > .workspace-column {
+        display: block;
+        padding: 0;
+        margin: 0;
+      }
+      .ligand-editor-expanded .workspace-header {
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .ligand-editor-expanded .ligand-editor-workbench {
+        min-height: 0;
+        height: calc(100vh - 92px);
+        grid-template-columns: minmax(0, 1fr) 360px;
+      }
+      .ligand-editor-expanded .ligand-editor-side {
+        overflow: auto;
+        padding-right: 2px;
+      }
+      .ligand-focus-exit {
+        display: none;
+      }
+      .ligand-editor-expanded .ligand-focus-exit {
+        display: inline-flex;
+      }
+      #toggle-ligand-focus {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      #toggle-ligand-focus svg,
+      .ligand-focus-exit svg {
+        width: 16px;
+        height: 16px;
+      }
       .asset-preview {
         min-height: 520px;
       }
@@ -1141,14 +1406,21 @@
       .ketcher-stage {
         position: relative;
         overflow: hidden;
-        min-height: 520px;
+        min-height: 0;
+        height: 100%;
         border: 1px solid rgba(190, 205, 225, 0.9);
         border-radius: 16px;
         background: rgba(255, 255, 255, 0.95);
       }
       #ligand-ketcher-root {
         width: 100%;
-        height: 520px;
+        height: 100%;
+        min-height: 0;
+      }
+      #ligand-ketcher-root > div,
+      #ligand-ketcher-root .Ketcher-root {
+        min-height: 0;
+        height: 100%;
       }
       .ketcher-help {
         color: #64748b;
@@ -1168,6 +1440,72 @@
       .yaml-preview {
         min-height: 280px;
         max-height: 460px;
+      }
+      .ligand-main-tabs {
+        min-height: calc(100vh - 220px);
+      }
+      .ligand-editor-workbench {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 12px;
+        min-height: calc(100vh - 245px);
+      }
+      .ligand-editor-workbench .ketcher-panel {
+        min-height: 0;
+        height: 100%;
+      }
+      .ligand-editor-side {
+        display: grid;
+        align-content: start;
+        gap: 10px;
+        min-width: 0;
+      }
+      .ligand-editor-side label {
+        margin-top: 0;
+      }
+      .ligand-editor-side textarea {
+        min-height: 120px;
+        max-height: 220px;
+      }
+      .ligand-editor-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .ligand-editor-actions button {
+        margin: 0;
+      }
+      .api-layout {
+        display: grid;
+        grid-template-columns: minmax(340px, 0.32fr) minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .api-sidebar {
+        position: sticky;
+        top: 112px;
+        display: grid;
+        gap: 12px;
+        max-height: calc(100vh - 130px);
+        overflow: auto;
+      }
+      .api-sidebar pre,
+      .api-workspace pre {
+        max-width: 100%;
+        overflow: auto;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .api-workspace {
+        display: grid;
+        gap: 12px;
+        min-width: 0;
+      }
+      .api-workspace .workbench-tabs {
+        position: static;
+      }
+      .api-workspace .asset-preview {
+        min-height: calc(100vh - 330px);
       }
       .api-doc-links {
         display: flex;
@@ -1299,6 +1637,7 @@
         .page-grid,
         .workflow-layout,
         .admin-layout,
+        .api-layout,
         .metric-grid,
         .preview-grid,
         .page-brief,
@@ -1340,12 +1679,51 @@
   <body>
     <header>
       <h1>Boltz Workbench</h1>
-      <div id="session-chip" class="session-chip hidden">
-        <div class="session-user">
-          <span>当前用户</span>
-          <strong id="user-id">admin</strong>
+      <div class="header-actions">
+        <div id="project-menu" class="project-menu hidden">
+          <button id="project-menu-toggle" class="project-button" type="button" aria-expanded="false">
+            <span>项目</span>
+            <strong id="current-project-label">未选择</strong>
+            <span>⌄</span>
+          </button>
+          <div class="project-popover" role="dialog" aria-label="项目管理">
+            <label>
+              当前项目
+              <select id="project-id"></select>
+            </label>
+            <label>
+              新建项目
+              <input id="project-name" placeholder="项目名称" />
+            </label>
+            <div class="project-popover-actions">
+              <button class="secondary" id="create-project">创建</button>
+              <button class="secondary danger" id="delete-project" type="button">删除当前</button>
+            </div>
+          </div>
         </div>
-        <button class="logout-button" id="logout" type="button">退出</button>
+        <div id="task-menu" class="task-menu hidden">
+          <button id="task-menu-toggle" class="task-center-button" type="button" aria-expanded="false">
+            <span>任务</span>
+            <strong id="task-center-label">0</strong>
+          </button>
+          <div class="task-popover" role="dialog" aria-label="任务中心">
+            <div class="workspace-header">
+              <div>
+                <h2>任务中心</h2>
+                <p class="muted">按步骤显示当前项目任务进度。</p>
+              </div>
+              <button class="secondary" id="refresh-task-center" type="button">刷新</button>
+            </div>
+            <div class="task-summary-list" id="task-center-list"></div>
+          </div>
+        </div>
+        <div id="session-chip" class="session-chip hidden">
+          <div class="session-user">
+            <span>当前用户</span>
+            <strong id="user-id">admin</strong>
+          </div>
+          <button class="logout-button" id="logout" type="button">退出</button>
+        </div>
       </div>
     </header>
     <main id="login-screen" class="login-shell">
@@ -1399,20 +1777,6 @@
     </main>
     <main id="app-screen" class="app-shell hidden">
       <aside class="side-nav">
-        <section class="project-strip">
-          <h2>项目</h2>
-          <label>
-            当前项目
-            <select id="project-id"></select>
-          </label>
-          <label>
-            新建项目
-            <input id="project-name" placeholder="项目名称" />
-          </label>
-          <button class="secondary" id="create-project">创建项目</button>
-          <button class="secondary danger" id="delete-project" type="button">删除项目</button>
-          <div class="status" id="status"></div>
-        </section>
         <section class="module-strip">
           <h2>模块</h2>
           <div class="nav-list">
@@ -1429,6 +1793,7 @@
           </div>
         </section>
       </aside>
+      <div class="toast-region"><div class="status" id="status"></div></div>
       <div class="workspace">
         <section class="page page-hero active" data-page="project">
           <div>
@@ -1767,44 +2132,65 @@
                   <div class="item"><small>选择或创建配体资产后解析分子列表。</small></div>
                 </div>
               </section>
-              <section class="asset-preview workspace-tab-panel" data-workbench-panel="ligand:editor">
+              <section class="asset-preview workspace-tab-panel ligand-main-tabs" data-workbench-panel="ligand:editor">
                 <div class="workspace-header">
                   <div>
                     <h2>Ketcher 2D 分子编辑器</h2>
-                    <p class="muted">从分子表点“编辑”会加载单个分子；点“新建空白分子”会打开空白画布。可追加到当前库、替换当前分子，或另存为新 ligand asset。</p>
+                    <p class="muted">中央是 Ketcher 画布；右侧是当前分子的结构文本、保存策略和 Boltz 衔接。专注模式下不用滚动找按钮。</p>
                   </div>
-                  <div class="ketcher-toolbar">
-                    <button class="secondary" id="ligand-ketcher-load" type="button">把表单载入 Ketcher</button>
-                    <button class="secondary" id="ligand-ketcher-sync" type="button">同步 Ketcher 到表单</button>
-                    <button class="secondary danger" id="ligand-ketcher-clear" type="button">清空 Ketcher</button>
+                  <div class="item-actions">
+                    <button class="secondary ligand-focus-exit" id="ligand-focus-exit" type="button">
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                        <path d="M10 6 4 12l6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M5 12h15" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+                      </svg>
+                      <span>退出编辑</span>
+                    </button>
+                    <button class="secondary" id="toggle-ligand-focus" type="button"></button>
                   </div>
                 </div>
-                <div class="editor-grid">
-                  <label>
-                    编辑后名称
-                    <input id="ligand-edit-name" placeholder="例如 edited_ligand_001" />
-                  </label>
-                  <label>
-                    SMILES
-                    <textarea id="ligand-edit-smiles" placeholder="可从分子表点击“编辑”带入，也可以手工输入"></textarea>
-                  </label>
-                  <label>
-                    MolBlock
-                    <textarea id="ligand-edit-molblock" placeholder="Ketcher 会把画出的 MolBlock 写到这里；也可以粘贴 MolBlock"></textarea>
-                  </label>
-                </div>
-                <div class="ketcher-panel">
-                  <div class="ketcher-stage">
-                    <div id="ligand-ketcher-root"></div>
+                <div class="ligand-editor-workbench">
+                  <div class="ketcher-panel">
+                    <div class="ketcher-stage">
+                      <div id="ligand-ketcher-root"></div>
+                    </div>
+                    <p class="ketcher-help" id="ligand-ketcher-status">进入“2D 编辑”后加载 Ketcher。若加载失败，会在这里显示具体错误。</p>
                   </div>
-                  <p class="ketcher-help" id="ligand-ketcher-status">进入“2D 编辑”后加载 Ketcher。若看不到编辑器，说明静态 Ketcher 资产没有随镜像打包。</p>
+                  <aside class="ligand-editor-side">
+                    <section>
+                      <h2>当前分子</h2>
+                      <label>
+                        编辑后名称
+                        <input id="ligand-edit-name" placeholder="例如 edited_ligand_001" />
+                      </label>
+                      <div class="ketcher-toolbar">
+                        <button class="secondary" id="ligand-ketcher-load" type="button">载入画布</button>
+                        <button class="secondary" id="ligand-ketcher-sync" type="button">从画布同步</button>
+                        <button class="secondary danger" id="ligand-ketcher-clear" type="button">清空</button>
+                      </div>
+                    </section>
+                    <section>
+                      <h2>结构文本</h2>
+                      <label>
+                        SMILES
+                        <textarea id="ligand-edit-smiles" placeholder="从分子表点击“编辑”带入，或手工输入 SMILES"></textarea>
+                      </label>
+                      <label>
+                        MolBlock
+                        <textarea id="ligand-edit-molblock" placeholder="Ketcher 会把 MolBlock 写到这里，也可以粘贴 MolBlock"></textarea>
+                      </label>
+                    </section>
+                    <section>
+                      <h2>保存策略</h2>
+                      <div class="ligand-editor-actions">
+                        <button id="append-edited-ligand" type="button">追加到当前配体资产</button>
+                        <button class="secondary" id="replace-edited-ligand" type="button">替换当前分子</button>
+                        <button class="secondary" id="save-edited-ligand" type="button">另存为新配体资产</button>
+                      </div>
+                      <p class="muted">默认另存不覆盖原始分子；追加/替换会修改当前 ligand asset 的 SDF 分子库。</p>
+                    </section>
+                  </div>
                 </div>
-                <div class="item-actions">
-                  <button id="append-edited-ligand" type="button">追加到当前配体资产</button>
-                  <button class="secondary" id="replace-edited-ligand" type="button">替换当前分子</button>
-                  <button class="secondary" id="save-edited-ligand" type="button">另存为新配体资产</button>
-                </div>
-                <p class="muted">保存前会自动同步 Ketcher 的 MolBlock / SMILES。追加/替换会修改当前 ligand asset 的 SDF 分子库；另存会创建新资产。</p>
               </section>
               <section class="asset-preview workspace-tab-panel" data-workbench-panel="ligand:boltz">
                 <h2>Boltz 输入预览</h2>
@@ -2170,8 +2556,8 @@
               <div class="brief-card"><strong>衔接 / Chaining</strong><span>导入蛋白→口袋→配体准备→Boltz input→任务→下载输出。Protein → pocket → ligand prep → Boltz input → job → outputs.</span></div>
             </div>
           </section>
-          <div class="workflow-layout">
-            <div class="operation-column">
+          <div class="api-layout">
+            <aside class="api-sidebar">
               <section>
                 <h2>认证 / Auth</h2>
                 <pre class="yaml-preview">POST /api/v1/auth/login
@@ -2199,8 +2585,8 @@ Response:
                   <li>下载文件：`GET /api/v1/assets/{asset_id}/files/{file_id}/download`。</li>
                 </ol>
               </section>
-            </div>
-            <div class="workspace-column">
+            </aside>
+            <div class="api-workspace">
               <section class="workbench-shell">
                 <div class="workbench-tabs" data-workbench="api">
                   <button class="workbench-tab active" data-workbench-tab="api:auto" type="button">自动接口目录</button>
@@ -2385,6 +2771,7 @@ GET /api/v1/admin/system</pre>
       let hiddenComponentKeys = new Set();
       let hiddenChainIds = new Set();
       let proteinFocusMode = false;
+      let ligandEditorFocusMode = false;
       let proteinViewer = null;
       let jobPollTimer = null;
       let openApiSchemaLoaded = false;
@@ -2441,6 +2828,10 @@ GET /api/v1/admin/system</pre>
       }
       const setStatus = (text, tone = "info") => {
         paintStatus(statusEl, text, tone);
+        if (text && tone !== "error") {
+          window.clearTimeout(setStatus._timer);
+          setStatus._timer = window.setTimeout(() => paintStatus(statusEl, ""), 3600);
+        }
       };
       const setLoginStatus = (text, tone = "info") => {
         paintStatus(loginStatusEl, text, tone);
@@ -2538,6 +2929,93 @@ GET /api/v1/admin/system</pre>
             document.getElementById("openapi-summary").textContent = `OpenAPI 读取失败：${error.message}`;
           });
         }
+      }
+      function togglePopover(menuId, open = null) {
+        const menu = document.getElementById(menuId);
+        if (!menu) return;
+        const shouldOpen = open === null ? !menu.classList.contains("open") : open;
+        document.querySelectorAll(".project-menu.open, .task-menu.open").forEach((node) => {
+          if (node !== menu) {
+            node.classList.remove("open");
+            node.querySelector("button")?.setAttribute("aria-expanded", "false");
+          }
+        });
+        menu.classList.toggle("open", shouldOpen);
+        menu.querySelector("button")?.setAttribute("aria-expanded", String(shouldOpen));
+      }
+      function jobStatusText(status) {
+        return {
+          queued: "排队中",
+          running: "运行中",
+          completed: "已完成",
+          failed: "失败",
+          canceled: "已停止",
+        }[status] || status || "未知";
+      }
+      function taskStepState(job, stepStatus) {
+        const order = { queued: 0, running: 1, completed: 2, failed: 2, canceled: 2 };
+        const current = order[job.status] ?? 0;
+        const target = order[stepStatus] ?? 0;
+        if (job.status === "failed" && stepStatus === "completed") return "failed";
+        if (job.status === "canceled" && stepStatus === "completed") return "failed";
+        if (job.status === stepStatus) return stepStatus === "completed" ? "done" : "active";
+        if (current > target) return "done";
+        return "";
+      }
+      function renderJobTimeline(job, events = []) {
+        const eventByStatus = new Map();
+        events.forEach((event) => {
+          const key = event.status || event.event;
+          if (key && !eventByStatus.has(key)) eventByStatus.set(key, event);
+        });
+        const output = job.result?.output_files?.length ? `输出：${job.result.output_files.join("，")}` : "";
+        const steps = [
+          ["queued", "进入队列", "任务已创建，等待对应 worker 消费。"],
+          ["running", "执行中", eventByStatus.get("running")?.payload?.message || "worker 已接管任务并开始处理。"],
+          [job.status === "failed" || job.status === "canceled" ? job.status : "completed", job.status === "failed" ? "失败" : job.status === "canceled" ? "已停止" : "完成", job.error || eventByStatus.get("completed")?.payload?.message || output || "结果资产和文件已写入项目。"],
+        ];
+        return `<div class="task-timeline">${steps
+          .map(([status, title, detail]) => {
+            const state = taskStepState(job, status);
+            return `<div class="task-step ${state}">
+              <span class="task-dot"></span>
+              <span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail || "")}</small></span>
+            </div>`;
+          })
+          .join("")}</div>`;
+      }
+      function renderTaskCenter(jobs = currentJobs) {
+        const label = document.getElementById("task-center-label");
+        const list = document.getElementById("task-center-list");
+        const button = document.getElementById("task-menu-toggle");
+        if (!label || !list || !button) return;
+        const activeCount = jobs.filter((job) => ["queued", "running"].includes(job.status)).length;
+        label.textContent = activeCount ? `${activeCount} 运行中` : `${jobs.length} 个`;
+        button.dataset.active = String(activeCount > 0);
+        const visible = jobs.slice(0, 8);
+        list.innerHTML = visible.length
+          ? visible
+              .map(
+                (job) => `<div class="task-summary-item ${escapeHtml(job.status)}">
+                  <div class="task-summary-head">
+                    <strong>${escapeHtml(job.job_type)} · ${escapeHtml(compactId(job.id))}</strong>
+                    <span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(jobStatusText(job.status))}</span>
+                  </div>
+                  ${renderJobTimeline(job)}
+                  <div class="item-actions">
+                    <button class="secondary" data-job-events="${job.id}" type="button">查看事件</button>
+                    ${(job.output_asset_ids || []).map((assetId) => `<button class="secondary" data-preview-job-output="${assetId}" type="button">输出 ${compactId(assetId)}</button>`).join("")}
+                  </div>
+                </div>`,
+              )
+              .join("")
+          : emptyList("当前项目没有任务");
+        list.querySelectorAll("[data-job-events]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => showJobEvents(node.dataset.jobEvents)));
+        });
+        list.querySelectorAll("[data-preview-job-output]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => previewAsset(node.dataset.previewJobOutput)));
+        });
       }
       function schemaRefName(ref) {
         return String(ref || "").split("/").pop() || "";
@@ -3515,6 +3993,37 @@ GET /api/v1/admin/system</pre>
           }
         }, 120);
       }
+      function setLigandFocusButtonLabel() {
+        const button = document.getElementById("toggle-ligand-focus");
+        if (!button) return;
+        const label = ligandEditorFocusMode ? "返回工作台" : "弹出专注编辑";
+        const title = ligandEditorFocusMode ? "返回配体工作台（Esc）" : "弹出 Ketcher 独立编辑窗口";
+        button.title = title;
+        button.setAttribute("aria-label", title);
+        button.innerHTML = `
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <path d="M8 4.75H5.75A1.75 1.75 0 0 0 4 6.5v11.75A1.75 1.75 0 0 0 5.75 20h11.75A1.75 1.75 0 0 0 19.25 18.25V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M13.5 4H20v6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M11 13 20 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          <span>${label}</span>
+        `;
+      }
+      function toggleLigandEditorFocusMode() {
+        ligandEditorFocusMode = !ligandEditorFocusMode;
+        const panel = document.querySelector("[data-workbench-panel='ligand:editor']");
+        if (ligandEditorFocusMode) {
+          showPage("ligand");
+          showWorkbenchPanel("ligand:editor");
+          window.scrollTo(0, 0);
+        }
+        panel?.classList.toggle("ligand-editor-expanded", ligandEditorFocusMode);
+        document.body.classList.toggle("ligand-editor-focus-active", ligandEditorFocusMode);
+        setLigandFocusButtonLabel();
+        setTimeout(() => {
+          if (window.BoltzKetcher?.isReady?.()) window.dispatchEvent(new Event("resize"));
+        }, 120);
+      }
       async function fetchAssetFileText(asset, file) {
         const response = await fetch(`/api/v1/assets/${asset.id}/files/${file.id}/download`, {
           headers: headers(),
@@ -3765,7 +4274,10 @@ GET /api/v1/admin/system</pre>
                 const canCancel = ["queued", "running"].includes(job.status);
                 return `
                   <div class="item">
-                    <strong>${escapeHtml(job.job_type)} · ${escapeHtml(statusText)}</strong>
+                    <div class="task-summary-head">
+                      <strong>${escapeHtml(job.job_type)}</strong>
+                      <span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(statusText)}</span>
+                    </div>
                     <small>
                       任务 ${escapeHtml(compactId(job.id))}<br />
                       输入 ${escapeHtml((job.input_asset_ids || []).map(compactId).join("，") || "无")}<br />
@@ -3774,6 +4286,7 @@ GET /api/v1/admin/system</pre>
                       ${removed ? `<br />${escapeHtml(removed)}` : ""}
                       ${job.error ? `<br />错误：${escapeHtml(job.error)}` : ""}
                     </small>
+                    ${renderJobTimeline(job)}
                     <div class="item-actions">
                       ${outputButtons}
                       <button class="secondary" data-job-events="${job.id}" type="button">查看进度</button>
@@ -3849,6 +4362,13 @@ GET /api/v1/admin/system</pre>
         if (window.BoltzKetcher) return Promise.resolve();
         if (ketcherScriptPromise) return ketcherScriptPromise;
         ketcherScriptPromise = new Promise((resolve, reject) => {
+          if (!document.querySelector('link[data-boltz-ketcher-css="true"]')) {
+            const style = document.createElement("link");
+            style.rel = "stylesheet";
+            style.href = "/vendor/ketcher/boltz-ketcher.css";
+            style.dataset.boltzKetcherCss = "true";
+            document.head.appendChild(style);
+          }
           const script = document.createElement("script");
           script.src = "/vendor/ketcher/boltz-ketcher.js";
           script.async = true;
@@ -4124,16 +4644,29 @@ GET /api/v1/admin/system</pre>
       }
       async function showJobEvents(jobId) {
         const events = await api(isAdmin ? `/api/v1/admin/jobs/${jobId}/events` : `/api/v1/jobs/${jobId}/events`);
-        const text = events.length
+        const job = currentJobs.find((item) => item.id === jobId);
+        const timeline = events.length
           ? events
               .map((event) => {
                 const payload = event.payload || {};
                 const message = payload.message || payload.error || payload.output_files?.join("，") || "";
-                return `${event.status || event.event || "event"}${message ? `：${message}` : ""}`;
+                const failed = event.event === "failed" || event.status === "failed";
+                return `<div class="task-step ${failed ? "failed" : "done"}">
+                  <span class="task-dot"></span>
+                  <span><strong>${escapeHtml(event.status || event.event || "event")}</strong><small>${escapeHtml(message || "状态已更新")}</small></span>
+                </div>`;
               })
-              .join("；")
-          : "这个任务还没有进度事件";
-        setStatus(`任务 ${compactId(jobId)} 进度：${text}`, events.some((event) => event.event === "failed") ? "error" : "success");
+              .join("")
+          : `<div class="task-step active"><span class="task-dot"></span><span><strong>等待事件</strong><small>这个任务还没有进度事件。</small></span></div>`;
+        const list = document.getElementById("task-center-list");
+        list.innerHTML = `<div class="task-summary-item ${escapeHtml(job?.status || "")}">
+          <div class="task-summary-head">
+            <strong>任务 ${escapeHtml(compactId(jobId))}</strong>
+            <span class="status-pill ${escapeHtml(job?.status || "")}">${escapeHtml(jobStatusText(job?.status))}</span>
+          </div>
+          <div class="task-timeline">${timeline}</div>
+        </div>`;
+        togglePopover("task-menu", true);
       }
       async function cleanupJob(jobId) {
         if (!window.confirm("确认删除这个任务生成的中间/输出资产和文件？任务记录会保留。")) return;
@@ -4258,6 +4791,7 @@ GET /api/v1/admin/system</pre>
         refreshBoltzSelectors(assets);
         bindAssetSelection();
         renderJobList(jobs, "jobs", "当前项目还没有任务");
+        renderTaskCenter(jobs);
         const dockingJobs = jobs.filter((job) =>
           ["structure_prediction", "affinity_prediction", "batch_screening"].includes(job.job_type),
         );
@@ -4274,6 +4808,8 @@ GET /api/v1/admin/system</pre>
           .map((project) => `<option value="${project.id}">${project.name}</option>`)
           .join("");
         document.getElementById("project-id").value = currentProjectId || "";
+        const currentProject = projects.find((project) => project.id === currentProjectId);
+        document.getElementById("current-project-label").textContent = currentProject?.name || "未选择";
       }
       function startJobPolling() {
         if (jobPollTimer) return;
@@ -4465,6 +5001,8 @@ GET /api/v1/admin/system</pre>
         if (savedState.projectId) currentProjectId = savedState.projectId;
         document.getElementById("user-id").textContent = userId;
         document.getElementById("session-chip").classList.remove("hidden");
+        document.getElementById("project-menu").classList.remove("hidden");
+        document.getElementById("task-menu").classList.remove("hidden");
         document.getElementById("login-screen").classList.add("hidden");
         document.getElementById("app-screen").classList.remove("hidden");
         document.getElementById("admin-nav").classList.toggle("hidden", !admin);
@@ -4497,11 +5035,14 @@ GET /api/v1/admin/system</pre>
         hiddenComponentKeys = new Set();
         hiddenChainIds = new Set();
         if (proteinFocusMode) toggleProteinFocusMode();
+        if (ligandEditorFocusMode) toggleLigandEditorFocusMode();
         localStorage.removeItem("boltz_token");
         localStorage.removeItem("boltz_user_id");
         localStorage.removeItem("boltz_is_admin");
         localStorage.removeItem(workbenchStateKey);
         document.getElementById("session-chip").classList.add("hidden");
+        document.getElementById("project-menu").classList.add("hidden");
+        document.getElementById("task-menu").classList.add("hidden");
         document.getElementById("app-screen").classList.add("hidden");
         document.getElementById("admin-nav").classList.add("hidden");
         document.getElementById("login-password").value = "";
@@ -4597,6 +5138,22 @@ GET /api/v1/admin/system</pre>
       document.querySelectorAll("[data-admin-tab]").forEach((node) => {
         node.addEventListener("click", () => showAdminTab(node.dataset.adminTab));
       });
+      document.getElementById("project-menu-toggle").addEventListener("click", (event) => {
+        event.stopPropagation();
+        togglePopover("project-menu");
+      });
+      document.getElementById("task-menu-toggle").addEventListener("click", (event) => {
+        event.stopPropagation();
+        renderTaskCenter();
+        togglePopover("task-menu");
+      });
+      document.getElementById("refresh-task-center").addEventListener("click", () => runAction(refresh));
+      document.addEventListener("click", (event) => {
+        if (!event.target.closest(".project-menu") && !event.target.closest(".task-menu")) {
+          togglePopover("project-menu", false);
+          togglePopover("task-menu", false);
+        }
+      });
       document.getElementById("project-id").addEventListener("change", async (event) => {
         currentProjectId = event.target.value;
         selectedAssetId = null;
@@ -4641,6 +5198,7 @@ GET /api/v1/admin/system</pre>
           await refreshProjects();
           await refresh();
           saveWorkbenchState({ projectId: currentProjectId });
+          togglePopover("project-menu", false);
         } catch (error) {
           setStatus(error.message, "error");
         }
@@ -4687,6 +5245,10 @@ GET /api/v1/admin/system</pre>
       document.getElementById("refresh-admin-jobs").addEventListener("click", refreshAdminJobs);
       document.getElementById("refresh-system").addEventListener("click", refreshSystemMetrics);
       document.getElementById("toggle-protein-focus").addEventListener("click", toggleProteinFocusMode);
+      document.getElementById("toggle-ligand-focus").addEventListener("click", toggleLigandEditorFocusMode);
+      document.getElementById("ligand-focus-exit").addEventListener("click", () => {
+        if (ligandEditorFocusMode) toggleLigandEditorFocusMode();
+      });
       initLigandKetcher();
       document.getElementById("new-ligand-molecule").addEventListener("click", () => runAction(startNewLigandMolecule));
       document.getElementById("protein-focus-exit-rail").addEventListener("click", () => {
@@ -4697,6 +5259,7 @@ GET /api/v1/admin/system</pre>
       });
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && proteinFocusMode) toggleProteinFocusMode();
+        if (event.key === "Escape" && ligandEditorFocusMode) toggleLigandEditorFocusMode();
       });
       document.getElementById("focus-selected-ligand").addEventListener("click", () =>
         runAction(() => {
@@ -4957,6 +5520,7 @@ GET /api/v1/admin/system</pre>
         showPage(currentRoutePage() || "project", { updateRoute: false });
       });
       setProteinFocusButtonLabel();
+      setLigandFocusButtonLabel();
       if (token) {
         enterApp(localStorage.getItem("boltz_user_id") || "admin", isAdmin).catch(() => {
           logout();
