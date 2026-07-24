@@ -12,7 +12,9 @@ ARG NPM_REGISTRY
 WORKDIR /build
 COPY package.json package-lock.json* /build/
 RUN npm config set registry "${NPM_REGISTRY}" \
-    && if [ -f package-lock.json ]; then npm ci; else npm install; fi
+    && (if [ -f package-lock.json ]; then npm ci; else npm install; fi \
+      || (npm config set registry "https://registry.npmjs.org" \
+        && if [ -f package-lock.json ]; then npm ci; else npm install; fi))
 COPY frontend /build/frontend
 RUN npm run build:ketcher
 
