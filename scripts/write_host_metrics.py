@@ -8,6 +8,7 @@ import platform
 import shutil
 import subprocess
 import time
+import re
 from pathlib import Path
 
 
@@ -148,6 +149,34 @@ def host_command(args: list[str], timeout: int = 3) -> subprocess.CompletedProce
     return None
 
 
+def read_text_first(paths: list[Path]) -> str:
+    for path in paths:
+        try:
+            value = path.read_text(errors="ignore").strip("\x00 \n\t")
+        except Exception:
+            continue
+        if value:
+            return value
+    return ""
+
+
+def is_tegra_host() -> bool:
+    descriptor = read_text_first(
+        [
+            proc_file("device-tree/model"),
+            proc_file("device-tree/compatible"),
+            sys_file("firmware/devicetree/base/model"),
+        ],
+    ).lower()
+    if any(token in descriptor for token in ("tegra", "jetson", "thor", "nvidia t")):
+        return True
+    try:
+        cpuinfo = proc_file("cpuinfo").read_text(errors="ignore").lower()
+    except Exception:
+        cpuinfo = ""
+    return any(token in cpuinfo for token in ("tegra", "jetson", "nvidia thor"))
+
+
 def read_nvidia_gpus() -> list[dict]:
     query = "name,driver_version,memory.total,memory.used,utilization.gpu,power.draw,power.limit,clocks.current.graphics"
     result = host_command(["nvidia-smi", f"--query-gpu={query}", "--format=csv,noheader,nounits"])
@@ -197,15 +226,102 @@ def read_rocm_gpus() -> list[dict]:
     return rows
 
 
+def parse_tegrastats_gpu(line: str) -> dict:
+    util = ""
+    clock = ""
+    match = re.search(r"(?:GR3D_FREQ|GPU)\s+(\d+(?:\.\d+)?)%?(?:@(\d+))?", line)
+    if match:
+        util = match.group(1)
+        clock = match.group(2) or ""
+    return {
+        "name": tegra_model_name(),
+        "backend": "host:tegrastats",
+        "raw": line,
+        "memory_total_mib": "",
+        "memory_used_mib": "",
+        "utilization_percent": util,
+        "power_draw_w": "",
+        "power_limit_w": "",
+        "power_used_percent": None,
+        "graphics_clock_mhz": clock,
+    }
+
+
+def tegra_model_name() -> str:
+    model = read_text_first(
+        [
+            proc_file("device-tree/model"),
+            sys_file("firmware/devicetree/base/model"),
+        ],
+    )
+    return model or "Jetson/Thor integrated GPU"
+
+
+def read_int_file(path: Path) -> int | None:
+    try:
+        raw = path.read_text().strip()
+    except Exception:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
+
+
+def read_jetson_sysfs_gpus() -> list[dict]:
+    candidates = [
+        sys_file("devices/platform/17000000.gpu/devfreq/17000000.gpu"),
+        sys_file("devices/gpu.0/devfreq/17000000.gpu"),
+    ]
+    try:
+        candidates.extend(SYS_ROOT.glob("devices/**/devfreq/*gpu*"))
+    except Exception:
+        pass
+    seen: set[Path] = set()
+    for root in candidates:
+        if root in seen or not root.exists():
+            continue
+        seen.add(root)
+        cur_freq = read_int_file(root / "cur_freq")
+        max_freq = read_int_file(root / "max_freq")
+        load = read_int_file(root / "load")
+        util = ""
+        if load is not None:
+            util = round(load / 10, 1) if load > 100 else load
+        return [
+            {
+                "name": tegra_model_name(),
+                "backend": "host:jetson-sysfs",
+                "memory_total_mib": "",
+                "memory_used_mib": "",
+                "utilization_percent": util,
+                "power_draw_w": "",
+                "power_limit_w": "",
+                "power_used_percent": None,
+                "graphics_clock_mhz": round(cur_freq / 1_000_000, 1) if cur_freq else "",
+                "max_clock_mhz": round(max_freq / 1_000_000, 1) if max_freq else "",
+            },
+        ]
+    return []
+
+
 def read_jetson_gpus() -> list[dict]:
     result = host_command(["tegrastats", "--interval", "100", "--count", "1"])
-    if result is None or not result.stdout.strip():
-        return []
-    return [{"name": "Jetson integrated GPU", "backend": "host:tegrastats", "raw": result.stdout.strip().splitlines()[-1]}]
+    if result is not None and result.stdout.strip():
+        return [parse_tegrastats_gpu(result.stdout.strip().splitlines()[-1])]
+    return read_jetson_sysfs_gpus()
 
 
 def collect(paths: list[str]) -> dict:
-    gpus = read_nvidia_gpus() or read_rocm_gpus() or read_jetson_gpus()
+    tegra = is_tegra_host()
+    gpus = read_jetson_gpus() or read_rocm_gpus() if tegra else read_nvidia_gpus() or read_rocm_gpus() or read_jetson_gpus()
+    gpu_note = ""
+    if not gpus:
+        gpu_note = (
+            "Jetson/Thor host detected. GPU data requires tegrastats or Jetson devfreq sysfs mounted into boltz-host-metrics."
+            if tegra
+            else "No host GPU tool returned data. Install/enable nvidia-smi, rocm-smi, or tegrastats on the host metrics runner."
+        )
     return {
         "host": platform.node(),
         "platform": platform.platform(),
@@ -214,7 +330,7 @@ def collect(paths: list[str]) -> dict:
         "cpu": read_cpu(),
         "memory": read_memory(),
         "gpus": gpus,
-        "gpu_note": "" if gpus else "No host GPU tool returned data. Install/enable nvidia-smi, rocm-smi, or tegrastats on the host metrics runner.",
+        "gpu_note": gpu_note,
         "disks": read_disks(paths),
     }
 

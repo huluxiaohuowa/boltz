@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import re
 import secrets
 import shutil
 import subprocess
@@ -355,6 +356,8 @@ def read_disk_info() -> list[dict]:
 
 
 def read_gpu_info() -> list[dict]:
+    if is_tegra_runtime():
+        return read_jetson_gpu_info() or read_rocm_gpu_info()
     query = (
         "name,driver_version,memory.total,memory.used,utilization.gpu,power.draw,power.limit,clocks.current.graphics"
     )
@@ -395,6 +398,34 @@ def read_gpu_info() -> list[dict]:
             },
         )
     return gpus or read_jetson_gpu_info()
+
+
+def read_text_first(paths: list[Path]) -> str:
+    for path in paths:
+        try:
+            value = path.read_text(errors="ignore").strip("\x00 \n\t")
+        except Exception:  # noqa: BLE001
+            continue
+        if value:
+            return value
+    return ""
+
+
+def is_tegra_runtime() -> bool:
+    descriptor = read_text_first(
+        [
+            Path("/proc/device-tree/model"),
+            Path("/proc/device-tree/compatible"),
+            Path("/sys/firmware/devicetree/base/model"),
+        ],
+    ).lower()
+    if any(token in descriptor for token in ("tegra", "jetson", "thor", "nvidia t")):
+        return True
+    try:
+        cpuinfo = Path("/proc/cpuinfo").read_text(errors="ignore").lower()
+    except Exception:  # noqa: BLE001
+        cpuinfo = ""
+    return any(token in cpuinfo for token in ("tegra", "jetson", "nvidia thor"))
 
 
 def read_rocm_gpu_info() -> list[dict]:
@@ -445,18 +476,19 @@ def read_jetson_gpu_info() -> list[dict]:
         )
         if result.returncode == 0 and result.stdout.strip():
             line = result.stdout.strip().splitlines()[-1]
+            match = re.search(r"(?:GR3D_FREQ|GPU)\s+(\d+(?:\.\d+)?)%?(?:@(\d+))?", line)
             return [
                 {
-                    "name": "Jetson integrated GPU",
+                    "name": tegra_model_name(),
                     "backend": "tegrastats",
                     "raw": line,
                     "memory_total_mib": "",
                     "memory_used_mib": "",
-                    "utilization_percent": "",
+                    "utilization_percent": match.group(1) if match else "",
                     "power_draw_w": "",
                     "power_limit_w": "",
                     "power_used_percent": None,
-                    "graphics_clock_mhz": "",
+                    "graphics_clock_mhz": match.group(2) if match and match.group(2) else "",
                 },
             ]
     except Exception:  # noqa: BLE001
@@ -465,19 +497,32 @@ def read_jetson_gpu_info() -> list[dict]:
         Path("/sys/devices/platform/17000000.gpu/devfreq/17000000.gpu"),
         Path("/sys/devices/gpu.0/devfreq/17000000.gpu"),
     ]
+    try:
+        candidates.extend(Path("/sys").glob("devices/**/devfreq/*gpu*"))
+    except Exception:  # noqa: BLE001
+        pass
+    seen: set[Path] = set()
     for root in candidates:
+        if root in seen:
+            continue
+        seen.add(root)
         if not root.exists():
             continue
         try:
             cur_freq = root.joinpath("cur_freq").read_text().strip() if root.joinpath("cur_freq").exists() else ""
             max_freq = root.joinpath("max_freq").read_text().strip() if root.joinpath("max_freq").exists() else ""
+            load = root.joinpath("load").read_text().strip() if root.joinpath("load").exists() else ""
+            utilization = ""
+            if load.isdigit():
+                load_value = int(load)
+                utilization = round(load_value / 10, 1) if load_value > 100 else load_value
             return [
                 {
-                    "name": "Jetson integrated GPU",
+                    "name": tegra_model_name(),
                     "backend": "sysfs",
                     "memory_total_mib": "",
                     "memory_used_mib": "",
-                    "utilization_percent": "",
+                    "utilization_percent": utilization,
                     "power_draw_w": "",
                     "power_limit_w": "",
                     "power_used_percent": None,
@@ -488,6 +533,15 @@ def read_jetson_gpu_info() -> list[dict]:
         except Exception:  # noqa: BLE001
             continue
     return []
+
+
+def tegra_model_name() -> str:
+    return read_text_first(
+        [
+            Path("/proc/device-tree/model"),
+            Path("/sys/firmware/devicetree/base/model"),
+        ],
+    ) or "Jetson/Thor integrated GPU"
 
 
 def system_info_payload() -> dict:
