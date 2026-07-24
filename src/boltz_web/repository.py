@@ -35,9 +35,15 @@ def asset_to_out(asset: Asset) -> AssetOut:
 
 
 def job_to_out(job: Job) -> JobOut:
+    project_name = ""
+    try:
+        project_name = job.project.name if job.project else ""
+    except Exception:  # noqa: BLE001
+        project_name = ""
     return JobOut(
         id=job.id,
         project_id=job.project_id,
+        project_name=project_name,
         job_type=job.job_type,
         status=job.status,
         input_asset_ids=job.input_asset_ids,

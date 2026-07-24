@@ -153,7 +153,7 @@
       .toast-region {
         position: fixed;
         right: 22px;
-        top: 70px;
+        top: 84px;
         z-index: 60;
         width: min(420px, calc(100vw - 44px));
         pointer-events: none;
@@ -753,10 +753,33 @@
       .toast-region .status:not(:empty) {
         margin: 0;
         animation: toast-in 180ms ease-out;
+        pointer-events: auto;
+      }
+      .status-close {
+        appearance: none;
+        width: auto;
+        min-height: 24px;
+        margin: 0 0 0 10px;
+        padding: 2px 8px;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: inherit;
+        font-size: 12px;
+        font-weight: 900;
+        box-shadow: none;
       }
       .task-summary-list {
         display: grid;
         gap: 8px;
+      }
+      .task-summary-section {
+        display: grid;
+        gap: 8px;
+      }
+      .task-summary-section > strong {
+        color: #314156;
+        font-size: 12px;
       }
       .task-summary-item {
         display: grid;
@@ -1491,6 +1514,13 @@
         border-radius: 16px;
         background: rgba(255, 255, 255, 0.95);
       }
+      .ketcher-loading {
+        display: grid;
+        place-items: center;
+        min-height: 420px;
+        color: #64748b;
+        font-weight: 800;
+      }
       #ligand-ketcher-root {
         width: 100%;
         height: 100%;
@@ -1714,6 +1744,23 @@
         width: var(--value, 0%);
         border-radius: inherit;
         background: linear-gradient(90deg, #3b82f6, #22c55e);
+      }
+      .metric-progress {
+        display: grid;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .metric-progress > div:first-child {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: #64748b;
+        font-size: 12px;
+      }
+      .metric-progress strong {
+        margin: 0;
+        color: #1f2937;
+        font-size: 12px;
       }
       .cpu-core-grid {
         display: grid;
@@ -2955,6 +3002,7 @@ DELETE /api/v1/jobs/{job_id}</pre>
       let currentAssets = [];
       let currentAllAssets = [];
       let currentJobs = [];
+      let currentAllJobs = [];
       let currentProjects = [];
       let currentLigandMolecules = [];
       let activeCopyAssetId = "";
@@ -3000,8 +3048,19 @@ DELETE /api/v1/jobs/{job_id}</pre>
       const loginStatusEl = document.getElementById("login-status");
       const headers = () => (token ? { Authorization: `Bearer ${token}` } : {});
       function paintStatus(element, text, tone = "info") {
-        element.textContent = text;
+        if (!element) return;
+        element.replaceChildren();
         element.classList.remove("error", "success");
+        if (!text) return;
+        element.appendChild(document.createTextNode(text));
+        if (element === statusEl) {
+          const close = document.createElement("button");
+          close.type = "button";
+          close.className = "status-close";
+          close.textContent = "×";
+          close.addEventListener("click", () => paintStatus(element, ""));
+          element.appendChild(close);
+        }
         if (text && tone !== "info") element.classList.add(tone);
       }
       function formatApiError(rawText, statusCode) {
@@ -3034,11 +3093,9 @@ DELETE /api/v1/jobs/{job_id}</pre>
         return text || "操作失败，请检查输入后重试";
       }
       const setStatus = (text, tone = "info") => {
+        window.clearTimeout(setStatus._timer);
         paintStatus(statusEl, text, tone);
-        if (text && tone !== "error") {
-          window.clearTimeout(setStatus._timer);
-          setStatus._timer = window.setTimeout(() => paintStatus(statusEl, ""), 3600);
-        }
+        if (text) setStatus._timer = window.setTimeout(() => paintStatus(statusEl, ""), tone === "error" ? 8000 : 3600);
       };
       const setLoginStatus = (text, tone = "info") => {
         paintStatus(loginStatusEl, text, tone);
@@ -3237,23 +3294,17 @@ DELETE /api/v1/jobs/{job_id}</pre>
           })
           .join("")}</div>`;
       }
-      function renderTaskCenter(jobs = currentJobs) {
-        const label = document.getElementById("task-center-label");
-        const list = document.getElementById("task-center-list");
-        const button = document.getElementById("task-menu-toggle");
-        if (!label || !list || !button) return;
-        const activeCount = jobs.filter((job) => ["queued", "running"].includes(job.status)).length;
-        label.textContent = activeCount ? `${activeCount} 运行中` : `${jobs.length} 个`;
-        button.dataset.active = String(activeCount > 0);
+      function renderTaskItems(jobs, emptyLabel) {
         const visible = jobs.slice(0, 8);
-        list.innerHTML = visible.length
+        return visible.length
           ? visible
               .map(
                 (job) => `<div class="task-summary-item ${escapeHtml(job.status)}">
                   <div class="task-summary-head">
-                    <strong>${escapeHtml(job.job_type)} · ${escapeHtml(compactId(job.id))}</strong>
+                    <strong>${escapeHtml(jobTypeLabel(job))} · ${escapeHtml(compactId(job.id))}</strong>
                     <span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(jobStatusText(job.status))}</span>
                   </div>
+                  <small>项目 ${escapeHtml(jobProjectLabel(job))}</small>
                   ${renderJobTimeline(job)}
                   <div class="item-actions">
                     <button class="secondary" data-job-events="${job.id}" type="button">查看事件</button>
@@ -3262,7 +3313,26 @@ DELETE /api/v1/jobs/{job_id}</pre>
                 </div>`,
               )
               .join("")
-          : emptyList("当前项目没有任务");
+          : emptyList(emptyLabel);
+      }
+      function renderTaskCenter(jobs = currentJobs, allJobs = currentAllJobs) {
+        const label = document.getElementById("task-center-label");
+        const list = document.getElementById("task-center-list");
+        const button = document.getElementById("task-menu-toggle");
+        if (!label || !list || !button) return;
+        const activeCount = jobs.filter((job) => ["queued", "running"].includes(job.status)).length;
+        label.textContent = activeCount ? `${activeCount} 运行中` : `${jobs.length} 个`;
+        button.dataset.active = String(activeCount > 0);
+        const otherJobs = allJobs.filter((job) => !jobs.some((item) => item.id === job.id));
+        list.innerHTML = `
+          <div class="task-summary-section">
+            <strong>当前项目任务</strong>
+            ${renderTaskItems(jobs, "当前项目没有任务")}
+          </div>
+          <div class="task-summary-section">
+            <strong>本用户其他任务</strong>
+            ${renderTaskItems(otherJobs, "其他项目没有任务")}
+          </div>`;
         list.querySelectorAll("[data-job-events]").forEach((node) => {
           node.addEventListener("click", () => runAction(() => showJobEvents(node.dataset.jobEvents)));
         });
@@ -3348,6 +3418,33 @@ DELETE /api/v1/jobs/{job_id}</pre>
       }
       function compactId(value) {
         return String(value || "").slice(0, 8);
+      }
+      function projectLabel(projectId) {
+        const project = currentProjects.find((item) => item.id === projectId);
+        if (!project) return compactId(projectId || "");
+        return `${project.name} · ${compactId(project.id)}`;
+      }
+      function jobProjectLabel(job) {
+        if (job?.project_name) return `${job.project_name} · ${compactId(job.project_id)}`;
+        return projectLabel(job?.project_id || "");
+      }
+      function jobTypeLabel(job) {
+        const type = job?.job_type || "";
+        if (type === "preparation") {
+          const assetKinds = (job.input_asset_ids || [])
+            .map((assetId) => currentAllAssets.find((asset) => asset.id === assetId)?.kind || "")
+            .join(" ");
+          if (assetKinds.includes("protein")) return "蛋白准备 / Protein preparation";
+          if (assetKinds.includes("ligand")) return "配体准备 / Ligand preparation";
+          return "结构准备 / Structure preparation";
+        }
+        return {
+          ligand_preparation: "配体准备 / Ligand preparation",
+          protein_preparation: "蛋白准备 / Protein preparation",
+          structure_prediction: "结构预测 / Structure prediction",
+          affinity_prediction: "亲和力预测 / Affinity prediction",
+          batch_screening: "批量筛选 / Batch screening",
+        }[type] || type || "任务 / Job";
       }
       function escapeHtml(value) {
         return String(value)
@@ -4518,6 +4615,7 @@ DELETE /api/v1/jobs/{job_id}</pre>
       }
       async function runAction(action) {
         try {
+          setStatus("");
           await action();
         } catch (error) {
           setStatus(error.message, "error");
@@ -4619,10 +4717,11 @@ DELETE /api/v1/jobs/{job_id}</pre>
                 return `
                   <div class="item">
                     <div class="task-summary-head">
-                      <strong>${escapeHtml(job.job_type)}</strong>
+                      <strong>${escapeHtml(jobTypeLabel(job))}</strong>
                       <span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(statusText)}</span>
                     </div>
                     <small>
+                      项目 ${escapeHtml(jobProjectLabel(job))}<br />
                       任务 ${escapeHtml(compactId(job.id))}<br />
                       输入 ${escapeHtml((job.input_asset_ids || []).map(compactId).join("，") || "无")}<br />
                       输出 ${escapeHtml((job.output_asset_ids || []).map(compactId).join("，") || "无")}
@@ -4705,6 +4804,7 @@ DELETE /api/v1/jobs/{job_id}</pre>
       function loadKetcherScript() {
         if (window.BoltzKetcher) return Promise.resolve();
         if (ketcherScriptPromise) return ketcherScriptPromise;
+        setKetcherStatus("正在加载 Ketcher 编辑器资源，首次加载可能需要几秒。", "info");
         ketcherScriptPromise = new Promise((resolve, reject) => {
           if (!document.querySelector('link[data-boltz-ketcher-css="true"]')) {
             const style = document.createElement("link");
@@ -4716,15 +4816,23 @@ DELETE /api/v1/jobs/{job_id}</pre>
           const script = document.createElement("script");
           script.src = "/vendor/ketcher/boltz-ketcher.js";
           script.async = true;
+          script.defer = true;
           script.onload = () => resolve();
           script.onerror = () => reject(new Error("Ketcher 资产加载失败：/vendor/ketcher/boltz-ketcher.js 不存在或不可访问"));
           document.head.appendChild(script);
         });
         return ketcherScriptPromise;
       }
+      function preloadKetcherAssets() {
+        loadKetcherScript()
+          .then(() => setKetcherStatus("Ketcher 资源已预加载；进入 2D 编辑时直接初始化画布。", "success"))
+          .catch((error) => setKetcherStatus(error.message, "error"));
+      }
       async function ensureKetcher() {
         const root = document.getElementById("ligand-ketcher-root");
         if (!root) throw new Error("Ketcher 容器没有渲染");
+        if (ketcherLoaded && window.BoltzKetcher?.isReady?.()) return window.BoltzKetcher;
+        if (!root.firstElementChild) root.innerHTML = `<div class="ketcher-loading">正在初始化 Ketcher 2D 编辑器...</div>`;
         await loadKetcherScript();
         if (!window.BoltzKetcher) throw new Error("Ketcher 静态资源未加载，请重新构建 boltz-web 镜像");
         const ketcher = await window.BoltzKetcher.mount(root, { staticResourcesUrl: "/vendor/ketcher" });
@@ -4790,6 +4898,7 @@ DELETE /api/v1/jobs/{job_id}</pre>
         const smiles = isMolBlockText(rawSmiles) ? "" : cleanSmilesText(rawSmiles);
         const molblock = rawMolblock || (isMolBlockText(rawSmiles) ? rawSmiles : "");
         if (!smiles && !molblock) throw new Error("请先画分子，或填写有效的 SMILES / MolBlock");
+        setStatus("");
         return {
           project_id: currentProjectId,
           name: document.getElementById("ligand-edit-name").value.trim() || defaultName,
@@ -5169,10 +5278,16 @@ DELETE /api/v1/jobs/{job_id}</pre>
       }
       async function refresh() {
         const suffix = currentProjectId ? `?project_id=${encodeURIComponent(currentProjectId)}` : "";
-        const [assets, allAssets, jobs] = await Promise.all([api(`/api/v1/assets${suffix}`), api("/api/v1/assets"), api(`/api/v1/jobs${suffix}`)]);
+        const [assets, allAssets, jobs, allJobs] = await Promise.all([
+          api(`/api/v1/assets${suffix}`),
+          api("/api/v1/assets"),
+          api(`/api/v1/jobs${suffix}`),
+          api("/api/v1/jobs"),
+        ]);
         currentAssets = assets;
         currentAllAssets = allAssets;
         currentJobs = jobs;
+        currentAllJobs = allJobs;
         renderAssetList(assets, "assets", "当前项目还没有资产");
         renderAssetList(
           assets.filter((asset) => isProteinLike(asset)),
@@ -5209,7 +5324,7 @@ DELETE /api/v1/jobs/{job_id}</pre>
         updateCurrentLigandMarkers();
         renderCurrentLigandSummary();
         renderJobList(jobs, "jobs", "当前项目还没有任务");
-        renderTaskCenter(jobs);
+        renderTaskCenter(jobs, allJobs);
         const dockingJobs = jobs.filter((job) =>
           ["structure_prediction", "affinity_prediction", "batch_screening"].includes(job.job_type),
         );
@@ -5380,14 +5495,38 @@ DELETE /api/v1/jobs/{job_id}</pre>
           );
         });
       }
-      function renderMetric(label, lines, percent = null) {
-        const value = Number(percent || 0);
+      function metricPercent(used, total) {
+        const usedValue = Number(used);
+        const totalValue = Number(total);
+        if (!Number.isFinite(usedValue) || !Number.isFinite(totalValue) || totalValue <= 0) return null;
+        return Math.max(0, Math.min(100, Math.round((usedValue / totalValue) * 10_000) / 100));
+      }
+      function normalizePercent(value) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return null;
+        return Math.max(0, Math.min(100, number));
+      }
+      function renderProgressRows(rows = []) {
+        return rows
+          .filter((row) => row && row.percent !== null && row.percent !== undefined)
+          .map((row) => {
+            const percent = normalizePercent(row.percent) ?? 0;
+            return `<div class="metric-progress">
+              <div><strong>${escapeHtml(row.label)}</strong><span>${escapeHtml(row.value || `${percent}%`)}</span></div>
+              <div class="meter" aria-label="${escapeHtml(row.label)} ${percent}%"><span style="--value:${percent}%"></span></div>
+            </div>`;
+          })
+          .join("");
+      }
+      function renderMetric(label, lines, percent = null, progressRows = []) {
+        const value = normalizePercent(percent);
         const visibleLines = lines.filter((line) => String(line || "").trim());
         return `
           <div class="metric-card">
             <strong>${escapeHtml(label)}</strong>
             <small>${visibleLines.map((line) => escapeHtml(line)).join("<br />")}</small>
-            ${percent === null ? "" : `<div class="meter" aria-label="${escapeHtml(label)} ${value}%"><span style="--value:${Math.max(0, Math.min(100, value))}%"></span></div>`}
+            ${value === null ? "" : `<div class="meter" aria-label="${escapeHtml(label)} ${value}%"><span style="--value:${value}%"></span></div>`}
+            ${renderProgressRows(progressRows)}
           </div>`;
       }
       function renderCpuCoreGrid(cores = []) {
@@ -5419,23 +5558,37 @@ DELETE /api/v1/jobs/{job_id}</pre>
           renderMetric("CPU", [`model: ${cpu.model || "unknown"}`, `logical cores: ${cpu.logical_count || 0}`, `freq: ${cpu.frequency_mhz ? `${cpu.frequency_mhz} MHz` : "unknown"}`]),
           renderMetric("内存 / Memory", [`total: ${memory.total_gib || 0} GiB`, `used: ${memory.used_gib || 0} GiB`, `available: ${memory.available_gib || 0} GiB`], memory.used_percent || 0),
           ...(gpus.length
-            ? gpus.map((gpu, index) =>
-                renderMetric(
+            ? gpus.map((gpu, index) => {
+                const gpuMemoryPercent = metricPercent(gpu.memory_used_mib, gpu.memory_total_mib);
+                const sharedMemoryPercent = metricPercent(gpu.shared_memory_used_mib, gpu.shared_memory_total_mib);
+                const utilPercent = normalizePercent(gpu.utilization_percent);
+                const powerPercent = metricPercent(gpu.power_draw_w, gpu.power_limit_w);
+                return renderMetric(
                   `GPU ${index + 1}`,
                   [
-                    `model: ${gpu.name}`,
+                    `model: ${gpu.name || "unknown"}`,
                     `backend: ${gpu.backend || "unknown"}`,
-                    `driver: ${gpu.driver_version}`,
-                    `memory: ${gpu.memory_used_mib}/${gpu.memory_total_mib} MiB`,
-                    `util: ${gpu.utilization_percent}%`,
-                    `power: ${gpu.power_draw_w}/${gpu.power_limit_w} W`,
-                    `graphics clock: ${gpu.graphics_clock_mhz} MHz`,
+                    gpu.driver_version ? `driver: ${gpu.driver_version}` : "",
+                    gpu.graphics_clock_mhz ? `graphics clock: ${gpu.graphics_clock_mhz} MHz` : "",
+                    gpu.max_clock_mhz ? `max clock: ${gpu.max_clock_mhz} MHz` : "",
+                    gpu.temperature_c ? `temperature: ${gpu.temperature_c} °C` : "",
+                    gpu.power_average_w ? `VDD_GPU: ${gpu.power_draw_w} W (avg ${gpu.power_average_w} W)` : "",
                     gpu.raw ? `raw: ${gpu.raw}` : "",
                   ],
-                  gpu.power_used_percent,
-                ),
-              )
-            : [renderMetric("GPU", ["没有检测到 NVIDIA GPU / nvidia-smi 不可用"])]),
+                  null,
+                  [
+                    gpuMemoryPercent === null
+                      ? null
+                      : { label: "显存 / VRAM", percent: gpuMemoryPercent, value: `${gpu.memory_used_mib}/${gpu.memory_total_mib} MiB` },
+                    sharedMemoryPercent === null
+                      ? null
+                      : { label: "统一内存 / Unified RAM", percent: sharedMemoryPercent, value: `${gpu.shared_memory_used_mib}/${gpu.shared_memory_total_mib} MiB` },
+                    utilPercent === null ? null : { label: "GPU Util", percent: utilPercent, value: `${utilPercent}%` },
+                    powerPercent === null ? null : { label: "Power", percent: powerPercent, value: `${gpu.power_draw_w}/${gpu.power_limit_w} W` },
+                  ],
+                );
+              })
+            : [renderMetric("GPU", ["没有检测到 GPU；AMD/NVIDIA/Thor 需要 host-metrics sidecar 暴露宿主机指标。"])]),
           ...(data.gpu_note ? [renderMetric("GPU 可见性 / GPU Visibility", [data.gpu_note])] : []),
           ...disks.map((disk) =>
             disk.error
@@ -5474,10 +5627,10 @@ DELETE /api/v1/jobs/{job_id}</pre>
                 const canCleanup = (job.output_asset_ids || []).length > 0;
                 return `
                   <div class="item">
-                    <strong>${escapeHtml(job.job_type)} · ${escapeHtml(statusText)}</strong>
+                    <strong>${escapeHtml(jobTypeLabel(job))} · ${escapeHtml(statusText)}</strong>
                     <small>
                       ${isAdmin ? `用户 ${escapeHtml(job.user_id || "")}<br />` : ""}
-                      项目 ${escapeHtml(compactId(job.project_id || ""))} · 任务 ${escapeHtml(compactId(job.id))}<br />
+                      项目 ${escapeHtml(jobProjectLabel(job))} · 任务 ${escapeHtml(compactId(job.id))}<br />
                       输入 ${escapeHtml((job.input_asset_ids || []).map(compactId).join("，") || "无")}<br />
                       输出 ${escapeHtml((job.output_asset_ids || []).map(compactId).join("，") || "无")}
                       ${job.error ? `<br />错误：${escapeHtml(job.error)}` : ""}
@@ -5541,6 +5694,7 @@ DELETE /api/v1/jobs/{job_id}</pre>
         await refreshUsers();
         if (!admin) showAdminTab("files");
         await Promise.all([refreshAdminJobs(), refreshSystemMetrics(), refreshAccountSummary()]);
+        window.requestIdleCallback ? window.requestIdleCallback(preloadKetcherAssets) : window.setTimeout(preloadKetcherAssets, 800);
         startJobPolling();
       }
       function logout() {
@@ -5717,37 +5871,45 @@ DELETE /api/v1/jobs/{job_id}</pre>
         }
       });
       document.getElementById("project-id").addEventListener("change", async (event) => {
-        currentProjectId = event.target.value;
-        selectedAssetId = null;
-        setSelectedProtein("");
-        selectedLigandId = "";
-        activeProteinAsset = null;
-        activeProteinText = "";
-        proteinComponents = [];
-        proteinChains = [];
-        activePocket = null;
-        editingLigand = null;
-        hiddenComponentKeys = new Set();
-        hiddenChainIds = new Set();
-        updateLigandEditor();
-        if (proteinViewer) proteinViewer.clear();
-        setProteinPlaceholder("No protein selected", "选择蛋白资产后，这里会加载 PDB 结构并显示 Cartoon、表面、配体、金属、水分子和口袋范围。");
-        renderProteinChains();
-        renderProteinComponents();
-        renderCleanupSummary();
-        renderPocketSummary();
-        document.getElementById("docking-ligand-asset").value = "";
-        document.getElementById("boltz-ligand-asset").value = "";
-        document.getElementById("boltz-ligand-index").value = "0";
-        renderLigandMolecules([]);
-        setSelectedPocket("");
-        saveWorkbenchState({
-          projectId: currentProjectId,
-          selectedProteinId: "",
-          selectedLigandId: "",
-          activePocket: null,
-        });
-        await refresh();
+        try {
+          currentProjectId = event.target.value;
+          const label = event.target.options[event.target.selectedIndex]?.textContent || "未选择";
+          document.getElementById("current-project-label").textContent = label;
+          togglePopover("project-menu", false);
+          setStatus("");
+          selectedAssetId = null;
+          setSelectedProtein("");
+          selectedLigandId = "";
+          activeProteinAsset = null;
+          activeProteinText = "";
+          proteinComponents = [];
+          proteinChains = [];
+          activePocket = null;
+          editingLigand = null;
+          hiddenComponentKeys = new Set();
+          hiddenChainIds = new Set();
+          updateLigandEditor();
+          if (proteinViewer) proteinViewer.clear();
+          setProteinPlaceholder("No protein selected", "选择蛋白资产后，这里会加载 PDB 结构并显示 Cartoon、表面、配体、金属、水分子和口袋范围。");
+          renderProteinChains();
+          renderProteinComponents();
+          renderCleanupSummary();
+          renderPocketSummary();
+          document.getElementById("docking-ligand-asset").value = "";
+          document.getElementById("boltz-ligand-asset").value = "";
+          document.getElementById("boltz-ligand-index").value = "0";
+          renderLigandMolecules([]);
+          setSelectedPocket("");
+          saveWorkbenchState({
+            projectId: currentProjectId,
+            selectedProteinId: "",
+            selectedLigandId: "",
+            activePocket: null,
+          });
+          await refresh();
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
       });
       document.getElementById("create-project").addEventListener("click", async () => {
         try {

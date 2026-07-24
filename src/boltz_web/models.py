@@ -103,3 +103,5 @@ class Job(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+    project: Mapped[Project] = relationship()

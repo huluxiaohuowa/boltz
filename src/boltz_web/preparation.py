@@ -297,7 +297,16 @@ def prepare_ligand_sdf(sdf_data: bytes, options: dict[str, Any]) -> tuple[bytes,
 
 
 def molblock_or_smiles_to_sdf(smiles: str | None, molblock: str | None, name: str) -> bytes:
-    mol = Chem.MolFromMolBlock(molblock, sanitize=True) if molblock else None
+    mol = None
+    if molblock:
+        mol = Chem.MolFromMolBlock(molblock, sanitize=True, removeHs=False, strictParsing=False)
+        if mol is None:
+            mol = Chem.MolFromMolBlock(molblock, sanitize=False, removeHs=False, strictParsing=False)
+            if mol is not None:
+                try:
+                    Chem.SanitizeMol(mol)
+                except Exception:
+                    mol = None
     if mol is None and smiles:
         mol = Chem.MolFromSmiles(smiles)
     if mol is None:

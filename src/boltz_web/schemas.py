@@ -66,6 +66,7 @@ class PasswordChangeRequest(BaseModel):
 class JobOut(BaseModel):
     id: str
     project_id: str
+    project_name: str = ""
     job_type: str
     status: str
     input_asset_ids: list[str]

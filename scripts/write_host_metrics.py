@@ -137,14 +137,18 @@ def command_json(args: list[str]) -> dict | None:
         return None
 
 
-def host_command(args: list[str], timeout: int = 3) -> subprocess.CompletedProcess[str] | None:
+def host_command(
+    args: list[str],
+    timeout: int = 3,
+    success_codes: tuple[int, ...] = (0,),
+) -> subprocess.CompletedProcess[str] | None:
     commands = [["nsenter", "-t", "1", "-m", "-u", "-i", "-n", "-p", "--", *args], args]
     for command in commands:
         try:
             result = subprocess.run(command, check=False, capture_output=True, text=True, timeout=timeout)
         except Exception:
             continue
-        if result.returncode == 0:
+        if result.returncode in success_codes:
             return result
     return None
 
@@ -233,16 +237,36 @@ def parse_tegrastats_gpu(line: str) -> dict:
     if match:
         util = match.group(1)
         clock = match.group(2) or ""
+    ram_used = ""
+    ram_total = ""
+    ram_match = re.search(r"\bRAM\s+(\d+)/(\d+)MB", line)
+    if ram_match:
+        ram_used = ram_match.group(1)
+        ram_total = ram_match.group(2)
+    power_draw = ""
+    power_average = ""
+    power_match = re.search(r"\bVDD_GPU\s+(\d+)mW(?:/(\d+)mW)?", line)
+    if power_match:
+        power_draw = round(int(power_match.group(1)) / 1000, 3)
+        power_average = round(int(power_match.group(2)) / 1000, 3) if power_match.group(2) else ""
+    temperature = ""
+    temp_match = re.search(r"\bgpu@(\d+(?:\.\d+)?)C", line)
+    if temp_match:
+        temperature = temp_match.group(1)
     return {
         "name": tegra_model_name(),
         "backend": "host:tegrastats",
         "raw": line,
         "memory_total_mib": "",
         "memory_used_mib": "",
+        "shared_memory_total_mib": ram_total,
+        "shared_memory_used_mib": ram_used,
         "utilization_percent": util,
-        "power_draw_w": "",
+        "power_draw_w": power_draw,
+        "power_average_w": power_average,
         "power_limit_w": "",
         "power_used_percent": None,
+        "temperature_c": temperature,
         "graphics_clock_mhz": clock,
     }
 
@@ -270,10 +294,13 @@ def read_int_file(path: Path) -> int | None:
 
 def read_jetson_sysfs_gpus() -> list[dict]:
     candidates = [
+        sys_file("class/devfreq/gpu-gpc-0"),
+        sys_file("class/devfreq/gpu-nvd-0"),
         sys_file("devices/platform/17000000.gpu/devfreq/17000000.gpu"),
         sys_file("devices/gpu.0/devfreq/17000000.gpu"),
     ]
     try:
+        candidates.extend(SYS_ROOT.glob("class/devfreq/*gpu*"))
         candidates.extend(SYS_ROOT.glob("devices/**/devfreq/*gpu*"))
     except Exception:
         pass
@@ -306,8 +333,8 @@ def read_jetson_sysfs_gpus() -> list[dict]:
 
 
 def read_jetson_gpus() -> list[dict]:
-    result = host_command(["tegrastats", "--interval", "100", "--count", "1"])
-    if result is not None and result.stdout.strip():
+    result = host_command(["timeout", "2", "tegrastats", "--interval", "1000"], timeout=4, success_codes=(0, 124))
+    if result is not None and result.stdout.strip() and "Unknown command" not in result.stdout:
         return [parse_tegrastats_gpu(result.stdout.strip().splitlines()[-1])]
     return read_jetson_sysfs_gpus()
 

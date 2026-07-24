@@ -62,6 +62,14 @@ async function mount(container, options = {}) {
   if (state.root && state.container === container) {
     return waitForReady();
   }
+  if (state.root) {
+    try {
+      state.root.unmount();
+    } catch {
+      // React can already be unmounted after a browser hot refresh.
+    }
+  }
+  container.replaceChildren();
   state.container = container;
   state.ketcher = null;
   state.readyPromise = new Promise((resolve, reject) => {

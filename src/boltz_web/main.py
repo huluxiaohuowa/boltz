@@ -468,15 +468,18 @@ def read_rocm_gpu_info() -> list[dict]:
 def read_jetson_gpu_info() -> list[dict]:
     try:
         result = subprocess.run(
-            ["tegrastats", "--interval", "100", "--count", "1"],
+            ["timeout", "2", "tegrastats", "--interval", "1000"],
             check=False,
             capture_output=True,
             text=True,
-            timeout=3,
+            timeout=4,
         )
-        if result.returncode == 0 and result.stdout.strip():
+        if result.returncode in (0, 124) and result.stdout.strip() and "Unknown command" not in result.stdout:
             line = result.stdout.strip().splitlines()[-1]
             match = re.search(r"(?:GR3D_FREQ|GPU)\s+(\d+(?:\.\d+)?)%?(?:@(\d+))?", line)
+            ram_match = re.search(r"\bRAM\s+(\d+)/(\d+)MB", line)
+            power_match = re.search(r"\bVDD_GPU\s+(\d+)mW(?:/(\d+)mW)?", line)
+            temp_match = re.search(r"\bgpu@(\d+(?:\.\d+)?)C", line)
             return [
                 {
                     "name": tegra_model_name(),
@@ -484,20 +487,27 @@ def read_jetson_gpu_info() -> list[dict]:
                     "raw": line,
                     "memory_total_mib": "",
                     "memory_used_mib": "",
+                    "shared_memory_total_mib": ram_match.group(2) if ram_match else "",
+                    "shared_memory_used_mib": ram_match.group(1) if ram_match else "",
                     "utilization_percent": match.group(1) if match else "",
-                    "power_draw_w": "",
+                    "power_draw_w": round(int(power_match.group(1)) / 1000, 3) if power_match else "",
+                    "power_average_w": round(int(power_match.group(2)) / 1000, 3) if power_match and power_match.group(2) else "",
                     "power_limit_w": "",
                     "power_used_percent": None,
+                    "temperature_c": temp_match.group(1) if temp_match else "",
                     "graphics_clock_mhz": match.group(2) if match and match.group(2) else "",
                 },
             ]
     except Exception:  # noqa: BLE001
         pass
     candidates = [
+        Path("/sys/class/devfreq/gpu-gpc-0"),
+        Path("/sys/class/devfreq/gpu-nvd-0"),
         Path("/sys/devices/platform/17000000.gpu/devfreq/17000000.gpu"),
         Path("/sys/devices/gpu.0/devfreq/17000000.gpu"),
     ]
     try:
+        candidates.extend(Path("/sys").glob("class/devfreq/*gpu*"))
         candidates.extend(Path("/sys").glob("devices/**/devfreq/*gpu*"))
     except Exception:  # noqa: BLE001
         pass
