@@ -15,6 +15,7 @@ class Settings:
     default_admin_username: str
     default_admin_password: str
     user_provision_token: str | None
+    ligand_prep_mode: str
 
 
 def load_settings() -> Settings:
@@ -33,4 +34,5 @@ def load_settings() -> Settings:
         default_admin_username=os.getenv("BOLTZ_DEFAULT_ADMIN_USERNAME", "admin"),
         default_admin_password=os.getenv("BOLTZ_DEFAULT_ADMIN_PASSWORD", "admin123456"),
         user_provision_token=os.getenv("BOLTZ_USER_PROVISION_TOKEN") or None,
+        ligand_prep_mode=os.getenv("BOLTZ_LIGAND_PREP_MODE", "sync").strip().lower(),
     )

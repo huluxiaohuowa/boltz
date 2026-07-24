@@ -1,6 +1,33 @@
-# 配体准备功能清单与开发框架
+# 配体准备功能清单与开发框架 / Ligand Preparation Requirements and Development Framework
 
 本文面向 Boltz Workbench 的配体准备模块，目标是满足 CADD 研究人员在分子对接、Boltz 任务、虚拟筛选、SAR/FEP 后续分析中的常见配体准备需求。
+
+This document defines the ligand-preparation capability required by Boltz Workbench for CADD workflows: docking, Boltz prediction, virtual screening, SAR, and FEP. The implementation should not be a thin web-only SMILES converter. The production path uses a dedicated ligand-prep worker so that chemistry dependencies, future commercial tool adapters, and compute isolation can be managed independently from the web server.
+
+## English executive summary
+
+The ligand workflow must be Boltz-first. For Boltz, the primary ligand input is a `ligand` entry with `smiles` or `ccd`; SDF and MOL2 are useful audit/interchange formats, while PDBQT is only a compatibility output for AutoDock/Vina. The web application should manage upload, table mapping, Ketcher editing, asset lineage, Boltz YAML preview, job submission, and file management. The `boltz-ligand-prep-worker` should run the chemistry pipeline.
+
+Minimum production capabilities:
+
+- Inputs: SMILES lists, SDF/MOL/MOL2/PDB upload, tabular files with a SMILES column, empty ligand libraries, and Ketcher drawing/editing.
+- Editing: edit a single molecule from an uploaded file or molecule library; save as a new asset/version by default; keep source asset, row index, molecule name, and edit reason.
+- Standardization: RDKit sanitize, salt stripping, largest-fragment selection, metal disconnection, neutralization/reionization, canonical SMILES, InChIKey deduplication, and failed-molecule reports.
+- Enumeration: pH-aware protonation when the backend is available, tautomer enumeration, undefined stereocenter enumeration, E/Z enumeration, and per-input variant limits.
+- 3D preparation: conformer generation, MMFF/UFF optimization, conformer pruning, failure reporting, and optional retention of supplied 3D coordinates.
+- Boltz output: stable ligand chain IDs, prepared SMILES or CCD, affinity binder configuration, pocket constraint linkage, YAML preview, and batch YAML export.
+- Optional compatibility: SDF/MOL2 for exchange, Meeko PDBQT for AutoDock/Vina, Open Babel fallback conversion.
+
+Current implementation direction:
+
+```text
+WebApp / FastAPI
+  -> uploads, Ketcher, tables, assets, API docs, task orchestration
+boltz-ligand-prep-worker
+  -> RDKit + OpenBabel + Meeko + Dimorphite-DL chemistry execution
+assets
+  -> ligand, prepared_ligand, boltz_prediction_input, optional docking_ready_ligand
+```
 
 ## 1. 结论
 

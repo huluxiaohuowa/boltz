@@ -175,6 +175,30 @@
         letter-spacing: -0.02em;
         margin-bottom: 8px;
       }
+      .page-brief {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .brief-card {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.58);
+        border: 1px solid rgba(210, 220, 234, 0.72);
+      }
+      .brief-card strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #172033;
+        font-size: 12px;
+      }
+      .brief-card span {
+        display: block;
+        color: #5f6e82;
+        font-size: 12px;
+        line-height: 1.45;
+      }
       .page-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -197,6 +221,54 @@
       }
       .workspace-column {
         grid-template-columns: minmax(0, 1fr);
+      }
+      .workbench-shell {
+        display: grid;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 20px;
+      }
+      .workbench-tabs {
+        position: sticky;
+        top: 136px;
+        z-index: 8;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-height: 44px;
+        padding: 6px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.86);
+        backdrop-filter: blur(22px) saturate(180%);
+        box-shadow: 0 14px 32px rgba(42, 58, 80, 0.08);
+        overflow-x: auto;
+      }
+      .workbench-tab {
+        width: auto;
+        min-height: 34px;
+        margin: 0;
+        padding: 7px 12px;
+        border-color: transparent;
+        border-radius: 12px;
+        background: transparent;
+        color: #46556a;
+        box-shadow: none;
+        white-space: nowrap;
+      }
+      .workbench-tab.active {
+        background: rgba(47, 112, 223, 0.12);
+        color: #173c82;
+      }
+      .workspace-tab-panel {
+        display: none;
+      }
+      .workspace-tab-panel.active {
+        display: block;
+      }
+      .workspace-tab-panel.active.section-stack {
+        display: grid;
+        gap: 12px;
       }
       .workspace-card {
         min-height: 640px;
@@ -1097,6 +1169,114 @@
         min-height: 280px;
         max-height: 460px;
       }
+      .api-doc-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .api-doc-links a {
+        align-items: center;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--accent-strong);
+        display: inline-flex;
+        font-weight: 800;
+        min-height: 38px;
+        padding: 0 14px;
+        text-decoration: none;
+      }
+      .api-endpoint-list {
+        display: grid;
+        gap: 12px;
+      }
+      .api-endpoint-card {
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 14px;
+      }
+      .api-endpoint-head {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .api-method {
+        background: rgba(47, 113, 229, 0.12);
+        border: 1px solid rgba(47, 113, 229, 0.24);
+        border-radius: 999px;
+        color: var(--accent-strong);
+        font-size: 0.76rem;
+        font-weight: 900;
+        padding: 5px 10px;
+        text-transform: uppercase;
+      }
+      .api-path {
+        color: #162033;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-weight: 850;
+      }
+      .api-schema-note {
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+      .admin-layout {
+        display: grid;
+        grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .admin-tabs {
+        display: grid;
+        gap: 8px;
+      }
+      .admin-tab {
+        text-align: left;
+      }
+      .admin-panel {
+        display: none;
+      }
+      .admin-panel.active {
+        display: block;
+      }
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .metric-card {
+        padding: 14px;
+        border: 1px solid rgba(213, 222, 235, 0.95);
+        border-radius: 16px;
+        background: rgba(248, 251, 255, 0.82);
+      }
+      .metric-card strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+      .metric-card small {
+        display: block;
+        color: #64748b;
+        line-height: 1.55;
+      }
+      .meter {
+        height: 9px;
+        margin-top: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(204, 216, 232, 0.8);
+      }
+      .meter span {
+        display: block;
+        height: 100%;
+        width: var(--value, 0%);
+        border-radius: inherit;
+        background: linear-gradient(90deg, #3b82f6, #22c55e);
+      }
       @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
@@ -1118,7 +1298,10 @@
         .side-nav,
         .page-grid,
         .workflow-layout,
+        .admin-layout,
+        .metric-grid,
         .preview-grid,
+        .page-brief,
         .project-strip,
         .field-row,
         .login-panel {
@@ -1237,8 +1420,11 @@
             <button class="nav-button" data-nav="protein" type="button">蛋白处理</button>
             <button class="nav-button" data-nav="ligand" type="button">配体处理</button>
             <button class="nav-button" data-nav="docking" type="button">对接任务</button>
+            <button class="nav-button" data-nav="generation" type="button">分子生成</button>
+            <button class="nav-button" data-nav="tpd" type="button">TPD / PROTAC</button>
             <button class="nav-button" data-nav="fep" type="button">FEP / 分析</button>
             <button class="nav-button" data-nav="sar" type="button">SAR / 构效关系</button>
+            <button class="nav-button" data-nav="api" type="button">API 文档</button>
             <button class="nav-button hidden" data-nav="admin" id="admin-nav" type="button">管理</button>
           </div>
         </section>
@@ -1248,6 +1434,12 @@
           <div>
             <h2>项目工作台</h2>
             <p class="muted">按项目管理输入资产、输出资产和任务记录。蛋白、配体、对接和 FEP 页面会复用这里的资产。</p>
+            <div class="page-brief">
+              <div class="brief-card"><strong>任务 / Task</strong><span>管理项目、资产、文件和任务记录。Manage projects, assets, files, and job history.</span></div>
+              <div class="brief-card"><strong>药设作用 / Role</strong><span>形成一个靶点或系列化合物的工作空间。Workspace for a target or compound series.</span></div>
+              <div class="brief-card"><strong>输入 / Inputs</strong><span>蛋白、配体、口袋、结果文件。Protein, ligand, pocket, and result assets.</span></div>
+              <div class="brief-card"><strong>输出 / Outputs</strong><span>可复用资产和任务记录，供所有模块调用。Reusable assets and jobs for all workflows.</span></div>
+            </div>
           </div>
           <div class="page-grid preview-grid">
             <section class="span-all">
@@ -1275,6 +1467,12 @@
           <section class="page-hero">
             <h2>蛋白处理</h2>
             <p class="muted">导入蛋白结构，选择口袋、保留关键组分，并为后续对接、Boltz 和 FEP 任务生成可复用蛋白资产。</p>
+            <div class="page-brief">
+              <div class="brief-card"><strong>任务 / Task</strong><span>导入、检查、清理蛋白结构并保存口袋。Import, inspect, clean protein structures, and save pockets.</span></div>
+              <div class="brief-card"><strong>药设作用 / Role</strong><span>为 docking、Boltz、FEP 和分子生成提供可靠受体。Prepare receptors for docking, Boltz, FEP, and generation.</span></div>
+              <div class="brief-card"><strong>输入 / Inputs</strong><span>PDB ID、本地 PDB/mmCIF、共享目录蛋白文件。PDB IDs, local structures, or shared files.</span></div>
+              <div class="brief-card"><strong>输出 / Outputs</strong><span>prepared_protein、pocket、链/配体片段文件。Prepared protein, pocket, and structure fragments.</span></div>
+            </div>
           </section>
           <div class="workflow-layout">
             <div class="operation-column">
@@ -1341,7 +1539,16 @@
               </section>
             </div>
             <div class="workspace-column">
-              <section class="workspace-card">
+              <section class="workbench-shell">
+                <div class="workbench-tabs" data-workbench="protein">
+                  <button class="workbench-tab active" data-workbench-tab="protein:viewer" type="button">结构视图</button>
+                  <button class="workbench-tab" data-workbench-tab="protein:objects" type="button">链 / 组分</button>
+                  <button class="workbench-tab" data-workbench-tab="protein:pocket" type="button">口袋</button>
+                  <button class="workbench-tab" data-workbench-tab="protein:outputs" type="button">输出资产</button>
+                </div>
+                <p class="muted">按 CADD 操作流组织：先看结构，再处理链和 HETATM 组分，保存口袋，最后检查准备产物。</p>
+              </section>
+              <section class="workspace-card workspace-tab-panel active" data-workbench-panel="protein:viewer">
                 <div class="workspace-header">
                   <div>
                     <h2>主工作区 / 3D 预览</h2>
@@ -1407,7 +1614,7 @@
                   <div class="object-pill"><small>选择蛋白资产后，这里会列出链、配体、金属、水等对象。</small></div>
                 </div>
               </section>
-              <section>
+              <section class="workspace-tab-panel section-stack" data-workbench-panel="protein:objects">
                 <div class="workspace-header">
                   <div>
                     <h2>蛋白链 / Chain</h2>
@@ -1417,8 +1624,6 @@
                 <div class="component-grid" id="protein-chains">
                   <div class="item"><small>选择蛋白资产后解析链</small></div>
                 </div>
-              </section>
-              <section>
                 <div class="workspace-header">
                   <div>
                     <h2>PDB 组分 / 候选配体</h2>
@@ -1429,24 +1634,22 @@
                   <div class="item"><small>选择蛋白资产后解析 PDB 组分</small></div>
                 </div>
               </section>
-              <section>
+              <section class="workspace-tab-panel" data-workbench-panel="protein:pocket">
                 <h2>当前口袋</h2>
                 <div class="pocket-summary" id="pocket-summary">
                   <div class="item"><small>还没有选择参考配体。请选择 PDB 组分里的候选配体来创建口袋。</small></div>
                 </div>
                 <button class="secondary" id="create-pocket-asset" type="button">创建口袋资产并用于对接</button>
               </section>
-              <section class="asset-preview">
+              <section class="asset-preview workspace-tab-panel active" data-workbench-panel="protein:viewer">
                 <h2>资产预览</h2>
                 <div id="protein-preview">
                   <p class="muted">选择蛋白资产后，在这里查看文件、元数据和准备方案。</p>
                 </div>
               </section>
-              <section>
+              <section class="workspace-tab-panel section-stack" data-workbench-panel="protein:outputs">
                 <h2>准备产物</h2>
                 <div class="list" id="prepared-protein-assets"></div>
-              </section>
-              <section>
                 <h2>口袋资产</h2>
                 <div class="list" id="pocket-assets"></div>
               </section>
@@ -1458,6 +1661,12 @@
           <section class="page-hero">
             <h2>配体处理</h2>
             <p class="muted">Boltz 优先：从 SDF、SMILES、表格或手工编辑得到 ligand asset，并生成可直接用于 Boltz 的 input.yaml。</p>
+            <div class="page-brief">
+              <div class="brief-card"><strong>任务 / Task</strong><span>导入、标准化、编辑单分子或分子库。Import, standardize, and edit ligands or libraries.</span></div>
+              <div class="brief-card"><strong>药设作用 / Role</strong><span>为 Boltz、对接、FEP、SAR 和分子生成提供配体输入。Supply ligand inputs to Boltz, docking, FEP, SAR, and generation.</span></div>
+              <div class="brief-card"><strong>输入 / Inputs</strong><span>SDF、SMILES、表格、Ketcher 手绘分子。SDF, SMILES, tables, or Ketcher drawings.</span></div>
+              <div class="brief-card"><strong>输出 / Outputs</strong><span>ligand、prepared_ligand、Boltz input.yaml。Ligand assets and Boltz input files.</span></div>
+            </div>
           </section>
           <div class="workflow-layout">
             <div class="operation-column">
@@ -1467,11 +1676,12 @@
                   资产名称
                   <input id="ligand-library-name" placeholder="例如 kinase_ligands" />
                 </label>
+                <button class="secondary" id="create-empty-ligand" type="button">新建空白配体资产</button>
                 <label>
                   SMILES
                   <textarea id="smiles" placeholder="每行一个 SMILES"></textarea>
                 </label>
-                <button id="create-smiles">生成配体资产</button>
+                <button id="create-smiles">从 SMILES 生成配体资产</button>
               </section>
               <section>
                 <h2>上传配体</h2>
@@ -1483,36 +1693,21 @@
                 <p class="muted">SDF 会解析为分子表；MOL2/PDB 先作为原始资产保存，后续通过 Open Babel worker 做格式转换。</p>
               </section>
               <section>
-                <h2>单分子编辑</h2>
+                <h2>配体准备</h2>
                 <label>
-                  编辑后名称
-                  <input id="ligand-edit-name" placeholder="例如 edited_ligand_001" />
+                  当前配体资产
+                  <select id="ligand-prep-asset"></select>
                 </label>
+                <label class="option-row"><input id="ligand-prep-strip-salts" type="checkbox" checked /> 去盐并保留最大有机片段</label>
+                <label class="option-row"><input id="ligand-prep-neutralize" type="checkbox" checked /> 中和可中和电荷</label>
+                <label class="option-row"><input id="ligand-prep-generate-3d" type="checkbox" checked /> 生成 3D 构象并 UFF 优化</label>
+                <label class="option-row"><input id="ligand-prep-tautomers" type="checkbox" /> 记录互变异构枚举需求（后续 worker）</label>
+                <label class="option-row"><input id="ligand-prep-stereo" type="checkbox" /> 记录立体异构枚举需求（后续 worker）</label>
                 <label>
-                  SMILES
-                  <textarea id="ligand-edit-smiles" placeholder="可从分子表点击“编辑”带入，也可以手工输入"></textarea>
+                  输出名称
+                  <input id="ligand-prep-output-name" placeholder="例如 ligands_prepared" />
                 </label>
-                <label>
-                  MolBlock
-                  <textarea id="ligand-edit-molblock" placeholder="Ketcher 集成后会把画出的 MolBlock 写到这里；当前可粘贴 MolBlock"></textarea>
-                </label>
-                <div class="ketcher-panel">
-                  <div>
-                    <strong>Ketcher 2D 分子编辑器</strong>
-                    <p class="ketcher-help">可从分子表点“编辑”载入单个分子，也可以直接画新分子。保存前先同步 Ketcher，会把 Ketcher 导出的 MolBlock / SMILES 写入上方表单。</p>
-                  </div>
-                  <div class="ketcher-toolbar">
-                    <button class="secondary" id="ligand-ketcher-load" type="button">把表单载入 Ketcher</button>
-                    <button class="secondary" id="ligand-ketcher-sync" type="button">同步 Ketcher 到表单</button>
-                    <button class="secondary danger" id="ligand-ketcher-clear" type="button">清空 Ketcher</button>
-                  </div>
-                  <div class="ketcher-stage">
-                    <div id="ligand-ketcher-root"></div>
-                  </div>
-                  <p class="ketcher-help" id="ligand-ketcher-status">Ketcher 正在等待初始化。若看不到编辑器，说明静态 Ketcher 资产没有随镜像打包。</p>
-                </div>
-                <button id="save-edited-ligand" type="button">保存为新配体资产</button>
-                <p class="muted">保存会创建新资产，不覆盖原始分子；Ketcher 编辑结果会进入同一套 MolBlock 保存接口，后续生成 Boltz input 时直接复用。</p>
+                <button id="prepare-ligand" type="button">生成准备后配体资产</button>
               </section>
               <section>
                 <h2>Boltz 输入</h2>
@@ -1551,24 +1746,77 @@
               </section>
             </div>
             <div class="workspace-column">
-              <section class="workspace-card asset-preview">
+              <section class="workbench-shell">
+                <div class="workbench-tabs" data-workbench="ligand">
+                  <button class="workbench-tab active" data-workbench-tab="ligand:molecules" type="button">分子表</button>
+                  <button class="workbench-tab" data-workbench-tab="ligand:editor" type="button">2D 编辑</button>
+                  <button class="workbench-tab" data-workbench-tab="ligand:boltz" type="button">Boltz 输入</button>
+                  <button class="workbench-tab" data-workbench-tab="ligand:outputs" type="button">输出资产</button>
+                </div>
+                <p class="muted">左侧负责导入和参数；右侧按分子检查、单分子编辑、Boltz YAML 和输出资产分层。</p>
+              </section>
+              <section class="workspace-card asset-preview workspace-tab-panel active" data-workbench-panel="ligand:molecules">
                 <div class="workspace-header">
                   <div>
                     <h2>主工作区 / 分子表与 Boltz YAML</h2>
                     <p class="muted">选择配体资产后，这里列出每个分子；单分子可进入编辑器修改，也可直接生成 Boltz 输入。</p>
                   </div>
+                  <button class="secondary" id="new-ligand-molecule" type="button">新建空白分子</button>
                 </div>
                 <div class="molecule-table" id="ligand-molecule-table">
                   <div class="item"><small>选择或创建配体资产后解析分子列表。</small></div>
                 </div>
               </section>
-              <section class="asset-preview">
+              <section class="asset-preview workspace-tab-panel" data-workbench-panel="ligand:editor">
+                <div class="workspace-header">
+                  <div>
+                    <h2>Ketcher 2D 分子编辑器</h2>
+                    <p class="muted">从分子表点“编辑”会加载单个分子；点“新建空白分子”会打开空白画布。可追加到当前库、替换当前分子，或另存为新 ligand asset。</p>
+                  </div>
+                  <div class="ketcher-toolbar">
+                    <button class="secondary" id="ligand-ketcher-load" type="button">把表单载入 Ketcher</button>
+                    <button class="secondary" id="ligand-ketcher-sync" type="button">同步 Ketcher 到表单</button>
+                    <button class="secondary danger" id="ligand-ketcher-clear" type="button">清空 Ketcher</button>
+                  </div>
+                </div>
+                <div class="editor-grid">
+                  <label>
+                    编辑后名称
+                    <input id="ligand-edit-name" placeholder="例如 edited_ligand_001" />
+                  </label>
+                  <label>
+                    SMILES
+                    <textarea id="ligand-edit-smiles" placeholder="可从分子表点击“编辑”带入，也可以手工输入"></textarea>
+                  </label>
+                  <label>
+                    MolBlock
+                    <textarea id="ligand-edit-molblock" placeholder="Ketcher 会把画出的 MolBlock 写到这里；也可以粘贴 MolBlock"></textarea>
+                  </label>
+                </div>
+                <div class="ketcher-panel">
+                  <div class="ketcher-stage">
+                    <div id="ligand-ketcher-root"></div>
+                  </div>
+                  <p class="ketcher-help" id="ligand-ketcher-status">进入“2D 编辑”后加载 Ketcher。若看不到编辑器，说明静态 Ketcher 资产没有随镜像打包。</p>
+                </div>
+                <div class="item-actions">
+                  <button id="append-edited-ligand" type="button">追加到当前配体资产</button>
+                  <button class="secondary" id="replace-edited-ligand" type="button">替换当前分子</button>
+                  <button class="secondary" id="save-edited-ligand" type="button">另存为新配体资产</button>
+                </div>
+                <p class="muted">保存前会自动同步 Ketcher 的 MolBlock / SMILES。追加/替换会修改当前 ligand asset 的 SDF 分子库；另存会创建新资产。</p>
+              </section>
+              <section class="asset-preview workspace-tab-panel" data-workbench-panel="ligand:boltz">
+                <h2>Boltz 输入预览</h2>
+                <p class="muted">生成 `boltz_prediction_input` 后，会在这里查看 input.yaml、report.json 和口袋约束摘要。</p>
+              </section>
+              <section class="asset-preview workspace-tab-panel" data-workbench-panel="ligand:outputs">
                 <h2>资产 / YAML 预览</h2>
                 <div id="ligand-preview">
                   <p class="muted">选择配体或 Boltz YAML 资产后，在这里查看文件、元数据和下载入口。</p>
                 </div>
-              </section>
-              <section>
+                <h2>准备后配体资产</h2>
+                <div class="list" id="prepared-ligand-assets"></div>
                 <h2>Boltz 输入资产</h2>
                 <div class="list" id="boltz-input-assets"></div>
               </section>
@@ -1580,6 +1828,12 @@
           <section class="page-hero">
             <h2>对接任务</h2>
             <p class="muted">选择蛋白和配体资产，配置口袋与参数，提交结构预测/亲和力预测等任务。</p>
+            <div class="page-brief">
+              <div class="brief-card"><strong>任务 / Task</strong><span>组合蛋白、配体和口袋，提交对接或 Boltz 输入任务。Combine receptor, ligand, and pocket inputs.</span></div>
+              <div class="brief-card"><strong>药设作用 / Role</strong><span>预测结合构象、生成排序依据和后续 FEP 起点。Pose prediction and starting points for ranking/FEP.</span></div>
+              <div class="brief-card"><strong>输入 / Inputs</strong><span>prepared_protein、ligand/prepared_ligand、pocket。Prepared receptors, ligands, and pockets.</span></div>
+              <div class="brief-card"><strong>输出 / Outputs</strong><span>对接结果、复合物、打分和可下载报告。Docking poses, complexes, scores, and reports.</span></div>
+            </div>
           </section>
           <div class="workflow-layout">
             <div class="operation-column">
@@ -1633,10 +1887,176 @@
           </div>
         </section>
 
+        <section class="page" data-page="generation">
+          <section class="page-hero">
+            <h2>分子生成</h2>
+            <p class="muted">根据蛋白页保存的口袋资产做 3D 分子生成、linker/fragment 生长和候选分子筛选。当前先搭好资产入口，后续接入生成 worker。</p>
+            <div class="page-brief">
+              <div class="brief-card"><strong>任务 / Task</strong><span>基于口袋约束生成、扩展或替换分子。Pocket-conditioned molecule generation and optimization.</span></div>
+              <div class="brief-card"><strong>药设作用 / Role</strong><span>探索新骨架、片段生长、linker 设计和下一轮候选。Explore scaffolds, fragments, linkers, and new candidates.</span></div>
+              <div class="brief-card"><strong>输入 / Inputs</strong><span>pocket asset、蛋白资产、参考配体或片段。Pocket assets, protein assets, and optional fragments.</span></div>
+              <div class="brief-card"><strong>输出 / Outputs</strong><span>候选 ligand library、SDF/SMILES、生成报告。Generated ligand libraries, SDF/SMILES, and reports.</span></div>
+            </div>
+          </section>
+          <div class="workflow-layout">
+            <div class="operation-column">
+              <section>
+                <h2>生成输入</h2>
+                <label>
+                  蛋白资产
+                  <select id="generation-protein-asset"></select>
+                </label>
+                <label>
+                  口袋资产
+                  <select id="generation-pocket-asset"></select>
+                </label>
+                <label>
+                  参考配体 / fragment
+                  <input id="generation-reference-ligand" placeholder="可选：从配体资产选择或输入 fragment ID" />
+                </label>
+                <label>
+                  生成模式
+                  <select id="generation-mode">
+                    <option value="pocket_de_novo">基于口袋 de novo 生成</option>
+                    <option value="fragment_grow">Fragment growing</option>
+                    <option value="scaffold_hop">Scaffold hopping</option>
+                    <option value="linker_design">Linker design</option>
+                  </select>
+                </label>
+                <button class="secondary" type="button" disabled>等待 3D 分子生成 worker 接入</button>
+              </section>
+              <section>
+                <h2>生成约束</h2>
+                <ul class="step-list">
+                  <li>口袋中心、box size、参考 H-bond/金属配位/疏水区域。</li>
+                  <li>分子量、cLogP、HBD/HBA、TPSA、rotatable bonds。</li>
+                  <li>排除反应性基团、PAINS、聚集体风险。</li>
+                  <li>输出 SDF/SMILES，并写回配体资产供 docking/Boltz/FEP 使用。</li>
+                </ul>
+              </section>
+            </div>
+            <div class="workspace-column">
+              <section class="workbench-shell">
+                <div class="workbench-tabs" data-workbench="generation">
+                  <button class="workbench-tab active" data-workbench-tab="generation:pocket" type="button">口袋上下文</button>
+                  <button class="workbench-tab" data-workbench-tab="generation:constraints" type="button">生成约束</button>
+                  <button class="workbench-tab" data-workbench-tab="generation:candidates" type="button">候选分子</button>
+                  <button class="workbench-tab" data-workbench-tab="generation:outputs" type="button">输出资产</button>
+                </div>
+                <p class="muted">分子生成必须从可复用 pocket asset 开始；蛋白页创建的口袋会在这里作为生成上下文。</p>
+              </section>
+              <section class="workspace-card workspace-tab-panel active" data-workbench-panel="generation:pocket">
+                <div class="workspace-header">
+                  <div>
+                    <h2>主工作区 / 口袋驱动生成</h2>
+                    <p class="muted">后续这里显示口袋表面、关键相互作用热区、参考配体和生成约束。</p>
+                  </div>
+                </div>
+                <ul class="step-list">
+                  <li>从 pocket asset 读取 center、box size、参考组分和蛋白资产 ID。</li>
+                  <li>把口袋导入 3D viewer，显示生成区域和排除体积。</li>
+                  <li>可把生成候选直接保存为 ligand asset 或 ligand library asset。</li>
+                </ul>
+              </section>
+              <section class="workspace-tab-panel" data-workbench-panel="generation:constraints">
+                <h2>生成约束面板</h2>
+                <p class="muted">后续放药化过滤、相互作用约束、片段保留、合成可及性和多样性控制。</p>
+              </section>
+              <section class="workspace-tab-panel" data-workbench-panel="generation:candidates">
+                <h2>候选分子</h2>
+                <p class="muted">后续展示生成分子的 2D/3D 结构、性质、打分、去重和批量导出。</p>
+              </section>
+              <section class="workspace-tab-panel" data-workbench-panel="generation:outputs">
+                <h2>输出资产</h2>
+                <p class="muted">生成结果会保存为 ligand / prepared_ligand_library / result asset，并可传给配体准备、对接、Boltz 或 FEP。</p>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" data-page="tpd">
+          <section class="page-hero">
+            <h2>TPD / PROTAC</h2>
+            <p class="muted">面向 targeted protein degradation 的三元复合物与 linker 设计入口。它和普通 docking 不同，需要 POI、E3 ligase、warhead、E3 ligand 和 linker 的专门对象模型。</p>
+            <div class="page-brief">
+              <div class="brief-card"><strong>任务 / Task</strong><span>构建 POI-E3 三元复合物并设计 PROTAC linker。Model ternary complexes and design linkers.</span></div>
+              <div class="brief-card"><strong>药设作用 / Role</strong><span>支持 targeted protein degradation 项目的构象和 linker 决策。Support TPD ternary-complex and linker decisions.</span></div>
+              <div class="brief-card"><strong>输入 / Inputs</strong><span>POI 口袋、E3 ligase、warhead、E3 ligand。POI pocket, E3 ligase, warhead, and E3 ligand.</span></div>
+              <div class="brief-card"><strong>输出 / Outputs</strong><span>PROTAC 候选、linker 采样、三元复合物模型。PROTAC candidates, linker samples, and ternary models.</span></div>
+            </div>
+          </section>
+          <div class="workflow-layout">
+            <div class="operation-column">
+              <section>
+                <h2>TPD 输入</h2>
+                <label>
+                  POI 蛋白 / 口袋
+                  <select id="tpd-poi-pocket"></select>
+                </label>
+                <label>
+                  E3 ligase 结构
+                  <input id="tpd-e3-asset" placeholder="例如 CRBN / VHL 结构资产" />
+                </label>
+                <label>
+                  POI warhead
+                  <input id="tpd-warhead" placeholder="配体资产或 warhead fragment" />
+                </label>
+                <label>
+                  E3 ligand
+                  <input id="tpd-e3-ligand" placeholder="例如 lenalidomide / VHL ligand" />
+                </label>
+                <button class="secondary" type="button" disabled>等待 TPD worker 接入</button>
+              </section>
+              <section>
+                <h2>TPD 需要的能力</h2>
+                <ul class="step-list">
+                  <li>POI/E3 二元结构准备与口袋识别。</li>
+                  <li>linker 长度、柔性、连接位点和构象采样。</li>
+                  <li>三元复合物构建、碰撞过滤、界面稳定性评分。</li>
+                  <li>输出 PROTAC 候选分子和三元复合物模型。</li>
+                </ul>
+              </section>
+            </div>
+            <div class="workspace-column">
+              <section class="workbench-shell">
+                <div class="workbench-tabs" data-workbench="tpd">
+                  <button class="workbench-tab active" data-workbench-tab="tpd:complex" type="button">三元复合物</button>
+                  <button class="workbench-tab" data-workbench-tab="tpd:linker" type="button">Linker 设计</button>
+                  <button class="workbench-tab" data-workbench-tab="tpd:candidates" type="button">PROTAC 候选</button>
+                  <button class="workbench-tab" data-workbench-tab="tpd:outputs" type="button">输出资产</button>
+                </div>
+                <p class="muted">TPD 建议作为独立 workflow，不和常规 docking 混在一个页面里。</p>
+              </section>
+              <section class="workspace-card workspace-tab-panel active" data-workbench-panel="tpd:complex">
+                <h2>主工作区 / 三元复合物建模</h2>
+                <p class="muted">后续这里显示 POI、E3、warhead、E3 ligand、linker 和三元界面。</p>
+              </section>
+              <section class="workspace-tab-panel" data-workbench-panel="tpd:linker">
+                <h2>Linker 设计</h2>
+                <p class="muted">预留连接位点、linker 长度、构象约束、可合成片段和碰撞过滤。</p>
+              </section>
+              <section class="workspace-tab-panel" data-workbench-panel="tpd:candidates">
+                <h2>PROTAC 候选</h2>
+                <p class="muted">预留候选列表、三元稳定性、性质过滤和合成优先级。</p>
+              </section>
+              <section class="workspace-tab-panel" data-workbench-panel="tpd:outputs">
+                <h2>输出资产</h2>
+                <p class="muted">三元复合物模型、PROTAC SDF、linker 采样结果和报告都会作为项目资产保存。</p>
+              </section>
+            </div>
+          </div>
+        </section>
+
         <section class="page" data-page="fep">
           <section class="page-hero">
             <h2>FEP / 后续分析</h2>
             <p class="muted">这里先作为后续计算入口，预留 FEP、相对结合自由能、轨迹分析、结果对比和报告生成。</p>
+            <div class="page-brief">
+              <div class="brief-card"><strong>任务 / Task</strong><span>配置 FEP、自由能和轨迹分析任务。Configure FEP, free-energy, and trajectory analysis jobs.</span></div>
+              <div class="brief-card"><strong>药设作用 / Role</strong><span>对化合物系列做更高精度亲和力排序。Higher-accuracy ranking for compound series.</span></div>
+              <div class="brief-card"><strong>输入 / Inputs</strong><span>复合物、配体系列、拓扑和模拟参数。Complexes, ligand series, topology, and MD settings.</span></div>
+              <div class="brief-card"><strong>输出 / Outputs</strong><span>ΔG/ΔΔG、误差、轨迹、分析报告。Free energies, errors, trajectories, and reports.</span></div>
+            </div>
           </section>
           <div class="workflow-layout">
             <div class="operation-column">
@@ -1684,6 +2104,12 @@
           <section class="page-hero">
             <h2>SAR / 构效关系</h2>
             <p class="muted">面向药化决策的化合物系列分析入口，用实验活性、配体结构、对接结果和 FEP 结果建立可解释的趋势视图。</p>
+            <div class="page-brief">
+              <div class="brief-card"><strong>任务 / Task</strong><span>整合活性、结构和计算结果做构效分析。Analyze SAR from activity, structure, and computed results.</span></div>
+              <div class="brief-card"><strong>药设作用 / Role</strong><span>指导下一轮设计、取代基优先级和系列优化。Guide next-round design and series optimization.</span></div>
+              <div class="brief-card"><strong>输入 / Inputs</strong><span>SMILES/结构表、活性数据、对接/FEP 结果。Chemical tables, activities, docking/FEP results.</span></div>
+              <div class="brief-card"><strong>输出 / Outputs</strong><span>SAR 趋势、MMPA、R-group、设计建议。SAR trends, MMPA, R-groups, and design ideas.</span></div>
+            </div>
           </section>
           <div class="workflow-layout">
             <div class="operation-column">
@@ -1733,16 +2159,195 @@
           </div>
         </section>
 
+        <section class="page" data-page="api">
+          <section class="page-hero">
+            <h2>API 文档 / API Docs</h2>
+            <p class="muted">给自动化 agent 和脚本使用的工作流接口说明。核心规则：每一步输出 asset_id 或 job_id，下一步直接把这些 ID 作为输入。</p>
+            <div class="page-brief">
+              <div class="brief-card"><strong>任务 / Task</strong><span>用 REST API 自动化项目、资产、准备、口袋、Boltz 输入和任务状态。Automate projects, assets, preparation, pockets, Boltz inputs, and job status.</span></div>
+              <div class="brief-card"><strong>输入 / Inputs</strong><span>Bearer token、project_id、asset_id、job_id。Bearer token plus project, asset, and job identifiers.</span></div>
+              <div class="brief-card"><strong>输出 / Outputs</strong><span>ProjectOut、AssetOut、JobOut、文件下载链接。Structured IDs and downloadable files for chaining.</span></div>
+              <div class="brief-card"><strong>衔接 / Chaining</strong><span>导入蛋白→口袋→配体准备→Boltz input→任务→下载输出。Protein → pocket → ligand prep → Boltz input → job → outputs.</span></div>
+            </div>
+          </section>
+          <div class="workflow-layout">
+            <div class="operation-column">
+              <section>
+                <h2>认证 / Auth</h2>
+                <pre class="yaml-preview">POST /api/v1/auth/login
+{"username":"admin","password":"admin123456"}
+
+Response:
+{"access_token":"...","user_id":"admin","is_admin":true}</pre>
+                <p class="muted">后续请求添加 Header：`Authorization: Bearer &lt;access_token&gt;`。</p>
+                <div class="api-doc-links">
+                  <a href="/docs" target="_blank" rel="noreferrer">Swagger UI / 交互调试</a>
+                  <a href="/redoc" target="_blank" rel="noreferrer">ReDoc / 结构化文档</a>
+                  <a href="/openapi.json" target="_blank" rel="noreferrer">OpenAPI JSON / 自动 schema</a>
+                </div>
+              </section>
+              <section>
+                <h2>自动化链路 / Automation Flow</h2>
+                <ol class="step-list">
+                  <li>创建/选择项目：`POST /api/v1/projects` → `project_id`。</li>
+                  <li>导入蛋白：`POST /api/v1/assets/proteins/pdb` 或 `POST /api/v1/assets/upload` → protein `asset_id`。</li>
+                  <li>创建口袋：`POST /api/v1/assets/pockets` → pocket `asset_id`。</li>
+                  <li>创建/上传/编辑配体：`/assets/ligands/*` → ligand `asset_id`。</li>
+                  <li>准备配体：`POST /api/v1/preparations/ligand` → prepared_ligand `asset_id`。</li>
+                  <li>生成 Boltz input：`POST /api/v1/boltz-inputs` → boltz_prediction_input `asset_id`。</li>
+                  <li>创建/查询任务：`POST /api/v1/jobs`、`GET /api/v1/jobs`、`GET /api/v1/jobs/{job_id}/events`。</li>
+                  <li>下载文件：`GET /api/v1/assets/{asset_id}/files/{file_id}/download`。</li>
+                </ol>
+              </section>
+            </div>
+            <div class="workspace-column">
+              <section class="workbench-shell">
+                <div class="workbench-tabs" data-workbench="api">
+                  <button class="workbench-tab active" data-workbench-tab="api:auto" type="button">自动接口目录</button>
+                  <button class="workbench-tab" data-workbench-tab="api:assets" type="button">资产 API</button>
+                  <button class="workbench-tab" data-workbench-tab="api:prep" type="button">准备 API</button>
+                  <button class="workbench-tab" data-workbench-tab="api:jobs" type="button">任务 API</button>
+                  <button class="workbench-tab" data-workbench-tab="api:admin" type="button">管理 API</button>
+                </div>
+                <p class="muted">完整接口、请求体和响应结构从 FastAPI OpenAPI 自动读取；下面的手写示例只解释自动化工作流如何衔接。</p>
+              </section>
+              <section class="asset-preview workspace-tab-panel active" data-workbench-panel="api:auto">
+                <h2>自动接口目录 / Auto-generated API Catalog</h2>
+                <p class="muted">来源：`/openapi.json`。后端新增或修改 API 后，这里会自动刷新；需要在线试调用时打开 Swagger UI。</p>
+                <div id="openapi-summary" class="api-schema-note">正在读取 OpenAPI schema...</div>
+                <div id="openapi-endpoints" class="api-endpoint-list"></div>
+              </section>
+              <section class="asset-preview workspace-tab-panel" data-workbench-panel="api:assets">
+                <h2>资产 API / Asset APIs</h2>
+                <pre class="yaml-preview">POST /api/v1/projects
+{"name":"demo"}
+→ {"id":"project_id","name":"demo"}
+
+POST /api/v1/assets/proteins/pdb
+{"pdb_id":"1a2c","project_id":"project_id"}
+→ AssetOut: protein asset_id
+
+POST /api/v1/assets/ligands/empty
+{"name":"library","project_id":"project_id"}
+→ AssetOut: empty ligand asset_id
+
+POST /api/v1/assets/ligands/smiles
+{"name":"library","project_id":"project_id","smiles":["CCO"],"names":["ethanol"]}
+→ AssetOut: ligand asset_id
+
+POST /api/v1/assets/ligands/{asset_id}/molecules
+{"name":"new_mol","smiles":"CCN","molblock":null}
+→ same ligand asset with appended molecule
+
+PUT /api/v1/assets/ligands/{asset_id}/molecules/{index}
+{"name":"replacement","smiles":"CCC","molblock":null}
+→ same ligand asset with replaced molecule</pre>
+              </section>
+              <section class="asset-preview workspace-tab-panel" data-workbench-panel="api:prep">
+                <h2>准备与 Boltz API / Preparation and Boltz APIs</h2>
+                <pre class="yaml-preview">POST /api/v1/assets/pockets
+{
+  "protein_asset_id":"protein_asset_id",
+  "project_id":"project_id",
+  "name":"1A2C PRJ pocket",
+  "reference":"PRJ J:3",
+  "center":[18.54,-14.79,20.56],
+  "box_size":[20,20,20],
+  "component":{"type":"ligand","chain":"J","resi":"3","resn":"PRJ"}
+}
+→ AssetOut: pocket asset_id
+
+POST /api/v1/preparations/protein
+{"asset_id":"protein_asset_id","project_id":"project_id","output_name":"1A2C_prepared","options":{"remove_waters":true}}
+→ AssetOut: prepared_protein asset_id
+
+POST /api/v1/preparations/ligand
+{"asset_id":"ligand_asset_id","project_id":"project_id","output_name":"ligands_prepared","options":{"strip_salts":true,"neutralize":true,"generate_3d":true}}
+→ AssetOut: prepared_ligand asset_id
+
+POST /api/v1/boltz-inputs
+{"protein_asset_id":"prepared_protein_asset_id","ligand_asset_id":"prepared_ligand_asset_id","ligand_index":0,"pocket_asset_id":"pocket_asset_id","project_id":"project_id","chain_id":"B","affinity":true}
+→ AssetOut: boltz_prediction_input asset_id with input.yaml</pre>
+              </section>
+              <section class="asset-preview workspace-tab-panel" data-workbench-panel="api:jobs">
+                <h2>任务 API / Job APIs</h2>
+                <pre class="yaml-preview">POST /api/v1/jobs
+{"project_id":"project_id","job_type":"structure_prediction","input_asset_ids":["boltz_prediction_input_asset_id"],"options":{}}
+→ JobOut: job_id
+
+GET /api/v1/jobs?project_id=project_id
+→ list[JobOut]
+
+GET /api/v1/jobs/{job_id}/events
+→ [{"event":"queued","payload":{...}}, {"event":"completed","payload":{"output_asset_id":"..."}}]
+
+POST /api/v1/jobs/{job_id}/cancel
+POST /api/v1/jobs/{job_id}/retry
+POST /api/v1/jobs/{job_id}/cleanup
+DELETE /api/v1/jobs/{job_id}</pre>
+                <p class="muted">自动化衔接：`JobOut.output_asset_ids[]` 或 event payload 里的 `output_asset_id` 可直接传给下一步。</p>
+              </section>
+              <section class="asset-preview workspace-tab-panel" data-workbench-panel="api:admin">
+                <h2>管理 API / Admin APIs</h2>
+                <pre class="yaml-preview">GET /api/v1/admin/users
+POST /api/v1/admin/users/{username}/approve
+DELETE /api/v1/admin/users/{username}
+
+GET /api/v1/admin/jobs
+POST /api/v1/admin/jobs/{job_id}/cancel
+POST /api/v1/admin/jobs/{job_id}/cleanup
+DELETE /api/v1/admin/jobs/{job_id}
+GET /api/v1/admin/system</pre>
+                <p class="muted">admin 删除用户会级联停止并删除该用户任务、项目、资产和持久化文件。普通用户只能操作自己的任务和文件。</p>
+              </section>
+            </div>
+          </div>
+        </section>
+
         <section class="page" data-page="admin" id="admin-panel">
           <section class="page-hero">
             <h2>管理</h2>
-            <p class="muted">管理员审核新用户，后续这里会加入 worker、队列和模型服务状态。</p>
+            <p class="muted">管理员审核用户、查看所有任务、停止或清理任务，并查看当前部署机器的 CPU、内存、GPU 和磁盘资源。</p>
           </section>
-          <div class="page-grid">
+          <div class="admin-layout">
             <section>
-              <h2>用户审核</h2>
-              <button class="secondary" id="refresh-users">刷新用户</button>
+              <h2>管理模块</h2>
+              <div class="admin-tabs">
+                <button class="admin-tab active" data-admin-tab="users" type="button">用户管理</button>
+                <button class="admin-tab secondary" data-admin-tab="jobs" type="button">任务管理</button>
+                <button class="admin-tab secondary" data-admin-tab="system" type="button">系统资源</button>
+              </div>
+              <p class="muted">普通用户只通过项目页查看自己的任务；这里是 admin 全局视图。</p>
+            </section>
+            <section class="admin-panel active" data-admin-panel="users">
+              <div class="workspace-header">
+                <div>
+                  <h2>用户管理</h2>
+                  <p class="muted">审核注册申请；删除用户会停止并删除该用户的任务、项目、资产和持久化文件。</p>
+                </div>
+                <button class="secondary" id="refresh-users" type="button">刷新用户</button>
+              </div>
               <div class="list" id="users"></div>
+            </section>
+            <section class="admin-panel" data-admin-panel="jobs">
+              <div class="workspace-header">
+                <div>
+                  <h2>全局任务</h2>
+                  <p class="muted">查看所有用户正在跑和历史任务；admin 可停止、清理输出或删除任务记录。</p>
+                </div>
+                <button class="secondary" id="refresh-admin-jobs" type="button">刷新任务</button>
+              </div>
+              <div class="list" id="admin-jobs"></div>
+            </section>
+            <section class="admin-panel" data-admin-panel="system">
+              <div class="workspace-header">
+                <div>
+                  <h2>系统资源</h2>
+                  <p class="muted">部署机器资源概览；没有 NVIDIA GPU 时 GPU 区域会显示为空，不影响页面。</p>
+                </div>
+                <button class="secondary" id="refresh-system" type="button">刷新资源</button>
+              </div>
+              <div id="system-metrics" class="metric-grid"></div>
             </section>
           </div>
         </section>
@@ -1761,9 +2366,11 @@
       let selectedLigandId = "";
       let currentAssets = [];
       let currentJobs = [];
+      let currentProjects = [];
       let currentLigandMolecules = [];
       let selectedLigandMoleculeIndex = 0;
       let ketcherLoaded = false;
+      let ketcherScriptPromise = null;
       let currentProjectId = null;
       let activeProteinAsset = null;
       let activeProteinText = "";
@@ -1780,7 +2387,8 @@
       let proteinFocusMode = false;
       let proteinViewer = null;
       let jobPollTimer = null;
-      const routePages = new Set(["project", "protein", "ligand", "docking", "fep", "sar", "admin"]);
+      let openApiSchemaLoaded = false;
+      const routePages = new Set(["project", "protein", "ligand", "docking", "generation", "tpd", "fep", "sar", "api", "admin"]);
       const workbenchStateKey = "boltz_workbench_state";
       const proteinViewState = {
         cartoon: true,
@@ -1905,6 +2513,104 @@
         });
         if (options.updateRoute !== false) writeRoute(pageName, Boolean(options.replaceRoute));
         saveWorkbenchState({ page: pageName });
+        if (pageName === "api") {
+          loadOpenApiCatalog().catch((error) => {
+            document.getElementById("openapi-summary").textContent = `OpenAPI 读取失败：${error.message}`;
+          });
+        }
+      }
+      function showWorkbenchPanel(tabKey) {
+        const [group] = String(tabKey || "").split(":");
+        if (!group) return;
+        document.querySelectorAll(`[data-workbench-tab^="${group}:"]`).forEach((node) => {
+          node.classList.toggle("active", node.dataset.workbenchTab === tabKey);
+        });
+        document.querySelectorAll(`[data-workbench-panel^="${group}:"]`).forEach((node) => {
+          node.classList.toggle("active", node.dataset.workbenchPanel === tabKey);
+        });
+        if (tabKey === "ligand:editor") {
+          window.requestAnimationFrame(() => {
+            ensureKetcher().catch((error) => setKetcherStatus(error.message, "error"));
+          });
+        }
+        if (tabKey === "api:auto") {
+          loadOpenApiCatalog().catch((error) => {
+            document.getElementById("openapi-summary").textContent = `OpenAPI 读取失败：${error.message}`;
+          });
+        }
+      }
+      function schemaRefName(ref) {
+        return String(ref || "").split("/").pop() || "";
+      }
+      function describeSchema(schema) {
+        if (!schema) return "无请求体 / no request body";
+        if (schema.$ref) return schemaRefName(schema.$ref);
+        if (schema.type) return schema.type;
+        if (schema.anyOf) return schema.anyOf.map(describeSchema).join(" | ");
+        if (schema.oneOf) return schema.oneOf.map(describeSchema).join(" | ");
+        if (schema.items) return `array<${describeSchema(schema.items)}>`;
+        return "schema";
+      }
+      function operationRequestSchema(operation) {
+        const content = operation.requestBody?.content || {};
+        const json = content["application/json"] || content["multipart/form-data"] || Object.values(content)[0];
+        return json?.schema ? describeSchema(json.schema) : "无请求体 / no request body";
+      }
+      function operationResponseSchema(operation) {
+        const responses = operation.responses || {};
+        const response = responses["200"] || responses["201"] || Object.values(responses)[0] || {};
+        const content = response.content || {};
+        const json = content["application/json"] || Object.values(content)[0];
+        return json?.schema ? describeSchema(json.schema) : response.description || "response";
+      }
+      function renderOpenApiCatalog(schema) {
+        const paths = schema.paths || {};
+        const operations = [];
+        Object.entries(paths).forEach(([path, methods]) => {
+          Object.entries(methods).forEach(([method, operation]) => {
+            if (!["get", "post", "put", "patch", "delete"].includes(method)) return;
+            operations.push({ path, method, operation });
+          });
+        });
+        const grouped = new Map();
+        operations.forEach((entry) => {
+          const tag = entry.operation.tags?.[0] || entry.path.split("/")[3] || "default";
+          if (!grouped.has(tag)) grouped.set(tag, []);
+          grouped.get(tag).push(entry);
+        });
+        document.getElementById("openapi-summary").innerHTML = `
+          <strong>${escapeHtml(schema.info?.title || "Boltz WebApp")}</strong>
+          · version ${escapeHtml(schema.info?.version || "unknown")}
+          · ${operations.length} endpoints
+          · 自动来源 / source: <code>/openapi.json</code>`;
+        document.getElementById("openapi-endpoints").innerHTML = [...grouped.entries()]
+          .map(([tag, entries]) => `
+            <section class="api-endpoint-card">
+              <h3>${escapeHtml(tag)}</h3>
+              ${entries
+                .map(({ path, method, operation }) => `
+                  <div class="api-endpoint-card">
+                    <div class="api-endpoint-head">
+                      <span class="api-method">${escapeHtml(method)}</span>
+                      <span class="api-path">${escapeHtml(path)}</span>
+                    </div>
+                    <div class="api-schema-note">
+                      ${escapeHtml(operation.summary || operation.operationId || "")}<br />
+                      request: ${escapeHtml(operationRequestSchema(operation))}<br />
+                      response: ${escapeHtml(operationResponseSchema(operation))}<br />
+                      curl: <code>curl -H "Authorization: Bearer $TOKEN" ${escapeHtml(method === "get" ? "" : "-H 'Content-Type: application/json' -d '{}' ")}${escapeHtml(path)}</code>
+                    </div>
+                  </div>`)
+                .join("")}
+            </section>`)
+          .join("");
+      }
+      async function loadOpenApiCatalog() {
+        if (openApiSchemaLoaded) return;
+        const response = await fetch("/openapi.json");
+        if (!response.ok) throw new Error(await response.text());
+        renderOpenApiCatalog(await response.json());
+        openApiSchemaLoaded = true;
       }
       function emptyList(label) {
         return `<div class="item"><small>${label}</small></div>`;
@@ -2993,6 +3699,7 @@
               selectedLigandId = selectedAssetId;
               document.getElementById("docking-ligand-asset").value = selectedLigandId;
               document.getElementById("boltz-ligand-asset").value = selectedLigandId;
+              if (document.getElementById("ligand-prep-asset")) document.getElementById("ligand-prep-asset").value = selectedLigandId;
               saveWorkbenchState();
               runAction(() => previewAsset(selectedAssetId));
               return;
@@ -3044,6 +3751,7 @@
                   running: "运行中",
                   completed: "已完成",
                   failed: "失败",
+                  canceled: "已停止",
                 }[job.status] || job.status;
                 const outputButtons = (job.output_asset_ids || [])
                   .map((assetId) => `<button class="secondary" data-preview-job-output="${assetId}" type="button">查看输出 ${compactId(assetId)}</button>`)
@@ -3054,6 +3762,7 @@
                   : "";
                 const canCleanup = (job.output_asset_ids || []).length > 0;
                 const canRetry = job.status === "failed" && job.job_type === "preparation";
+                const canCancel = ["queued", "running"].includes(job.status);
                 return `
                   <div class="item">
                     <strong>${escapeHtml(job.job_type)} · ${escapeHtml(statusText)}</strong>
@@ -3068,8 +3777,10 @@
                     <div class="item-actions">
                       ${outputButtons}
                       <button class="secondary" data-job-events="${job.id}" type="button">查看进度</button>
+                      ${canCancel ? `<button class="secondary danger" data-cancel-job="${job.id}" type="button">停止任务</button>` : ""}
                       ${canRetry ? `<button class="secondary" data-retry-job="${job.id}" type="button">继续/重跑</button>` : ""}
                       ${canCleanup ? `<button class="secondary danger" data-cleanup-job="${job.id}" type="button">删除中间/输出文件</button>` : ""}
+                      <button class="secondary danger" data-delete-job="${job.id}" type="button">删除任务</button>
                     </div>
                   </div>`;
               })
@@ -3086,6 +3797,12 @@
         });
         target.querySelectorAll("[data-cleanup-job]").forEach((node) => {
           node.addEventListener("click", () => runAction(() => cleanupJob(node.dataset.cleanupJob)));
+        });
+        target.querySelectorAll("[data-cancel-job]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => cancelJob(node.dataset.cancelJob)));
+        });
+        target.querySelectorAll("[data-delete-job]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => deleteJob(node.dataset.deleteJob)));
         });
       }
       function renderPreview(asset, targetId) {
@@ -3128,9 +3845,23 @@
         target.classList.remove("error", "success");
         if (tone !== "info") target.classList.add(tone);
       }
+      function loadKetcherScript() {
+        if (window.BoltzKetcher) return Promise.resolve();
+        if (ketcherScriptPromise) return ketcherScriptPromise;
+        ketcherScriptPromise = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "/vendor/ketcher/boltz-ketcher.js";
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("Ketcher 资产加载失败：/vendor/ketcher/boltz-ketcher.js 不存在或不可访问"));
+          document.head.appendChild(script);
+        });
+        return ketcherScriptPromise;
+      }
       async function ensureKetcher() {
         const root = document.getElementById("ligand-ketcher-root");
         if (!root) throw new Error("Ketcher 容器没有渲染");
+        await loadKetcherScript();
         if (!window.BoltzKetcher) throw new Error("Ketcher 静态资源未加载，请重新构建 boltz-web 镜像");
         const ketcher = await window.BoltzKetcher.mount(root, { staticResourcesUrl: "/vendor/ketcher" });
         ketcherLoaded = true;
@@ -3163,12 +3894,6 @@
         setKetcherStatus("Ketcher 和编辑表单已清空", "success");
       }
       function initLigandKetcher() {
-        const script = document.createElement("script");
-        script.src = "/vendor/ketcher/boltz-ketcher.js";
-        script.async = true;
-        script.onload = () => ensureKetcher().catch((error) => setKetcherStatus(error.message, "error"));
-        script.onerror = () => setKetcherStatus("Ketcher 资产加载失败：/vendor/ketcher/boltz-ketcher.js 不存在或不可访问", "error");
-        document.head.appendChild(script);
         document.getElementById("ligand-ketcher-load").addEventListener("click", () =>
           runAction(() => loadFormToKetcher()),
         );
@@ -3178,6 +3903,74 @@
         document.getElementById("ligand-ketcher-clear").addEventListener("click", () =>
           runAction(() => clearKetcher()),
         );
+      }
+      async function startNewLigandMolecule() {
+        selectedLigandMoleculeIndex = currentLigandMolecules.length || 0;
+        document.getElementById("ligand-edit-name").value = "drawn_ligand";
+        document.getElementById("ligand-edit-smiles").value = "";
+        document.getElementById("ligand-edit-molblock").value = "";
+        showWorkbenchPanel("ligand:editor");
+        await clearKetcher();
+        setKetcherStatus("已打开空白画布，可以直接画新分子", "success");
+      }
+      async function collectLigandEditorPayload(defaultName = "edited ligand") {
+        await syncKetcherToForm({ silent: true });
+        return {
+          project_id: currentProjectId,
+          name: document.getElementById("ligand-edit-name").value.trim() || defaultName,
+          smiles: document.getElementById("ligand-edit-smiles").value.trim() || null,
+          molblock: document.getElementById("ligand-edit-molblock").value.trim() || null,
+        };
+      }
+      async function saveLigandEditor(mode) {
+        const payload = await collectLigandEditorPayload(mode === "append" ? "new ligand" : "edited ligand");
+        if (mode === "append") {
+          if (!selectedLigandId) throw new Error("请先创建或选择一个配体资产，再追加分子");
+          const asset = await api(`/api/v1/assets/ligands/${selectedLigandId}/molecules`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          selectedLigandId = asset.id;
+          document.getElementById("docking-ligand-asset").value = asset.id;
+          document.getElementById("boltz-ligand-asset").value = asset.id;
+          setStatus("分子已追加到当前配体资产", "success");
+          await refresh();
+          await loadLigandMolecules(asset.id);
+          await previewAsset(asset.id);
+          return;
+        }
+        if (mode === "replace") {
+          if (!selectedLigandId) throw new Error("请先选择一个配体资产");
+          const asset = await api(`/api/v1/assets/ligands/${selectedLigandId}/molecules/${selectedLigandMoleculeIndex}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          setStatus("当前分子已替换", "success");
+          await refresh();
+          await loadLigandMolecules(asset.id);
+          await previewAsset(asset.id);
+          return;
+        }
+        const asset = selectedLigandId
+          ? await api(`/api/v1/assets/ligands/${selectedLigandId}/molecules/${selectedLigandMoleculeIndex}/edit`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...payload, edit_reason: "web ligand editor" }),
+            })
+          : await api("/api/v1/assets/ligands/draw", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+        selectedLigandId = asset.id;
+        document.getElementById("docking-ligand-asset").value = asset.id;
+        document.getElementById("boltz-ligand-asset").value = asset.id;
+        setStatus("编辑后的配体已保存为新资产", "success");
+        await refresh();
+        await loadLigandMolecules(asset.id);
+        await previewAsset(asset.id);
       }
       function renderLigandMolecules(molecules = currentLigandMolecules) {
         const target = document.getElementById("ligand-molecule-table");
@@ -3223,6 +4016,7 @@
           document.getElementById("ligand-edit-name").value = `${mol.name || `ligand_${index + 1}`}_edited`;
           document.getElementById("ligand-edit-smiles").value = mol.smiles || "";
           document.getElementById("ligand-edit-molblock").value = mol.molblock || "";
+          showWorkbenchPanel("ligand:editor");
           ensureKetcher()
             .then(() => window.BoltzKetcher.setMolecule(mol.molblock || mol.smiles || ""))
             .then(() => setKetcherStatus("已把选中分子载入 Ketcher，可继续编辑", "success"))
@@ -3262,6 +4056,7 @@
           selectedLigandId = asset.id;
           document.getElementById("docking-ligand-asset").value = asset.id;
           document.getElementById("boltz-ligand-asset").value = asset.id;
+          if (document.getElementById("ligand-prep-asset")) document.getElementById("ligand-prep-asset").value = asset.id;
           renderPreview(asset, "ligand-preview");
           await loadLigandMolecules(asset.id);
           saveWorkbenchState();
@@ -3293,21 +4088,25 @@
       }
       async function copyAsset(assetId) {
         const asset = currentAssets.find((item) => item.id === assetId) || (await api(`/api/v1/assets/${assetId}`));
-        const projects = Array.from(document.getElementById("project-id").options).map((option) => ({
-          id: option.value,
-          name: option.textContent,
-        }));
-        const projectText = projects.map((project) => `${project.name}：${project.id}`).join("\n");
-        const targetProjectId = window.prompt(`输入目标项目 ID：\n${projectText}`, currentProjectId || "");
-        if (!targetProjectId) return;
+        const projects = currentProjects.length
+          ? currentProjects
+          : Array.from(document.getElementById("project-id").options).map((option) => ({ id: option.value, name: option.textContent }));
+        const projectText = projects.map((project, index) => `${index + 1}. ${project.name}${project.id === currentProjectId ? "（当前）" : ""}`).join("\n");
+        const choice = window.prompt(`选择目标项目，输入编号或项目名：\n${projectText}`, "1");
+        if (!choice) return;
+        const normalized = choice.trim();
+        const byIndex = projects[Number(normalized) - 1];
+        const byName = projects.find((project) => project.name === normalized);
+        const targetProject = byIndex || byName;
+        if (!targetProject) throw new Error("没有找到目标项目，请输入列表中的编号或项目名");
         const name = window.prompt("复制后的资产名称", `${asset.name} copy`);
         if (!name || !name.trim()) return;
         const copied = await api(`/api/v1/assets/${assetId}/copy`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ project_id: targetProjectId.trim(), name: name.trim() }),
+          body: JSON.stringify({ project_id: targetProject.id, name: name.trim() }),
         });
-        setStatus(`资产已复制到目标项目：${copied.name}`, "success");
+        setStatus(`资产已复制到项目“${targetProject.name}”：${copied.name}`, "success");
         await refresh();
       }
       async function deleteAsset(assetId) {
@@ -3324,7 +4123,7 @@
         await refresh();
       }
       async function showJobEvents(jobId) {
-        const events = await api(`/api/v1/jobs/${jobId}/events`);
+        const events = await api(isAdmin ? `/api/v1/admin/jobs/${jobId}/events` : `/api/v1/jobs/${jobId}/events`);
         const text = events.length
           ? events
               .map((event) => {
@@ -3351,9 +4150,22 @@
         setStatus("任务已重新执行", "success");
         await refresh();
       }
+      async function cancelJob(jobId) {
+        if (!window.confirm("确认停止这个任务？如果它正在运行，worker 会在下一次检查状态时停止。")) return;
+        await api(`/api/v1/jobs/${jobId}/cancel`, { method: "POST" });
+        setStatus("任务已停止", "success");
+        await refresh();
+      }
+      async function deleteJob(jobId) {
+        if (!window.confirm("确认删除这个任务记录，并清理它的输出文件？")) return;
+        await api(`/api/v1/jobs/${jobId}`, { method: "DELETE" });
+        setStatus("任务已删除", "success");
+        await refresh();
+      }
       function refreshBoltzSelectors(assets) {
         const proteinSelect = document.getElementById("boltz-protein-asset");
         const pocketSelect = document.getElementById("boltz-pocket-asset");
+        const ligandPrepSelect = document.getElementById("ligand-prep-asset");
         if (!proteinSelect || !pocketSelect) return;
         proteinSelect.innerHTML = assets
           .filter((asset) => isProteinLike(asset))
@@ -3368,6 +4180,13 @@
             .join("");
         const currentPocket = document.getElementById("docking-pocket-asset")?.value || "";
         if (currentPocket && assets.some((asset) => asset.id === currentPocket)) pocketSelect.value = currentPocket;
+        if (ligandPrepSelect) {
+          ligandPrepSelect.innerHTML = assets
+            .filter((asset) => isLigandLike(asset))
+            .map((asset) => `<option value="${asset.id}">${escapeHtml(asset.name)} · ${escapeHtml(asset.kind)} · ${escapeHtml(compactId(asset.id))}</option>`)
+            .join("");
+          if (selectedLigandId && assets.some((asset) => asset.id === selectedLigandId)) ligandPrepSelect.value = selectedLigandId;
+        }
       }
       async function deleteCurrentProject() {
         if (!currentProjectId) throw new Error("当前没有项目");
@@ -3427,6 +4246,11 @@
           "还没有配体资产",
         );
         renderAssetList(
+          assets.filter((asset) => asset.kind === "prepared_ligand"),
+          "prepared-ligand-assets",
+          "还没有准备后配体资产",
+        );
+        renderAssetList(
           assets.filter((asset) => isBoltzInput(asset)),
           "boltz-input-assets",
           "还没有 Boltz input.yaml 资产",
@@ -3441,6 +4265,7 @@
       }
       async function refreshProjects() {
         const projects = await api("/api/v1/projects");
+        currentProjects = projects;
         if (!currentProjectId && projects[0]) currentProjectId = projects[0].id;
         if (currentProjectId && !projects.some((project) => project.id === currentProjectId) && projects[0]) {
           currentProjectId = projects[0].id;
@@ -3495,11 +4320,10 @@
             <div class="item">
               <strong>${user.id}</strong>
               <small>${user.status} · ${user.is_admin ? "admin" : "user"}</small>
-              ${
-                user.status === "pending"
-                  ? `<button class="secondary" data-approve="${user.id}">批准</button>`
-                  : ""
-              }
+              <div class="item-actions">
+                ${user.status === "pending" ? `<button class="secondary" data-approve="${user.id}" type="button">批准</button>` : ""}
+                ${user.id !== document.getElementById("user-id").textContent ? `<button class="secondary danger" data-delete-user="${user.id}" type="button">删除用户和数据</button>` : ""}
+              </div>
             </div>`,
           )
           .join("");
@@ -3509,6 +4333,130 @@
             await refreshUsers();
           });
         });
+        document.querySelectorAll("[data-delete-user]").forEach((node) => {
+          node.addEventListener("click", async () => {
+            if (!window.confirm(`确认删除用户 ${node.dataset.deleteUser}？该用户的任务、项目、资产和文件都会删除。`)) return;
+            await api(`/api/v1/admin/users/${node.dataset.deleteUser}`, { method: "DELETE" });
+            await Promise.all([refreshUsers(), refreshAdminJobs()]);
+          });
+        });
+      }
+      function showAdminTab(tab) {
+        document.querySelectorAll("[data-admin-tab]").forEach((node) => {
+          node.classList.toggle("active", node.dataset.adminTab === tab);
+          node.classList.toggle("secondary", node.dataset.adminTab !== tab);
+        });
+        document.querySelectorAll("[data-admin-panel]").forEach((node) => {
+          node.classList.toggle("active", node.dataset.adminPanel === tab);
+        });
+        if (tab === "jobs") refreshAdminJobs().catch((error) => setStatus(error.message, "error"));
+        if (tab === "system") refreshSystemMetrics().catch((error) => setStatus(error.message, "error"));
+      }
+      function renderMetric(label, lines, percent = null) {
+        const value = Number(percent || 0);
+        return `
+          <div class="metric-card">
+            <strong>${escapeHtml(label)}</strong>
+            <small>${lines.map((line) => escapeHtml(line)).join("<br />")}</small>
+            ${percent === null ? "" : `<div class="meter" aria-label="${escapeHtml(label)} ${value}%"><span style="--value:${Math.max(0, Math.min(100, value))}%"></span></div>`}
+          </div>`;
+      }
+      async function refreshSystemMetrics() {
+        if (!isAdmin) return;
+        const data = await api("/api/v1/admin/system");
+        const cpu = data.cpu || {};
+        const memory = data.memory || {};
+        const disks = data.disks || [];
+        const gpus = data.gpus || [];
+        const cards = [
+          renderMetric("机器 / Host", [`host: ${data.host || "unknown"}`, `platform: ${data.platform || "unknown"}`, `arch: ${cpu.architecture || "unknown"}`]),
+          renderMetric("CPU", [`model: ${cpu.model || "unknown"}`, `logical cores: ${cpu.logical_count || 0}`, `freq: ${cpu.frequency_mhz ? `${cpu.frequency_mhz} MHz` : "unknown"}`]),
+          renderMetric("内存 / Memory", [`total: ${memory.total_gib || 0} GiB`, `used: ${memory.used_gib || 0} GiB`, `available: ${memory.available_gib || 0} GiB`], memory.used_percent || 0),
+          ...(gpus.length
+            ? gpus.map((gpu, index) =>
+                renderMetric(
+                  `GPU ${index + 1}`,
+                  [
+                    `model: ${gpu.name}`,
+                    `driver: ${gpu.driver_version}`,
+                    `memory: ${gpu.memory_used_mib}/${gpu.memory_total_mib} MiB`,
+                    `util: ${gpu.utilization_percent}%`,
+                    `power: ${gpu.power_draw_w}/${gpu.power_limit_w} W`,
+                    `graphics clock: ${gpu.graphics_clock_mhz} MHz`,
+                  ],
+                  gpu.power_used_percent,
+                ),
+              )
+            : [renderMetric("GPU", ["没有检测到 NVIDIA GPU / nvidia-smi 不可用"])]),
+          ...disks.map((disk) =>
+            disk.error
+              ? renderMetric(`磁盘 / Disk ${disk.path}`, [`error: ${disk.error}`])
+              : renderMetric(
+                  `磁盘 / Disk ${disk.path}`,
+                  [`total: ${disk.total_gib} GiB`, `used: ${disk.used_gib} GiB`, `free: ${disk.free_gib} GiB`],
+                  disk.used_percent,
+                ),
+          ),
+        ];
+        document.getElementById("system-metrics").innerHTML = cards.join("");
+      }
+      async function refreshAdminJobs() {
+        if (!isAdmin) return;
+        const jobs = await api("/api/v1/admin/jobs");
+        const target = document.getElementById("admin-jobs");
+        target.innerHTML = jobs.length
+          ? jobs
+              .map((job) => {
+                const statusText = { queued: "排队中", running: "运行中", completed: "已完成", failed: "失败", canceled: "已停止" }[job.status] || job.status;
+                const canCancel = ["queued", "running"].includes(job.status);
+                const canCleanup = (job.output_asset_ids || []).length > 0;
+                return `
+                  <div class="item">
+                    <strong>${escapeHtml(job.job_type)} · ${escapeHtml(statusText)}</strong>
+                    <small>
+                      用户 ${escapeHtml(job.user_id || "")}<br />
+                      项目 ${escapeHtml(compactId(job.project_id || ""))} · 任务 ${escapeHtml(compactId(job.id))}<br />
+                      输入 ${escapeHtml((job.input_asset_ids || []).map(compactId).join("，") || "无")}<br />
+                      输出 ${escapeHtml((job.output_asset_ids || []).map(compactId).join("，") || "无")}
+                      ${job.error ? `<br />错误：${escapeHtml(job.error)}` : ""}
+                    </small>
+                    <div class="item-actions">
+                      <button class="secondary" data-job-events="${job.id}" type="button">查看进度</button>
+                      ${canCancel ? `<button class="secondary danger" data-admin-cancel-job="${job.id}" type="button">停止任务</button>` : ""}
+                      ${canCleanup ? `<button class="secondary danger" data-admin-cleanup-job="${job.id}" type="button">清理输出</button>` : ""}
+                      <button class="secondary danger" data-admin-delete-job="${job.id}" type="button">删除任务</button>
+                    </div>
+                  </div>`;
+              })
+              .join("")
+          : emptyList("当前没有任务");
+        target.querySelectorAll("[data-job-events]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => showJobEvents(node.dataset.jobEvents)));
+        });
+        target.querySelectorAll("[data-admin-cancel-job]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => adminCancelJob(node.dataset.adminCancelJob)));
+        });
+        target.querySelectorAll("[data-admin-cleanup-job]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => adminCleanupJob(node.dataset.adminCleanupJob)));
+        });
+        target.querySelectorAll("[data-admin-delete-job]").forEach((node) => {
+          node.addEventListener("click", () => runAction(() => adminDeleteJob(node.dataset.adminDeleteJob)));
+        });
+      }
+      async function adminCancelJob(jobId) {
+        if (!window.confirm("确认停止这个任务？")) return;
+        await api(`/api/v1/admin/jobs/${jobId}/cancel`, { method: "POST" });
+        await refreshAdminJobs();
+      }
+      async function adminCleanupJob(jobId) {
+        if (!window.confirm("确认清理这个任务的输出资产和文件？")) return;
+        await api(`/api/v1/admin/jobs/${jobId}/cleanup`, { method: "POST" });
+        await refreshAdminJobs();
+      }
+      async function adminDeleteJob(jobId) {
+        if (!window.confirm("确认删除这个任务记录并清理输出？")) return;
+        await api(`/api/v1/admin/jobs/${jobId}`, { method: "DELETE" });
+        await refreshAdminJobs();
       }
       async function enterApp(userId, admin) {
         isAdmin = admin;
@@ -3526,6 +4474,10 @@
         await refresh();
         await restoreWorkbenchView();
         await refreshUsers();
+        if (admin) {
+          await refreshAdminJobs();
+          await refreshSystemMetrics();
+        }
         startJobPolling();
       }
       function logout() {
@@ -3627,8 +4579,23 @@
           },
         };
       }
+      function collectLigandPrepOptions() {
+        return {
+          strip_salts: checked("ligand-prep-strip-salts"),
+          neutralize: checked("ligand-prep-neutralize"),
+          generate_3d: checked("ligand-prep-generate-3d"),
+          enumerate_tautomers: checked("ligand-prep-tautomers"),
+          enumerate_stereo: checked("ligand-prep-stereo"),
+        };
+      }
       document.querySelectorAll("[data-nav]").forEach((node) => {
         node.addEventListener("click", () => showPage(node.dataset.nav));
+      });
+      document.querySelectorAll("[data-workbench-tab]").forEach((node) => {
+        node.addEventListener("click", () => showWorkbenchPanel(node.dataset.workbenchTab));
+      });
+      document.querySelectorAll("[data-admin-tab]").forEach((node) => {
+        node.addEventListener("click", () => showAdminTab(node.dataset.adminTab));
       });
       document.getElementById("project-id").addEventListener("change", async (event) => {
         currentProjectId = event.target.value;
@@ -3717,8 +4684,11 @@
       });
       document.getElementById("logout").addEventListener("click", logout);
       document.getElementById("refresh-users").addEventListener("click", refreshUsers);
+      document.getElementById("refresh-admin-jobs").addEventListener("click", refreshAdminJobs);
+      document.getElementById("refresh-system").addEventListener("click", refreshSystemMetrics);
       document.getElementById("toggle-protein-focus").addEventListener("click", toggleProteinFocusMode);
       initLigandKetcher();
+      document.getElementById("new-ligand-molecule").addEventListener("click", () => runAction(startNewLigandMolecule));
       document.getElementById("protein-focus-exit-rail").addEventListener("click", () => {
         if (proteinFocusMode) toggleProteinFocusMode();
       });
@@ -3831,12 +4801,40 @@
           setStatus(error.message, "error");
         }
       });
+      document.getElementById("prepare-ligand").addEventListener("click", async () => {
+        try {
+          const assetId = document.getElementById("ligand-prep-asset").value || selectedLigandId;
+          if (!assetId) throw new Error("请先选择或创建一个配体资产");
+          const asset = await api("/api/v1/preparations/ligand", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              asset_id: assetId,
+              project_id: currentProjectId,
+              output_name: document.getElementById("ligand-prep-output-name").value.trim(),
+              options: collectLigandPrepOptions(),
+            }),
+          });
+          selectedLigandId = asset.id;
+          document.getElementById("docking-ligand-asset").value = asset.id;
+          document.getElementById("boltz-ligand-asset").value = asset.id;
+          document.getElementById("ligand-prep-asset").value = asset.id;
+          setStatus("准备后配体资产已生成", "success");
+          showWorkbenchPanel("ligand:outputs");
+          await refresh();
+          await loadLigandMolecules(asset.id);
+          await previewAsset(asset.id);
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      });
       document.getElementById("upload-ligand").addEventListener("click", async () => {
         try {
           const asset = await uploadAsset("ligand", "ligand-upload-file");
           selectedLigandId = asset.id;
           document.getElementById("docking-ligand-asset").value = asset.id;
           document.getElementById("boltz-ligand-asset").value = asset.id;
+          document.getElementById("ligand-prep-asset").value = asset.id;
           setStatus("配体资产已上传", "success");
           showPage("ligand");
           await refresh();
@@ -3864,6 +4862,7 @@
           selectedLigandId = asset.id;
           document.getElementById("docking-ligand-asset").value = asset.id;
           document.getElementById("boltz-ligand-asset").value = asset.id;
+          document.getElementById("ligand-prep-asset").value = asset.id;
           setStatus("配体资产已生成", "success");
           showPage("ligand");
           await refresh();
@@ -3872,31 +4871,33 @@
           setStatus(error.message, "error");
         }
       });
-      document.getElementById("save-edited-ligand").addEventListener("click", async () => {
+      document.getElementById("create-empty-ligand").addEventListener("click", async () => {
         try {
-          if (!selectedLigandId) throw new Error("请先选择一个配体资产");
-          await syncKetcherToForm({ silent: true });
-          const asset = await api(`/api/v1/assets/ligands/${selectedLigandId}/molecules/${selectedLigandMoleculeIndex}/edit`, {
+          const asset = await api("/api/v1/assets/ligands/empty", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               project_id: currentProjectId,
-              name: document.getElementById("ligand-edit-name").value.trim() || "edited ligand",
-              smiles: document.getElementById("ligand-edit-smiles").value.trim() || null,
-              molblock: document.getElementById("ligand-edit-molblock").value.trim() || null,
-              edit_reason: "web ligand editor",
+              name: document.getElementById("ligand-library-name").value.trim() || "empty ligand library",
             }),
           });
           selectedLigandId = asset.id;
           document.getElementById("docking-ligand-asset").value = asset.id;
           document.getElementById("boltz-ligand-asset").value = asset.id;
-          setStatus("编辑后的配体已保存为新资产", "success");
+          document.getElementById("ligand-prep-asset").value = asset.id;
+          currentLigandMolecules = [];
+          selectedLigandMoleculeIndex = 0;
+          setStatus("空白配体资产已创建，可以追加 SMILES/MolBlock 或手绘分子", "success");
           await refresh();
+          renderLigandMolecules([]);
           await previewAsset(asset.id);
         } catch (error) {
           setStatus(error.message, "error");
         }
       });
+      document.getElementById("append-edited-ligand").addEventListener("click", () => runAction(() => saveLigandEditor("append")));
+      document.getElementById("replace-edited-ligand").addEventListener("click", () => runAction(() => saveLigandEditor("replace")));
+      document.getElementById("save-edited-ligand").addEventListener("click", () => runAction(() => saveLigandEditor("save")));
       document.getElementById("create-boltz-input").addEventListener("click", async () => {
         try {
           const proteinId = document.getElementById("boltz-protein-asset").value || selectedProteinId;

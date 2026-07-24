@@ -1,0 +1,33 @@
+services:
+  boltz-web:
+    environment:
+      BOLTZ_LIGAND_PREP_MODE: worker
+
+  boltz-ligand-prep-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.ligand-prep.amd
+      args:
+        LIGAND_PREP_AMD_BASE_IMAGE: ${LIGAND_PREP_AMD_BASE_IMAGE:-debian:bookworm-slim}
+    image: ${BOLTZ_LIGAND_PREP_AMD_IMAGE:-boltz-ligand-prep:amd-dev}
+    restart: unless-stopped
+    profiles: ["workers", "ligand-prep"]
+    depends_on:
+      boltz-postgres:
+        condition: service_healthy
+      boltz-redis:
+        condition: service_healthy
+    environment:
+      BOLTZ_DATA_DIR: /data
+      BOLTZ_DATABASE_URL: postgresql+psycopg://boltz:${BOLTZ_POSTGRES_PASSWORD:-boltz}@boltz-postgres:5432/boltz
+      BOLTZ_REDIS_URL: redis://boltz-redis:6379/0
+      BOLTZ_LIGAND_PREP_WORKER_PLATFORM: ${BOLTZ_LIGAND_PREP_WORKER_PLATFORM:-amd-cpu}
+      BOLTZ_LIGAND_PREP_POLL_SECONDS: ${BOLTZ_LIGAND_PREP_POLL_SECONDS:-3}
+    volumes:
+      - ${BOLTZ_DATA_HOST_DIR:-./data}:/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -m boltz_ligand_prep.worker --check > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3

@@ -9,6 +9,7 @@ import pandas as pd
 import requests
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers, StereoEnumerationOptions
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
 
@@ -46,6 +47,57 @@ def fetch_pdb(pdb_id: str) -> bytes:
     return response.content
 
 
+def _prepare_mol(mol: Chem.Mol, *, strip_salts: bool = True, neutralize: bool = True, generate_3d: bool = True) -> Chem.Mol:
+    prepared = rdMolStandardize.Cleanup(mol)
+    if strip_salts:
+        prepared = rdMolStandardize.FragmentParent(prepared)
+    if neutralize:
+        prepared = rdMolStandardize.Uncharger().uncharge(prepared)
+    if generate_3d:
+        prepared = Chem.AddHs(prepared)
+        if prepared.GetNumConformers() == 0:
+            embed_status = AllChem.EmbedMolecule(prepared, randomSeed=0xC0FFEE)
+            if embed_status != 0:
+                AllChem.EmbedMolecule(prepared, randomSeed=0xC0FFEE, useRandomCoords=True)
+        try:
+            AllChem.MMFFOptimizeMolecule(prepared, maxIters=200)
+        except Exception:
+            AllChem.UFFOptimizeMolecule(prepared, maxIters=200)
+    return prepared
+
+
+def _enumerate_ligand_variants(mol: Chem.Mol, options: dict[str, Any]) -> list[tuple[str, Chem.Mol]]:
+    base = _prepare_mol(
+        mol,
+        strip_salts=bool(options.get("strip_salts", True)),
+        neutralize=bool(options.get("neutralize", True)),
+        generate_3d=False,
+    )
+    max_tautomers = max(1, int(options.get("max_tautomers", 8) or 8))
+    max_stereoisomers = max(1, int(options.get("max_stereoisomers", 16) or 16))
+    variants: list[tuple[str, Chem.Mol]] = [("parent", base)]
+
+    if options.get("enumerate_tautomers"):
+        enumerator = rdMolStandardize.TautomerEnumerator()
+        enumerator.SetMaxTautomers(max_tautomers)
+        variants = [(f"tautomer_{index + 1}", tautomer) for index, tautomer in enumerate(enumerator.Enumerate(base))]
+
+    if options.get("enumerate_stereo"):
+        stereo_variants: list[tuple[str, Chem.Mol]] = []
+        stereo_options = StereoEnumerationOptions(tryEmbedding=True, unique=True, maxIsomers=max_stereoisomers)
+        for label, variant in variants:
+            isomers = list(EnumerateStereoisomers(variant, options=stereo_options))
+            if not isomers:
+                stereo_variants.append((label, variant))
+                continue
+            stereo_variants.extend((f"{label}_stereo_{index + 1}", Chem.Mol(isomer)) for index, isomer in enumerate(isomers[:max_stereoisomers]))
+        variants = stereo_variants
+
+    if not variants:
+        variants = [("parent", base)]
+    return variants
+
+
 def smiles_to_sdf(smiles: list[str], names: list[str] | None = None) -> bytes:
     buffer = io.StringIO()
     writer = Chem.SDWriter(buffer)
@@ -54,9 +106,7 @@ def smiles_to_sdf(smiles: list[str], names: list[str] | None = None) -> bytes:
             mol = Chem.MolFromSmiles(item)
             if mol is None:
                 raise ValueError(f"invalid SMILES at index {index}: {item}")
-            mol = Chem.AddHs(mol)
-            AllChem.EmbedMolecule(mol, randomSeed=0xC0FFEE)
-            AllChem.UFFOptimizeMolecule(mol, maxIters=200)
+            mol = _prepare_mol(mol)
             mol.SetProp("_Name", (names or [])[index] if names and index < len(names) else f"ligand_{index + 1}")
             writer.write(mol)
     finally:
@@ -65,10 +115,7 @@ def smiles_to_sdf(smiles: list[str], names: list[str] | None = None) -> bytes:
 
 
 def _standardize_mol(mol: Chem.Mol) -> Chem.Mol:
-    cleanup = rdMolStandardize.Cleanup(mol)
-    parent = rdMolStandardize.FragmentParent(cleanup)
-    uncharger = rdMolStandardize.Uncharger()
-    return uncharger.uncharge(parent)
+    return _prepare_mol(mol, strip_salts=True, neutralize=True, generate_3d=False)
 
 
 def _mol_to_record(mol: Chem.Mol, index: int) -> dict[str, Any]:
@@ -205,16 +252,57 @@ def boltz_yaml_from_components(
     return "\n".join(lines).rstrip() + "\n", warnings
 
 
+def prepare_ligand_sdf(sdf_data: bytes, options: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
+    supplier = Chem.ForwardSDMolSupplier(io.BytesIO(sdf_data), removeHs=False)
+    buffer = io.StringIO()
+    writer = Chem.SDWriter(buffer)
+    stats = {
+        "input_molecules": 0,
+        "prepared_molecules": 0,
+        "failed_molecules": 0,
+        "tautomer_enumeration": bool(options.get("enumerate_tautomers", False)),
+        "stereo_enumeration": bool(options.get("enumerate_stereo", False)),
+        "max_tautomers": int(options.get("max_tautomers", 8) or 8),
+        "max_stereoisomers": int(options.get("max_stereoisomers", 16) or 16),
+        "engine": "rdkit-standardize-mmff",
+    }
+    try:
+        for index, mol in enumerate(supplier):
+            stats["input_molecules"] += 1
+            if mol is None:
+                stats["failed_molecules"] += 1
+                continue
+            try:
+                name = mol.GetProp("_Name") if mol.HasProp("_Name") else f"ligand_{index + 1}"
+                variants = _enumerate_ligand_variants(mol, options)
+                for variant_label, variant in variants:
+                    prepared = _prepare_mol(
+                        variant,
+                        strip_salts=False,
+                        neutralize=False,
+                        generate_3d=bool(options.get("generate_3d", True)),
+                    )
+                    prepared.SetProp("_Name", name if variant_label == "parent" else f"{name}_{variant_label}")
+                    prepared.SetProp("BOLTZ_PREP_VARIANT", variant_label)
+                    writer.write(prepared)
+                    stats["prepared_molecules"] += 1
+            except Exception:
+                stats["failed_molecules"] += 1
+    finally:
+        writer.close()
+    data = buffer.getvalue().encode("utf-8")
+    if stats["prepared_molecules"] == 0 and stats["input_molecules"] > 0:
+        raise ValueError("no ligand molecules could be prepared")
+    return data, stats
+
+
 def molblock_or_smiles_to_sdf(smiles: str | None, molblock: str | None, name: str) -> bytes:
     mol = Chem.MolFromMolBlock(molblock, sanitize=True) if molblock else None
     if mol is None and smiles:
         mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         raise ValueError("drawn ligand must include a valid molblock or SMILES")
-    mol = Chem.AddHs(mol)
-    if mol.GetNumConformers() == 0:
-        AllChem.EmbedMolecule(mol, randomSeed=0xC0FFEE)
-    AllChem.UFFOptimizeMolecule(mol, maxIters=200)
+    mol = _prepare_mol(mol)
     mol.SetProp("_Name", name)
     buffer = io.StringIO()
     writer = Chem.SDWriter(buffer)
@@ -335,8 +423,14 @@ def ligand_prepare_metadata(options: dict[str, Any]) -> dict[str, Any]:
     return {
         "operation": "ligand_preparation",
         "strip_salts": options.get("strip_salts", True),
+        "neutralize": options.get("neutralize", True),
         "enumerate_tautomers": options.get("enumerate_tautomers", False),
         "enumerate_stereo": options.get("enumerate_stereo", False),
+        "max_tautomers": options.get("max_tautomers", 8),
+        "max_stereoisomers": options.get("max_stereoisomers", 16),
         "generate_3d": options.get("generate_3d", True),
-        "status": "placeholder",
+        "status": "worker_or_rdkit_prepared",
+        "unsupported_operations": [
+            "pH-specific protonation state prediction",
+        ],
     }

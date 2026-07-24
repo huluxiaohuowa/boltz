@@ -1,0 +1,47 @@
+ARG LIGAND_PREP_AMD_BASE_IMAGE=debian:bookworm-slim
+FROM ${LIGAND_PREP_AMD_BASE_IMAGE}
+
+ARG TARGETARCH
+ARG APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian
+ARG APT_SECURITY_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian-security
+ARG MINIFORGE_BASE_URL=https://mirrors.tuna.tsinghua.edu.cn/github-release/conda-forge/miniforge/LatestRelease
+ARG CONDA_FORGE_CHANNEL=https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    BOLTZ_DATA_DIR=/data \
+    PYTHONPATH=/app/src \
+    PATH=/opt/conda/envs/boltz-ligand-prep/bin:/opt/conda/bin:$PATH
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+WORKDIR /app
+
+RUN if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then \
+      sed -i "s|http://deb.debian.org/debian|${APT_MIRROR}|g; s|http://deb.debian.org/debian-security|${APT_SECURITY_MIRROR}|g" /etc/apt/sources.list.d/debian.sources; \
+    elif [[ -f /etc/apt/sources.list ]]; then \
+      sed -i "s|http://deb.debian.org/debian|${APT_MIRROR}|g; s|http://security.debian.org/debian-security|${APT_SECURITY_MIRROR}|g" /etc/apt/sources.list; \
+    fi \
+    && echo "ligand-prep apt mirror configured for TARGETARCH=${TARGETARCH:-unknown}" \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends bash ca-certificates curl bzip2 tini \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY docker/protein-prep/install-miniforge.sh /tmp/install-miniforge.sh
+COPY docker/ligand-prep/environment.yml /tmp/ligand-prep-environment.yml
+
+RUN sed -i "s|  - conda-forge|  - ${CONDA_FORGE_CHANNEL}|g" /tmp/ligand-prep-environment.yml \
+    && bash /tmp/install-miniforge.sh /opt/conda \
+    && conda env create -f /tmp/ligand-prep-environment.yml \
+    && conda clean -afy \
+    && rm -f /tmp/install-miniforge.sh /tmp/ligand-prep-environment.yml
+
+COPY pyproject.toml README.md README.origin.md LICENSE /app/
+COPY src /app/src
+
+RUN python -m pip install --no-cache-dir --no-deps -e .
+
+VOLUME ["/data"]
+
+ENTRYPOINT ["tini", "--"]
+CMD ["python", "-m", "boltz_ligand_prep.worker", "--watch"]

@@ -83,6 +83,11 @@ class SmilesLigandRequest(BaseModel):
     project_id: str | None = None
 
 
+class EmptyLigandLibraryRequest(BaseModel):
+    name: str = "empty ligand library"
+    project_id: str | None = None
+
+
 class DrawLigandRequest(BaseModel):
     smiles: str | None = None
     molblock: str | None = None

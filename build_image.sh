@@ -22,7 +22,7 @@ die() { err "$*"; exit 1; }
 usage() {
   cat <<'EOF'
 Usage:
-  ./build_image.sh [--component web|protein-prep-arm|protein-prep-amd|all] [--tag amd_YYYYMMDD|arm_YYYYMMDD] [--registry REGISTRY] [--no-push]
+  ./build_image.sh [--component web|protein-prep-arm|protein-prep-amd|ligand-prep-arm|ligand-prep-amd|all] [--tag amd_YYYYMMDD|arm_YYYYMMDD] [--registry REGISTRY] [--no-push]
 
 Image naming follows the ictrek app convention:
   ${REGISTRY}/${image_name}:${PLATFORM_TAG}
@@ -31,6 +31,7 @@ Examples:
   ./build_image.sh
   ./build_image.sh --component web --tag arm_20260724
   PROTEIN_PREP_ARM_BASE_IMAGE=<arm64-cpu-base> ./build_image.sh --component protein-prep-arm --tag arm_20260724
+  LIGAND_PREP_ARM_BASE_IMAGE=<arm64-cpu-base> ./build_image.sh --component ligand-prep-arm --tag arm_20260724
 
 Mirror overrides:
   CONDA_FORGE_CHANNEL=https://mirrors.ustc.edu.cn/anaconda/cloud/conda-forge \
@@ -140,6 +141,26 @@ build_protein_prep_amd() {
     --build-arg "CONDA_FORGE_CHANNEL=${CONDA_FORGE_CHANNEL:-https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge}"
 }
 
+build_ligand_prep_arm() {
+  load_env_if_present
+  build_and_push "boltz-ligand-prep" "Dockerfile.ligand-prep.arm" \
+    --build-arg "LIGAND_PREP_ARM_BASE_IMAGE=${LIGAND_PREP_ARM_BASE_IMAGE:-debian:bookworm-slim}" \
+    --build-arg "APT_MIRROR=${APT_MIRROR:-http://mirrors.tuna.tsinghua.edu.cn/debian}" \
+    --build-arg "APT_SECURITY_MIRROR=${APT_SECURITY_MIRROR:-http://mirrors.tuna.tsinghua.edu.cn/debian-security}" \
+    --build-arg "MINIFORGE_BASE_URL=${MINIFORGE_BASE_URL:-https://mirrors.tuna.tsinghua.edu.cn/github-release/conda-forge/miniforge/LatestRelease}" \
+    --build-arg "CONDA_FORGE_CHANNEL=${CONDA_FORGE_CHANNEL:-https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge}"
+}
+
+build_ligand_prep_amd() {
+  load_env_if_present
+  build_and_push "boltz-ligand-prep" "Dockerfile.ligand-prep.amd" \
+    --build-arg "LIGAND_PREP_AMD_BASE_IMAGE=${LIGAND_PREP_AMD_BASE_IMAGE:-debian:bookworm-slim}" \
+    --build-arg "APT_MIRROR=${APT_MIRROR:-http://mirrors.tuna.tsinghua.edu.cn/debian}" \
+    --build-arg "APT_SECURITY_MIRROR=${APT_SECURITY_MIRROR:-http://mirrors.tuna.tsinghua.edu.cn/debian-security}" \
+    --build-arg "MINIFORGE_BASE_URL=${MINIFORGE_BASE_URL:-https://mirrors.tuna.tsinghua.edu.cn/github-release/conda-forge/miniforge/LatestRelease}" \
+    --build-arg "CONDA_FORGE_CHANNEL=${CONDA_FORGE_CHANNEL:-https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge}"
+}
+
 require_env_file
 case "$COMPONENT" in
   web)
@@ -151,12 +172,20 @@ case "$COMPONENT" in
   protein-prep-amd)
     build_protein_prep_amd
     ;;
+  ligand-prep-arm)
+    build_ligand_prep_arm
+    ;;
+  ligand-prep-amd)
+    build_ligand_prep_amd
+    ;;
   all)
     build_web
     if [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
       build_protein_prep_arm
+      build_ligand_prep_arm
     else
       log "Skipping protein-prep-arm on non-arm host"
+      build_ligand_prep_amd
     fi
     ;;
   *)

@@ -1,6 +1,19 @@
-# 1A2C 蛋白准备网页端操作指南
+# 1A2C 蛋白准备网页端操作指南 / 1A2C Protein Preparation Web Guide
 
 本文以 PDB `1A2C` 为例，说明在 Boltz Workbench 网页端如何选择参考配体、定义口袋、完成蛋白准备，并把准备后的文件作为后续对接任务输入。
+
+This guide uses PDB `1A2C` as an example. It explains how to choose the reference ligand, define a docking pocket, run protein preparation in Boltz Workbench, and reuse the prepared receptor and pocket in downstream docking or Boltz workflows.
+
+## English quick path
+
+1. Log in as `admin / admin123456`.
+2. Create a project such as `1A2C-thrombin-demo`.
+3. Open `Protein Preparation`, import PDB ID `1a2c`, and preview the imported protein asset.
+4. In the PDB component list, use `PRJ J:3` as the pocket reference. It sits in the middle of the Aeruginosin 298-A inhibitor chain.
+5. Set the pocket center to approximately `18.54, -14.79, 20.56` and start with a `20, 20, 20 Å` box. Increase to `22, 22, 22 Å` if you want to cover the full inhibitor chain more conservatively.
+6. Keep thrombin chains `H/L`; remove the original inhibitor chain `J` before preparing the receptor. Remove hirudin chain `I` if the task is ordinary small-molecule docking against thrombin.
+7. Keep `NA H:626` unless your downstream method requires all ions removed. Remove crystallographic waters by default.
+8. Run protein preparation and use the generated `prepared_protein` asset plus the `pocket` asset in the docking or Boltz input page.
 
 ## 1. 这个结构该选哪个配体
 

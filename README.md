@@ -1,7 +1,27 @@
 # Boltz WebApp
 
-This repository is the ictrek fork of Boltz for building a VOS web application
-around biomolecular structure and affinity prediction.
+Boltz WebApp is an ictrek fork of Boltz that adds a browser workbench for CADD
+input preparation, molecular inspection, task tracking, and Boltz-ready asset
+management.
+
+Boltz WebApp 是 Boltz 的 ictrek 工作分支，目标是在浏览器里完成 CADD 输入准备、分子结构检查、任务跟踪和 Boltz 可复用资产管理。
+
+![Boltz Workbench main page](docs/images/boltz-workbench-main.png)
+
+## 功能分类 / Feature Categories
+
+| 模块 | 中文说明 | English |
+| --- | --- | --- |
+| 项目与资产 / Projects & Assets | 用户隔离的项目、输入/输出文件、跨项目复制、下载、重命名、删除。 | User-isolated projects, reusable input/output assets, cross-project copy, download, rename, and deletion. |
+| 蛋白处理 / Protein Preparation | PDB ID 导入、本地上传、3D 预览、链/组分/配体/金属/水对象管理、口袋定义、准备后蛋白资产输出。 | PDB import, local upload, 3D inspection, chain/component/ligand/metal/water management, pocket definition, and prepared-protein outputs. |
+| 配体处理 / Ligand Preparation | 空白配体库、SMILES/SDF 导入、Ketcher 2D 编辑、库内追加/替换、RDKit CPU 准备、Boltz input.yaml 生成。 | Empty ligand libraries, SMILES/SDF import, Ketcher 2D editing, append/replace molecules, CPU RDKit preparation, and Boltz input.yaml generation. |
+| 对接任务 / Docking Tasks | 组合 prepared protein、ligand 和 pocket，生成任务记录与可复用输出。 | Combine prepared proteins, ligands, and pockets into tracked docking or prediction tasks. |
+| 分子生成 / Molecule Generation | 预留基于 pocket asset 的 3D 分子生成入口。 | Planned pocket-conditioned 3D molecule generation entry. |
+| TPD / PROTAC | 预留 POI/E3/warhead/linker 的 Targeted Protein Degradation 工作流。 | Planned Targeted Protein Degradation workflow for POI, E3, warheads, and linkers. |
+| FEP / 分析 | 预留自由能计算、轨迹、误差和报告入口。 | Planned FEP, trajectory, uncertainty, and report workflow. |
+| SAR / 构效关系 | 预留活性表、R-group、MMPA 和下一轮设计入口。 | Planned activity table, R-group, MMPA, and next-design workflow. |
+| 管理 / Admin | 用户审核、全局任务停止/清理/删除、用户级联删除、部署机器资源监控。 | User approval, global task cancel/cleanup/delete, cascading user deletion, and host resource monitoring. |
+| API 文档 / API Docs | 页面内从 OpenAPI 自动生成接口目录，并提供 asset_id/job_id 自动化衔接示例。 | In-app API catalog generated from OpenAPI with asset_id/job_id chaining examples. |
 
 The upstream Boltz project README is preserved in [README.origin.md](README.origin.md).
 Keep upstream documentation changes there when merging from
@@ -105,7 +125,17 @@ PROTEIN_PREP_ARM_BASE_IMAGE=<arm64-cpu-base-image> \
   ./build_image.sh --component protein-prep-arm --tag arm_YYYYMMDD
 ```
 
-The protein-prep Dockerfiles expose mirror overrides for reproducible builds in
+Ligand preparation also has a separate CPU worker image. It is the production
+path for CADD ligand preparation and includes RDKit, OpenBabel, Meeko, and
+Dimorphite-DL. The web image keeps only the UI/API orchestration and lightweight
+fallback logic:
+
+```bash
+LIGAND_PREP_ARM_BASE_IMAGE=<arm64-cpu-base-image> \
+  ./build_image.sh --component ligand-prep-arm --tag arm_YYYYMMDD
+```
+
+The worker Dockerfiles expose mirror overrides for reproducible builds in
 domestic networks:
 
 ```bash
@@ -130,24 +160,38 @@ CPU-only images tagged as `amd_YYYYMMDD` or `arm_YYYYMMDD`; reserve
 The stack starts:
 
 - `boltz-web`: FastAPI WebServer and static workbench.
+- `boltz-ligand-prep-worker`: CPU ligand preparation worker with RDKit,
+  OpenBabel, Meeko, and Dimorphite-DL.
+- `boltz-protein-prep-worker`: CPU protein preparation worker image scaffold.
 - `boltz-postgres`: Postgres using the PGV image from `PGV_POSTGRES_IMAGE`.
 - `boltz-redis`: Redis for task event streams and status cache.
 
-Optional protein-preparation workers are provided as compose overlays:
+Optional preparation workers are provided as compose overlays:
 
 ```bash
-# AMD/x86_64 CPU worker
+# AMD/x86_64 CPU workers
 docker compose --env-file .env.web \
   -f docker-compose.web.yml \
   -f docker-compose.protein-prep.amd.yml \
+  -f docker-compose.ligand-prep.amd.yml \
   --profile protein-prep up --build -d boltz-protein-prep-worker
+docker compose --env-file .env.web \
+  -f docker-compose.web.yml \
+  -f docker-compose.ligand-prep.amd.yml \
+  --profile ligand-prep up --build -d boltz-ligand-prep-worker
 
-# ARM/aarch64 CPU worker; override only if the deployment uses an internal base.
+# ARM/aarch64 CPU workers; override only if the deployment uses an internal base.
 export PROTEIN_PREP_ARM_BASE_IMAGE=<arm64-cpu-base-image>
+export LIGAND_PREP_ARM_BASE_IMAGE=<arm64-cpu-base-image>
 docker compose --env-file .env.web \
   -f docker-compose.web.yml \
   -f docker-compose.protein-prep.arm.yml \
+  -f docker-compose.ligand-prep.arm.yml \
   --profile protein-prep up --build -d boltz-protein-prep-worker
+docker compose --env-file .env.web \
+  -f docker-compose.web.yml \
+  -f docker-compose.ligand-prep.arm.yml \
+  --profile ligand-prep up --build -d boltz-ligand-prep-worker
 ```
 
 See [docs/protein-prep-worker.md](docs/protein-prep-worker.md) for the worker
@@ -193,6 +237,21 @@ New users can submit registration requests from the login screen. Admin approval
 is required before they can use the workbench. The backend also exposes a
 `BOLTZ_USER_PROVISION_TOKEN` protected endpoint for later VOS account
 provisioning.
+
+## User Guides / 使用指南
+
+Each workflow module has a bilingual guide under [userguide](userguide):
+
+- [Project and assets / 项目与资产](userguide/project-and-assets.md)
+- [Protein preparation / 蛋白处理](userguide/protein-preparation.md)
+- [Ligand preparation / 配体处理](userguide/ligand-preparation.md)
+- [Docking tasks / 对接任务](userguide/docking-tasks.md)
+- [Molecule generation / 分子生成](userguide/molecule-generation.md)
+- [TPD / PROTAC](userguide/tpd-protac.md)
+- [FEP and analysis / FEP 与分析](userguide/fep-analysis.md)
+- [SAR / 构效关系](userguide/sar.md)
+- [Admin / 管理](userguide/admin.md)
+- [API automation / API 自动化](userguide/api-automation.md)
 
 The standalone workbench is organized by workflow module:
 
