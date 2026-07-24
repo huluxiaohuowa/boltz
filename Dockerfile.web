@@ -1,6 +1,6 @@
 ARG WEB_BASE_IMAGE=python:3.11-slim
 ARG NODE_BASE_IMAGE=node:24-bookworm-slim
-ARG NPM_REGISTRY=https://registry.npmjs.org
+ARG NPM_REGISTRY=https://registry.npmmirror.com
 ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
 ARG PIP_TRUSTED_HOST=mirrors.aliyun.com
 ARG APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian

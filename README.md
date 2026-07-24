@@ -120,9 +120,15 @@ swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-web:arm_YYYYMMDD
 swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-host-metrics:arm_YYYYMMDD
 swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-protein-prep:arm_YYYYMMDD
 swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-ligand-prep:arm_YYYYMMDD
+swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/pgv:arm_16_YYYYMMDD
 ```
 
 CPU-only 镜像只使用 `amd_YYYYMMDD` 或 `arm_YYYYMMDD`。`thor_YYYYMMDD` 只保留给未来需要 GPU/CUDA 的模型运行镜像。
+
+镜像来源规则：
+
+- VOS app 打包：沿用 ictrek 的发布与 Feishu 版本解析体系。
+- 独立部署：统一使用 `swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/...` 镜像，包括 Web、workers、host metrics runner 和 PGV/Postgres。
 
 构建示例：
 
@@ -132,6 +138,8 @@ CPU-only 镜像只使用 `amd_YYYYMMDD` 或 `arm_YYYYMMDD`。`thor_YYYYMMDD` 只
 ./build_image.sh --component protein-prep-arm --tag arm_YYYYMMDD
 ./build_image.sh --component ligand-prep-arm --tag arm_YYYYMMDD
 ```
+
+Web 镜像默认使用加速源：npm 使用 `https://registry.npmmirror.com`，pip 使用阿里云 PyPI，Debian apt 使用清华镜像。必要时可在 `.env.web` 覆盖 `NPM_REGISTRY`、`PIP_INDEX_URL`、`PIP_TRUSTED_HOST`、`APT_MIRROR` 或 `APT_SECURITY_MIRROR`。
 
 配体准备 worker 是生产配体准备路径，包含 RDKit、OpenBabel、Meeko、Dimorphite-DL 和 gemmi。web 镜像只负责 UI、API 和任务编排，不承担重型化学处理。
 
@@ -325,19 +333,29 @@ Keep the repository name as the component name and put platform/date in the tag:
 
 ```text
 swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-web:arm_YYYYMMDD
+swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-host-metrics:arm_YYYYMMDD
 swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-protein-prep:arm_YYYYMMDD
 swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-ligand-prep:arm_YYYYMMDD
+swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/pgv:arm_16_YYYYMMDD
 ```
 
 CPU-only images use only `amd_YYYYMMDD` or `arm_YYYYMMDD`. Reserve `thor_YYYYMMDD` for future GPU/CUDA model runtime images.
+
+Image source rule:
+
+- VOS app packages keep using the ictrek release and Feishu version-resolution pipeline.
+- Independent deployments use `swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/...` images for Web, workers, the host metrics runner, and PGV/Postgres.
 
 Build examples:
 
 ```bash
 ./build_image.sh --component web --tag arm_YYYYMMDD
+./build_image.sh --component host-metrics --tag arm_YYYYMMDD
 ./build_image.sh --component protein-prep-arm --tag arm_YYYYMMDD
 ./build_image.sh --component ligand-prep-arm --tag arm_YYYYMMDD
 ```
+
+Web image builds use accelerated mirrors by default: npm uses `https://registry.npmmirror.com`, pip uses Aliyun PyPI, and Debian apt uses Tsinghua mirrors. Override `NPM_REGISTRY`, `PIP_INDEX_URL`, `PIP_TRUSTED_HOST`, `APT_MIRROR`, or `APT_SECURITY_MIRROR` in `.env.web` when needed.
 
 The ligand-prep worker is the production ligand preparation path. It bundles RDKit, OpenBabel, Meeko, Dimorphite-DL, and gemmi. The web image is responsible for UI, API, and job orchestration, not heavy chemistry execution.
 
