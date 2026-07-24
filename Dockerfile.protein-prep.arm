@@ -1,5 +1,5 @@
-ARG PROTEIN_PREP_AMD_BASE_IMAGE=debian:bookworm-slim
-FROM ${PROTEIN_PREP_AMD_BASE_IMAGE}
+ARG PROTEIN_PREP_ARM_BASE_IMAGE=debian:bookworm-slim
+FROM ${PROTEIN_PREP_ARM_BASE_IMAGE}
 
 ARG TARGETARCH
 ARG APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian

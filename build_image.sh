@@ -4,7 +4,13 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 REGISTRY="${REGISTRY:-swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa}"
-PLATFORM_TAG="${PLATFORM_TAG:-thor_$(date +%Y%m%d)}"
+ARCH="$(uname -m)"
+case "$ARCH" in
+  x86_64|amd64) DEFAULT_PLATFORM_TAG="amd_$(date +%Y%m%d)" ;;
+  aarch64|arm64) DEFAULT_PLATFORM_TAG="arm_$(date +%Y%m%d)" ;;
+  *) DEFAULT_PLATFORM_TAG="${ARCH}_$(date +%Y%m%d)" ;;
+esac
+PLATFORM_TAG="${PLATFORM_TAG:-$DEFAULT_PLATFORM_TAG}"
 ENV_FILE="${ENV_FILE:-.env.web}"
 COMPONENT="${COMPONENT:-web}"
 PUSH="${PUSH:-1}"
@@ -16,15 +22,23 @@ die() { err "$*"; exit 1; }
 usage() {
   cat <<'EOF'
 Usage:
-  ./build_image.sh [--component web|protein-prep-thor|protein-prep-amd|all] [--tag thor_YYYYMMDD] [--registry REGISTRY] [--no-push]
+  ./build_image.sh [--component web|protein-prep-arm|protein-prep-amd|all] [--tag amd_YYYYMMDD|arm_YYYYMMDD] [--registry REGISTRY] [--no-push]
 
 Image naming follows the ictrek app convention:
   ${REGISTRY}/${image_name}:${PLATFORM_TAG}
 
 Examples:
   ./build_image.sh
-  ./build_image.sh --component web --tag thor_20260723
-  PROTEIN_PREP_THOR_BASE_IMAGE=<l4t/cuda-base> ./build_image.sh --component protein-prep-thor
+  ./build_image.sh --component web --tag arm_20260724
+  PROTEIN_PREP_ARM_BASE_IMAGE=<arm64-cpu-base> ./build_image.sh --component protein-prep-arm --tag arm_20260724
+
+Mirror overrides:
+  CONDA_FORGE_CHANNEL=https://mirrors.ustc.edu.cn/anaconda/cloud/conda-forge \
+    ./build_image.sh --component protein-prep-arm --tag arm_YYYYMMDD
+  CONDA_FORGE_CHANNEL=https://mirrors.cloud.tencent.com/anaconda/cloud/conda-forge \
+    ./build_image.sh --component protein-prep-amd --tag amd_YYYYMMDD
+  CONDA_FORGE_CHANNEL=https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge \
+    ./build_image.sh --component protein-prep-arm --tag arm_YYYYMMDD
 EOF
 }
 
@@ -97,20 +111,33 @@ build_and_push() {
 build_web() {
   load_env_if_present
   build_and_push "boltz-web" "Dockerfile.web" \
-    --build-arg "WEB_BASE_IMAGE=${WEB_BASE_IMAGE:-python:3.11-slim}"
+    --build-arg "WEB_BASE_IMAGE=${WEB_BASE_IMAGE:-python:3.11-slim}" \
+    --build-arg "NODE_BASE_IMAGE=${NODE_BASE_IMAGE:-node:24-bookworm-slim}" \
+    --build-arg "NPM_REGISTRY=${NPM_REGISTRY:-https://registry.npmjs.org}" \
+    --build-arg "PIP_INDEX_URL=${PIP_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple}" \
+    --build-arg "PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST:-mirrors.aliyun.com}" \
+    --build-arg "APT_MIRROR=${APT_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn/debian}" \
+    --build-arg "APT_SECURITY_MIRROR=${APT_SECURITY_MIRROR:-https://mirrors.tuna.tsinghua.edu.cn/debian-security}"
 }
 
-build_protein_prep_thor() {
+build_protein_prep_arm() {
   load_env_if_present
-  [[ -n "${PROTEIN_PREP_THOR_BASE_IMAGE:-}" ]] || die "PROTEIN_PREP_THOR_BASE_IMAGE is required for protein-prep-thor"
-  build_and_push "boltz-protein-prep" "Dockerfile.protein-prep.thor" \
-    --build-arg "PROTEIN_PREP_THOR_BASE_IMAGE=${PROTEIN_PREP_THOR_BASE_IMAGE}"
+  build_and_push "boltz-protein-prep" "Dockerfile.protein-prep.arm" \
+    --build-arg "PROTEIN_PREP_ARM_BASE_IMAGE=${PROTEIN_PREP_ARM_BASE_IMAGE:-debian:bookworm-slim}" \
+    --build-arg "APT_MIRROR=${APT_MIRROR:-http://mirrors.tuna.tsinghua.edu.cn/debian}" \
+    --build-arg "APT_SECURITY_MIRROR=${APT_SECURITY_MIRROR:-http://mirrors.tuna.tsinghua.edu.cn/debian-security}" \
+    --build-arg "MINIFORGE_BASE_URL=${MINIFORGE_BASE_URL:-https://mirrors.tuna.tsinghua.edu.cn/github-release/conda-forge/miniforge/LatestRelease}" \
+    --build-arg "CONDA_FORGE_CHANNEL=${CONDA_FORGE_CHANNEL:-https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge}"
 }
 
 build_protein_prep_amd() {
   load_env_if_present
   build_and_push "boltz-protein-prep" "Dockerfile.protein-prep.amd" \
-    --build-arg "PROTEIN_PREP_AMD_BASE_IMAGE=${PROTEIN_PREP_AMD_BASE_IMAGE:-debian:bookworm-slim}"
+    --build-arg "PROTEIN_PREP_AMD_BASE_IMAGE=${PROTEIN_PREP_AMD_BASE_IMAGE:-debian:bookworm-slim}" \
+    --build-arg "APT_MIRROR=${APT_MIRROR:-http://mirrors.tuna.tsinghua.edu.cn/debian}" \
+    --build-arg "APT_SECURITY_MIRROR=${APT_SECURITY_MIRROR:-http://mirrors.tuna.tsinghua.edu.cn/debian-security}" \
+    --build-arg "MINIFORGE_BASE_URL=${MINIFORGE_BASE_URL:-https://mirrors.tuna.tsinghua.edu.cn/github-release/conda-forge/miniforge/LatestRelease}" \
+    --build-arg "CONDA_FORGE_CHANNEL=${CONDA_FORGE_CHANNEL:-https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge}"
 }
 
 require_env_file
@@ -118,18 +145,18 @@ case "$COMPONENT" in
   web)
     build_web
     ;;
-  protein-prep-thor)
-    build_protein_prep_thor
+  protein-prep-arm)
+    build_protein_prep_arm
     ;;
   protein-prep-amd)
     build_protein_prep_amd
     ;;
   all)
     build_web
-    if [[ -n "${PROTEIN_PREP_THOR_BASE_IMAGE:-}" ]]; then
-      build_protein_prep_thor
+    if [[ "$(uname -m)" == "aarch64" || "$(uname -m)" == "arm64" ]]; then
+      build_protein_prep_arm
     else
-      log "Skipping protein-prep-thor: PROTEIN_PREP_THOR_BASE_IMAGE is not set"
+      log "Skipping protein-prep-arm on non-arm host"
     fi
     ;;
   *)

@@ -18,9 +18,12 @@ case "${arch}" in
 esac
 
 installer="/tmp/Miniforge3-Linux-${installer_arch}.sh"
-url="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${installer_arch}.sh"
+base_url="${MINIFORGE_BASE_URL:-https://mirrors.tuna.tsinghua.edu.cn/github-release/conda-forge/miniforge/LatestRelease}"
+url="${base_url%/}/Miniforge3-Linux-${installer_arch}.sh"
 
 curl -fsSL "${url}" -o "${installer}"
 bash "${installer}" -b -p "${prefix}"
 rm -f "${installer}"
+"${prefix}/bin/conda" config --system --remove-key channels >/dev/null 2>&1 || true
+"${prefix}/bin/conda" config --system --add channels "${CONDA_FORGE_CHANNEL:-https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge}"
 "${prefix}/bin/conda" config --system --set channel_priority strict

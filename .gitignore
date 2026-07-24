@@ -129,6 +129,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+node_modules/
+src/boltz_web/static/vendor/ketcher/
 
 # Spyder project settings
 .spyderproject

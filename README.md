@@ -86,23 +86,46 @@ docker compose --env-file .env.web -f docker-compose.web.yml up --build
 Build and push production images from the target build host with:
 
 ```bash
-./build_image.sh --component web --tag thor_YYYYMMDD
+./build_image.sh --component web --tag arm_YYYYMMDD
 ```
 
 The script uses the same repository-plus-tag convention as the other ictrek app
 image build scripts:
 
 ```text
-swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-web:thor_YYYYMMDD
+swr.cn-east-3.myhuaweicloud.com/huluxiaohuowa/boltz-web:arm_YYYYMMDD
 ```
 
-Protein-preparation worker images are separate from the web image. Build the
-Thor worker only after selecting the matching Thor/L4T/CUDA base image:
+Protein-preparation worker images are separate from the web image. This worker
+is CPU-oriented and does not need PyTorch or CUDA; override the base image only
+when a site requires an internal AMD/ARM CPU base:
 
 ```bash
-PROTEIN_PREP_THOR_BASE_IMAGE=<thor-l4t-cuda-base-image> \
-  ./build_image.sh --component protein-prep-thor --tag thor_YYYYMMDD
+PROTEIN_PREP_ARM_BASE_IMAGE=<arm64-cpu-base-image> \
+  ./build_image.sh --component protein-prep-arm --tag arm_YYYYMMDD
 ```
+
+The protein-prep Dockerfiles expose mirror overrides for reproducible builds in
+domestic networks:
+
+```bash
+# Tsinghua/TUNA, current default
+CONDA_FORGE_CHANNEL=https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge \
+MINIFORGE_BASE_URL=https://mirrors.tuna.tsinghua.edu.cn/github-release/conda-forge/miniforge/LatestRelease \
+./build_image.sh --component protein-prep-arm --tag arm_YYYYMMDD
+
+# USTC or Tencent Cloud conda-forge can also be used
+CONDA_FORGE_CHANNEL=https://mirrors.ustc.edu.cn/anaconda/cloud/conda-forge \
+./build_image.sh --component protein-prep-amd --tag amd_YYYYMMDD
+
+CONDA_FORGE_CHANNEL=https://mirrors.cloud.tencent.com/anaconda/cloud/conda-forge \
+./build_image.sh --component protein-prep-arm --tag arm_YYYYMMDD
+```
+
+`APT_MIRROR`, `APT_SECURITY_MIRROR`, `MINIFORGE_BASE_URL`, and
+`CONDA_FORGE_CHANNEL` can all be overridden from the build environment. Keep
+CPU-only images tagged as `amd_YYYYMMDD` or `arm_YYYYMMDD`; reserve
+`thor_YYYYMMDD` for future GPU/CUDA runtime images.
 
 The stack starts:
 
@@ -119,11 +142,11 @@ docker compose --env-file .env.web \
   -f docker-compose.protein-prep.amd.yml \
   --profile protein-prep up --build -d boltz-protein-prep-worker
 
-# Thor/aarch64 worker; set the base image to the deployed L4T/CUDA runtime.
-export PROTEIN_PREP_THOR_BASE_IMAGE=<thor-l4t-cuda-base-image>
+# ARM/aarch64 CPU worker; override only if the deployment uses an internal base.
+export PROTEIN_PREP_ARM_BASE_IMAGE=<arm64-cpu-base-image>
 docker compose --env-file .env.web \
   -f docker-compose.web.yml \
-  -f docker-compose.protein-prep.thor.yml \
+  -f docker-compose.protein-prep.arm.yml \
   --profile protein-prep up --build -d boltz-protein-prep-worker
 ```
 
@@ -209,9 +232,12 @@ The standalone workbench is organized by workflow module:
 - Ligand: left-side SMILES/upload/asset controls and a wide right-side ligand
   preview/editing workspace. The first Boltz-first ligand-preparation slice
   parses SDF/SMILES assets into molecule rows, lets one molecule be selected for
-  Boltz chain-id assignment, supports editing a selected molecule through
-  SMILES/MolBlock fields and saving it as a new ligand asset, and can generate a
-  `boltz_prediction_input` asset containing `input.yaml` plus `report.json`.
+  Boltz chain-id assignment, supports editing a selected molecule through the
+  bundled Ketcher 2D molecule editor, synchronizes Ketcher output back to
+  SMILES/MolBlock, saves the edited molecule as a new ligand asset, and can
+  generate a `boltz_prediction_input` asset containing `input.yaml` plus
+  `report.json`. Ketcher is bundled into the `boltz-web` image at build time;
+  the runtime does not load editor code from a CDN.
   PDBQT remains an optional future AutoDock/Vina export rather than the default
   ligand output.
 - Docking: left-side protein/ligand/pocket/task controls and a wide right-side

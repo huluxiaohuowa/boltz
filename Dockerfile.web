@@ -1,5 +1,28 @@
 ARG WEB_BASE_IMAGE=python:3.11-slim
+ARG NODE_BASE_IMAGE=node:24-bookworm-slim
+ARG NPM_REGISTRY=https://registry.npmjs.org
+ARG PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple
+ARG PIP_TRUSTED_HOST=mirrors.aliyun.com
+ARG APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian
+ARG APT_SECURITY_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/debian-security
+FROM ${NODE_BASE_IMAGE} AS ketcher-assets
+
+ARG NPM_REGISTRY
+
+WORKDIR /build
+COPY package.json package-lock.json* /build/
+RUN npm config set registry "${NPM_REGISTRY}" \
+    && if [ -f package-lock.json ]; then npm ci; else npm install; fi
+COPY frontend /build/frontend
+RUN npm run build:ketcher
+
 FROM ${WEB_BASE_IMAGE}
+
+ARG PIP_INDEX_URL
+ARG PIP_TRUSTED_HOST
+ARG APT_MIRROR
+ARG APT_SECURITY_MIRROR
+ARG TARGETARCH
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -9,14 +32,29 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN apt-get update \
+RUN set -eux; \
+    echo "Configuring Debian apt mirrors for TARGETARCH=${TARGETARCH:-unknown}"; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+      sed -i \
+        -e "s|http://deb.debian.org/debian-security|${APT_SECURITY_MIRROR}|g" \
+        -e "s|http://deb.debian.org/debian|${APT_MIRROR}|g" \
+        /etc/apt/sources.list.d/debian.sources; \
+    elif [ -f /etc/apt/sources.list ]; then \
+      sed -i \
+        -e "s|http://deb.debian.org/debian-security|${APT_SECURITY_MIRROR}|g" \
+        -e "s|http://deb.debian.org/debian|${APT_MIRROR}|g" \
+        /etc/apt/sources.list; \
+    fi; \
+    apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-pip python3-venv wget \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml README.md README.origin.md LICENSE /app/
 COPY src /app/src
+COPY --from=ketcher-assets /build/src/boltz_web/static/vendor/ketcher /app/src/boltz_web/static/vendor/ketcher
 
 RUN python3 -m pip install --no-cache-dir --break-system-packages \
+    --index-url "${PIP_INDEX_URL}" --trusted-host "${PIP_TRUSTED_HOST}" \
     fastapi "uvicorn[standard]" sqlalchemy "psycopg[binary]" redis python-multipart \
     requests pandas openpyxl rdkit
 

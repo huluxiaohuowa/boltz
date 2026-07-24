@@ -1,6 +1,12 @@
 .git
-.pytest_cache
+.gitmodules
+node_modules
+src/boltz_web/static/vendor/ketcher
+data
+.modelhub
 __pycache__
 *.pyc
-ictrek.app/dist
-
+.pytest_cache
+.mypy_cache
+.venv
+venv

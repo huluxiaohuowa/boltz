@@ -2,10 +2,10 @@ services:
   boltz-protein-prep-worker:
     build:
       context: .
-      dockerfile: Dockerfile.protein-prep.thor
+      dockerfile: Dockerfile.protein-prep.arm
       args:
-        PROTEIN_PREP_THOR_BASE_IMAGE: ${PROTEIN_PREP_THOR_BASE_IMAGE:?set to the Thor/L4T/CUDA base image that matches the deployed JetPack/Thor runtime}
-    image: ${BOLTZ_PROTEIN_PREP_THOR_IMAGE:-boltz-protein-prep:thor-dev}
+        PROTEIN_PREP_ARM_BASE_IMAGE: ${PROTEIN_PREP_ARM_BASE_IMAGE:-debian:bookworm-slim}
+    image: ${BOLTZ_PROTEIN_PREP_ARM_IMAGE:-boltz-protein-prep:arm-dev}
     restart: unless-stopped
     profiles: ["workers", "protein-prep"]
     depends_on:
@@ -17,13 +17,10 @@ services:
       BOLTZ_DATA_DIR: /data
       BOLTZ_DATABASE_URL: postgresql+psycopg://boltz:${BOLTZ_POSTGRES_PASSWORD:-boltz}@boltz-postgres:5432/boltz
       BOLTZ_REDIS_URL: redis://boltz-redis:6379/0
-      BOLTZ_PREP_WORKER_PLATFORM: thor
+      BOLTZ_PREP_WORKER_PLATFORM: ${BOLTZ_PREP_WORKER_PLATFORM:-arm-cpu}
       BOLTZ_PREP_POLL_SECONDS: ${BOLTZ_PREP_POLL_SECONDS:-5}
-      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
-      NVIDIA_DRIVER_CAPABILITIES: ${NVIDIA_DRIVER_CAPABILITIES:-compute,utility}
     volumes:
       - ${BOLTZ_DATA_HOST_DIR:-./data}:/data
-    gpus: all
     healthcheck:
       test: ["CMD-SHELL", "python -m boltz_prep.worker --check > /dev/null 2>&1 || exit 1"]
       interval: 30s

@@ -4,7 +4,7 @@ channels:
 dependencies:
   - python=3.11
   - pip
-  - gemmi=0.6.5
+  - gemmi>=0.6.5
   - numpy>=1.26
   - scipy
   - rdkit
@@ -16,8 +16,7 @@ dependencies:
   - requests
   - pandas
   - pydantic
-  - sqlalchemy
-  - redis
-  - psycopg
   - pip:
+      - redis
+      - sqlalchemy
       - psycopg[binary]
